@@ -9,6 +9,32 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Icons\**" />
+    <EmbeddedResource Remove="Icons\**" />
+    <None Remove="Icons\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="IconsDark\debug-continue.png" />
+    <None Remove="IconsDark\debug-disconnect.png" />
+    <None Remove="IconsDark\debug-pause.png" />
+    <None Remove="IconsDark\debug-start.png" />
+    <None Remove="IconsDark\debug-step-into.png" />
+    <None Remove="IconsDark\debug-step-out.png" />
+    <None Remove="IconsDark\debug-step-over.png" />
+    <None Remove="IconsDark\debug-stop.png" />
+    <None Remove="IconsDark\debug.png" />
+    <None Remove="IconsDark\gear.png" />
+    <None Remove="IconsLight\debug-continue.png" />
+    <None Remove="IconsLight\debug-disconnect.png" />
+    <None Remove="IconsLight\debug-pause.png" />
+    <None Remove="IconsLight\debug-start.png" />
+    <None Remove="IconsLight\debug-step-into.png" />
+    <None Remove="IconsLight\debug-step-out.png" />
+    <None Remove="IconsLight\debug-step-over.png" />
+    <None Remove="IconsLight\debug-stop.png" />
+    <None Remove="IconsLight\debug.png" />
+    <None Remove="IconsLight\gear.png" />
     <None Remove="shaders\imgui-frag.glsl" />
     <None Remove="shaders\imgui-frag.glsles" />
     <None Remove="shaders\imgui-frag.hlsl" />
@@ -28,6 +54,26 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="IconsDark\debug-continue.png" />
+    <EmbeddedResource Include="IconsDark\debug-disconnect.png" />
+    <EmbeddedResource Include="IconsDark\debug-pause.png" />
+    <EmbeddedResource Include="IconsDark\debug-start.png" />
+    <EmbeddedResource Include="IconsDark\debug-step-into.png" />
+    <EmbeddedResource Include="IconsDark\debug-step-out.png" />
+    <EmbeddedResource Include="IconsDark\debug-step-over.png" />
+    <EmbeddedResource Include="IconsDark\debug-stop.png" />
+    <EmbeddedResource Include="IconsDark\debug.png" />
+    <EmbeddedResource Include="IconsDark\gear.png" />
+    <EmbeddedResource Include="IconsLight\debug-continue.png" />
+    <EmbeddedResource Include="IconsLight\debug-disconnect.png" />
+    <EmbeddedResource Include="IconsLight\debug-pause.png" />
+    <EmbeddedResource Include="IconsLight\debug-start.png" />
+    <EmbeddedResource Include="IconsLight\debug-step-into.png" />
+    <EmbeddedResource Include="IconsLight\debug-step-out.png" />
+    <EmbeddedResource Include="IconsLight\debug-step-over.png" />
+    <EmbeddedResource Include="IconsLight\debug-stop.png" />
+    <EmbeddedResource Include="IconsLight\debug.png" />
+    <EmbeddedResource Include="IconsLight\gear.png" />
     <EmbeddedResource Include="shaders\imgui-frag.glsl" />
     <EmbeddedResource Include="shaders\imgui-frag.glsles" />
     <EmbeddedResource Include="shaders\imgui-frag.hlsl" />
@@ -47,9 +93,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ImGuiColorTextEditNet" Version="0.1.2" />
+    <PackageReference Include="ImGuiColorTextEditNet" Version="0.1.3" />
     <PackageReference Include="ImGui.NET" Version="1.89.2" />
     <PackageReference Include="Veldrid" Version="4.9.0" />
+    <PackageReference Include="Veldrid.ImageSharp" Version="4.9.0" />
     <PackageReference Include="Veldrid.RenderDoc" Version="1.0.1-ga121087cad" />
     <PackageReference Include="Veldrid.StartupUtilities" Version="4.9.0" />
   </ItemGroup>
@@ -61,7 +108,7 @@
     <ProjectReference Include="..\..\deps\ImGuiColorTextEditNet\src\TextEdit\ImGuiColorTextEditNet.csproj" />
   </ItemGroup>
   <ItemGroup Condition="!Exists('..\..\deps\GhidraProgramData\')">
-    <PackageReference Include="GhidraProgramData" Version="0.1.0"  />
+    <PackageReference Include="GhidraProgramData" Version="0.1.0" />
   </ItemGroup>
   <ItemGroup Condition="Exists('..\..\deps\GhidraProgramData\')">
     <ProjectReference Include="..\..\deps\GhidraProgramData\src\GhidraProgramData\GhidraProgramData.csproj" />
@@ -70,6 +117,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Lizard.Interfaces\Lizard.Interfaces.csproj" />
     <ProjectReference Include="..\Lizard.Watch\Lizard.Watch.csproj" />
+    <ProjectReference Include="..\SharpFileDialog\SharpFileDialog.csproj" />
   </ItemGroup>
 
 </Project>

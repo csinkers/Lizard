@@ -126,22 +126,32 @@ static class CommandParser
                 }
             }),
             new(new []  { "clear", "cls", ".cls" }, "Clear the log history", (_,  d) => d.Log.Clear()),
+            new(new []  {"exit", "quit" }, "Exits the debugger", (_, d) => d.Exit()),
 
             new(new[] { "Connect", "!" }, "Register the callback proxy for 'breakpoint hit' alerts",
-                (_,  d) => d.Host.Connect(d.DebugClientPrx)),
+                (_,  d) => d.Host?.Connect(d.Callback)),
 
-            new(new[] { "Continue", "g" }, "Resume execution", (_,  d) => d.Host.Continue()),
+            new(new[] { "Continue", "g" }, "Resume execution", (_,  d) => d.Host?.Continue()),
 
             // TODO
-            new(new[] { "Break", "b" }, "Pause execution", (_,  d) => UpdateRegisters(d.Host.Break(), d)),
+            new(new[] { "Break", "b" }, "Pause execution", (_,  d) =>
+            {
+                if (d.Host == null) return;
+                UpdateRegisters(d.Host.Break(), d);
+            }),
             new(new[] { "StepOver", "p" }, "Steps to the next instruction, ignoring function calls / interrupts etc", (_, d) =>
             {
                 // TODO
             }),
-            new(new[] { "StepIn", "n" }, "Steps to the next instruction, including into function calls etc", (_,  d) => UpdateRegisters(d.Host.StepIn(), d)),
+            new(new[] { "StepIn", "n" }, "Steps to the next instruction, including into function calls etc", (_,  d) =>
+            {
+                if (d.Host == null) return;
+                UpdateRegisters(d.Host.StepIn(), d);
+            }),
             new(new[] { "StepMultiple", "gn" }, "Runs the CPU for the given number of cycles", (getArg, d) =>
             {
                 var n = ParseUtil.ParseVal(getArg());
+                if (d.Host == null) return;
                 UpdateRegisters(d.Host.StepMultiple(n), d);
             }),
             new(new[] { "StepOut", "go" }, "Run until the current function returns", (_, _) =>
@@ -156,10 +166,14 @@ static class CommandParser
             new(new[] { "RunToAddress", "ga" }, "Run until the given address is reached", (getArg,  d) =>
             {
                 var address = ParseUtil.ParseAddress(getArg(), d, true);
-                d.Host.RunToAddress(address);
+                d.Host?.RunToAddress(address);
             }),
 
-            new(new[] { "GetState", "r" }, "Get the current CPU state", (_,  d) => UpdateRegisters(d.Host.GetState(), d)),
+            new(new[] { "GetState", "r" }, "Get the current CPU state", (_,  d) =>
+            {
+                if (d.Host == null) return;
+                UpdateRegisters(d.Host.GetState(), d);
+            }),
             new(new[] { "Disassemble", "u" }, "Disassemble instructions at the given address", (getArg,  d) =>
             {
                 var addressArg = getArg();
@@ -172,6 +186,7 @@ static class CommandParser
                     ? 10
                     : ParseUtil.ParseVal(lengthArg);
 
+                if (d.Host == null) return;
                 PrintAsm(d.Host.Disassemble(address, length), d.Log);
             }),
 
@@ -183,6 +198,7 @@ static class CommandParser
                     ? 64
                     : ParseUtil.ParseVal(lengthArg);
 
+                if (d.Host == null) return;
                 PrintBytes(address, d.Host.GetMemory(address, length), d.Log);
             }),
 
@@ -191,7 +207,7 @@ static class CommandParser
                 var address = ParseUtil.ParseAddress(getArg(), d, false);
                 var value = ParseUtil.ParseVal(getArg());
                 var bytes = BitConverter.GetBytes(value);
-                d.Host.SetMemory(address, bytes);
+                d.Host?.SetMemory(address, bytes);
             }),
 
             new(new[] { "GetMaxAddress" }, "Gets the maximum address that has been used in the given segment", (getArg,  d) =>
@@ -203,6 +219,7 @@ static class CommandParser
                     return;
                 }
 
+                if (d.Host == null) return;
                 int maxAddress = d.Host.GetMaxNonEmptyAddress(segment);
                 d.Log.Info($"MaxAddress: 0x{(uint)maxAddress:X8}");
             }),
@@ -225,6 +242,7 @@ static class CommandParser
                     pattern.Add(b);
                 }
 
+                if (d.Host == null) return;
                 var results = d.Host.SearchMemory(address, length, pattern.ToArray(), 1);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
@@ -252,6 +270,7 @@ static class CommandParser
                     pattern.Add((byte)((dword >> 24) & 0xff));
                 }
 
+                if (d.Host == null) return;
                 var results = d.Host.SearchMemory(address, length, pattern.ToArray(), 4);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
@@ -269,6 +288,7 @@ static class CommandParser
 
                 var bytes = Encoding.ASCII.GetBytes(pattern);
 
+                if (d.Host == null) return;
                 var results = d.Host.SearchMemory(address, length, bytes, 1);
                 int displayLength = 16 * ((pattern.Length + 15) / 16);
                 foreach (var result in results)
@@ -287,13 +307,18 @@ static class CommandParser
                     ? 64
                     : ParseUtil.ParseVal(lengthArg);
 
+                if (d.Host == null) return;
                 var bytes = d.Host.GetMemory(address, length);
 
                 if (bytes != null)
                     File.WriteAllBytes(filename, bytes);
             }),
 
-            new(new[] { "ListBreakpoints", "bps", "bl" }, "Retrieves the current breakpoint list", (_,  d) => PrintBps(d.Host.ListBreakpoints(), d.Log)),
+            new(new[] { "ListBreakpoints", "bps", "bl" }, "Retrieves the current breakpoint list", (_,  d) =>
+            {
+                if (d.Host == null) return;
+                PrintBps(d.Host.ListBreakpoints(), d.Log);
+            }),
             new(new[] { "SetBreakpoint", "bp" }, "<address> [type] [ah] [al] - Sets or updates a breakpoint", (getArg,  d) =>
             {
                 var address = ParseUtil.ParseAddress(getArg(), d, true);
@@ -307,29 +332,31 @@ static class CommandParser
                 byte al = s == "" ? (byte)0 : (byte)ParseUtil.ParseVal(s);
 
                 var bp = new Breakpoint(address, type, ah, al);
-                d.Host.SetBreakpoint(bp);
+                d.Host?.SetBreakpoint(bp);
             }),
 
             new(new[] { "DelBreakpoint", "bd" }, "Removes the breakpoint at the given address", (getArg,  d) =>
             {
                 var addr = ParseUtil.ParseAddress(getArg(), d, true);
-                d.Host.DelBreakpoint(addr);
+                d.Host?.DelBreakpoint(addr);
             }),
 
             new(new[] { "SetReg", "reg" }, "Updates the contents of a CPU register", (getArg,  d) =>
             {
                 Register reg = ParseUtil.ParseReg(getArg());
                 int value = ParseUtil.ParseVal(getArg());
-                d.Host.SetReg(reg, value);
+                d.Host?.SetReg(reg, value);
             }),
 
             new(new[] { "GetGDT", "gdt"}, "Retrieves the Global Descriptor Table", (getArg, d) =>
             {
+                if (d.Host == null) return;
                 PrintDescriptors(d.Host.GetGdt(), false, d.Log);
             }),
 
             new(new[] { "GetLDT", "ldt"}, "Retrieves the Local Descriptor Table", (getArg, d) =>
             {
+                if (d.Host == null) return;
                 PrintDescriptors(d.Host.GetLdt(), true, d.Log);
             })
         }.SelectMany(x => x.Names.Select(name => (name, x)))

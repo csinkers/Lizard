@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using System.Text;
 using ImGuiColorTextEditNet;
 using ImGuiNET;
 
@@ -9,7 +8,7 @@ public class CommandWindow : SingletonWindow
 {
     readonly Debugger _debugger;
     readonly LogHistory _history;
-    readonly byte[] _inputBuffer = new byte[512]; // TODO: Initial size
+    readonly ImText _inputBuffer = new(512);
     readonly TextEditor _textEditor = new();
     bool _autoScroll = true;
     bool _scrollToBottom = true;
@@ -78,15 +77,10 @@ public class CommandWindow : SingletonWindow
         }
 
         bool reclaimFocus = false;
-        var inputTextFlags = ImGuiInputTextFlags.EnterReturnsTrue;
-        if (ImGui.InputText("", _inputBuffer, (uint)_inputBuffer.Length, inputTextFlags))
+        if (_inputBuffer.Draw("", ImGuiInputTextFlags.EnterReturnsTrue))
         {
-            var command = Encoding.ASCII.GetString(_inputBuffer);
-            int index = command.IndexOf((char)0, StringComparison.Ordinal);
-            command = command[..index];
-
-            for (int i = 0; i < command.Length; i++)
-                _inputBuffer[i] = 0;
+            var command = _inputBuffer.Text;
+            _inputBuffer.Text = "";
 
             _history.Add("> " + command, Severity.Info);
             CommandParser.RunCommand(command, _debugger);

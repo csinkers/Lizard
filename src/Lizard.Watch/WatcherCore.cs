@@ -1,12 +1,11 @@
 ﻿using GhidraProgramData;
-using ImGuiNET;
 using Lizard.Interfaces;
 
 namespace Lizard.Watch;
 
-public sealed class WatcherCore : IDisposable
+public sealed class WatcherCore
 {
-    readonly IMemoryReader _reader;
+    readonly IMemoryCache _memory;
     readonly ITextureStore _textures;
     DrawContext? _drawContext;
 
@@ -22,10 +21,11 @@ public sealed class WatcherCore : IDisposable
     // Highlight changed values
     // Searching / filtering.
 
-    public WatcherCore(IMemoryReader reader, ITextureStore textures)
+    public WatcherCore(IMemoryCache memory, ITextureStore textures)
     {
-        _reader = reader ?? throw new ArgumentNullException(nameof(reader));
+        _memory = memory ?? throw new ArgumentNullException(nameof(memory));
         _textures = textures ?? throw new ArgumentNullException(nameof(textures));
+
         // Config = Config.Load();
 
         /* foreach (var name in config.Watches)
@@ -40,12 +40,17 @@ public sealed class WatcherCore : IDisposable
         }*/
     }
 
-    const string SymbolPath = @"C:\Depot\bb\ualbion_extra\SR-Main.exe.xml";
+    public void LoadProgramData(string path)
+    {
+        if (!File.Exists(path))
+            return;
+
+        _drawContext = new DrawContext(path, _memory, _textures);
+    }
+
+    // const string SymbolPath = @"C:\Depot\bb\ualbion_extra\SR-Main.exe.xml";
     public void Draw()
     {
-        if (ImGui.Button("Reload from XML"))
-            _drawContext = new DrawContext(SymbolPath, _reader, _textures);
-
         if (_drawContext == null)
             return;
 
@@ -70,6 +75,4 @@ public sealed class WatcherCore : IDisposable
 
         LastUpdateTimeUtc = DateTime.UtcNow;
     }
-
-    public void Dispose() => _reader.Dispose();
 }

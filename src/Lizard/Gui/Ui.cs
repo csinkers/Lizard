@@ -1,99 +1,152 @@
 ﻿using System.Numerics;
 using ImGuiNET;
-using Veldrid;
-using Veldrid.Sdl2;
-using Veldrid.StartupUtilities;
+using Lizard.Watch;
+using SharpFileDialog;
 
 namespace Lizard.Gui;
 
-class Ui : IDisposable
+class Ui
 {
-    public delegate void WindowFunc();
-    readonly List<WindowFunc> _windows = new();
-    readonly List<WindowFunc> _menus = new();
-    readonly Sdl2Window _window;
-    readonly GraphicsDevice _gd;
-    readonly ImGuiRenderer _imguiRenderer;
+    readonly Debugger _debugger;
+    readonly WatcherCore _watcherCore;
+    readonly UiManager _uiManager;
+    readonly ToolbarIcons _icons;
+    bool _done;
 
-    public void AddWindow(WindowFunc window) { _windows.Add(window); }
-    public void RemoveWindow(WindowFunc window) { _windows.Remove(window); }
-    public void AddMenu(WindowFunc window) { _menus.Add(window); }
-    public void RemoveMenu(WindowFunc window) { _menus.Remove(window); }
+    public BreakpointsWindow BreakpointsWindow { get; }
+    public CallStackWindow CallStackWindow { get; }
+    public CodeWindow CodeWindow { get; }
+    public ConnectWindow ConnectWindow { get; }
+    public CommandWindow CommandWindow { get; }
+    public DisassemblyWindow DisassemblyWindow { get; }
+    public LocalsWindow LocalsWindow { get; }
+    public RegistersWindow RegistersWindow { get; }
+    public WatchWindow WatchWindow { get; }
 
-    public Ui()
+    public Ui(UiManager uiManager, Debugger debugger, LogHistory history, WatcherCore watcherCore)
     {
-#if RENDERDOC
-        RenderDoc.Load(out var renderDoc);
-        bool capturePending = false;
-#endif
+        _uiManager = uiManager ?? throw new ArgumentNullException(nameof(uiManager));
+        _debugger = debugger ?? throw new ArgumentNullException(nameof(debugger));
+        _watcherCore = watcherCore ?? throw new ArgumentNullException(nameof(watcherCore));
+        _icons = new ToolbarIcons(uiManager, true);
 
-        VeldridStartup.CreateWindowAndGraphicsDevice(
-            new WindowCreateInfo(100, 100, 800, 1024, WindowState.Normal, "MemWatcher"),
-            new GraphicsDeviceOptions(true) { SyncToVerticalBlank = true },
-            GraphicsBackend.Direct3D11,
-            out _window,
-            out _gd);
+        debugger.ExitRequested += () => _done = true;
 
-        _imguiRenderer = new ImGuiRenderer(
-            _gd,
-            _gd.MainSwapchain.Framebuffer.OutputDescription,
-            (int)_gd.MainSwapchain.Framebuffer.Width,
-            (int)_gd.MainSwapchain.Framebuffer.Height);
+        BreakpointsWindow = new BreakpointsWindow();
+        CallStackWindow = new CallStackWindow();
+        CodeWindow = new CodeWindow();
+        CommandWindow = new CommandWindow(debugger, history);
+        ConnectWindow = new ConnectWindow(debugger.SessionManager);
+        DisassemblyWindow = new DisassemblyWindow();
+        LocalsWindow = new LocalsWindow();
+        RegistersWindow = new RegistersWindow(debugger);
+        WatchWindow = new WatchWindow(watcherCore);
 
-        _window.Resized += () =>
-        {
-            _gd.ResizeMainWindow((uint)_window.Width, (uint)_window.Height);
-            _imguiRenderer.WindowResized(_window.Width, _window.Height);
-        };
-
+        uiManager.AddMenu(DrawFileMenu);
+        uiManager.AddMenu(DrawWindowsMenu);
+        uiManager.AddMenu(DrawToolbar);
+        uiManager.AddWindow(BreakpointsWindow);
+        uiManager.AddWindow(CallStackWindow);
+        uiManager.AddWindow(CodeWindow);
+        uiManager.AddWindow(CommandWindow);
+        uiManager.AddWindow(ConnectWindow);
+        uiManager.AddWindow(DisassemblyWindow);
+        uiManager.AddWindow(LocalsWindow);
+        uiManager.AddWindow(RegistersWindow);
+        uiManager.AddWindow(WatchWindow);
     }
 
     public void Run()
     {
-        var cl = _gd.ResourceFactory.CreateCommandList();
-        ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(0.1f, 0.1f, 0.1f, 1.0f));
-        while (_window.Exists)
+        while (!_done)
+            if (!_uiManager.RenderFrame())
+                _done = true;
+    }
+
+    void DrawFileMenu()
+    {
+        if (!ImGui.BeginMenu("File")) 
+            return;
+
+        if (_debugger.Host == null && ImGui.MenuItem("Connect"))
+            ConnectWindow.Open();
+
+        if (_debugger.Host != null && ImGui.MenuItem("Disconnect"))
+            _debugger.SessionManager.Disconnect();
+
+        if (ImGui.MenuItem("Load Program Data"))
         {
-#if RENDERDOC
-            if (capturePending)
+            using var openFile = new OpenFileDialog();
+            openFile.Open(x =>
             {
-                renderDoc.TriggerCapture();
-                capturePending = false;
+                if (x.Success)
+                    _watcherCore.LoadProgramData(x.FileName);
+            }, "Ghidra Program Data XML (*.xml)|*.xml");
+        }
+
+        ImGui.EndMenu();
+    }
+
+    void DrawWindowsMenu()
+    {
+        if (!ImGui.BeginMenu("Windows"))
+            return;
+
+        if (ImGui.MenuItem("Breakpoints")) BreakpointsWindow.Open();
+        if (ImGui.MenuItem("Call Stack")) CallStackWindow.Open();
+        if (ImGui.MenuItem("Code")) CodeWindow.Open();
+        if (ImGui.MenuItem("Command")) CommandWindow.Open();
+        if (ImGui.MenuItem("Disassembly")) DisassemblyWindow.Open();
+        if (ImGui.MenuItem("Locals")) LocalsWindow.Open();
+        if (ImGui.MenuItem("Registers")) RegistersWindow.Open();
+        if (ImGui.MenuItem("Watch")) WatchWindow.Open();
+        ImGui.EndMenu();
+    }
+
+    void DrawToolbar()
+    {
+        if (_debugger.Host == null)
+        {
+            if (Toolbar("connect##", _icons.Debug, "Connect _debugger"))
+                ConnectWindow.Open();
+        }
+        else
+        {
+            if (Toolbar("disconnect##", _icons.Disconnect, "Disconnect"))
+                _debugger.SessionManager.Disconnect();
+        }
+
+        if (_debugger.Host != null)
+        {
+            if (_debugger.IsPaused)
+            {
+                if (Toolbar("start##",_icons.Start, "Resume (F5)"))
+                    _debugger.Host.Continue();
+
+                if (Toolbar("stepin##",_icons.StepInto, "Step In (F11)"))
+                    _debugger.Host.StepIn();
+
+                if (Toolbar("stepover##",_icons.StepOver, "Step Over (F10)"))
+                    _debugger.Log.Warn("TODO");
+
+                if (Toolbar("stepout##",_icons.StepOut, "Step Out (Shift+F11)"))
+                    _debugger.Log.Warn("TODO");
             }
-#endif
-
-            var input = _window.PumpEvents();
-            if (!_window.Exists)
-                break;
-
-            _imguiRenderer.Update(1f / 60f, input);
-
-            if (!ImGui.BeginMainMenuBar())
-                return;
-
-            foreach (var menu in _menus)
-                menu();
-
-            ImGui.EndMainMenuBar();
-
-            ImGui.DockSpaceOverViewport();
-
-            foreach (var imGuiWindow in _windows)
-                imGuiWindow();
-
-            cl.Begin();
-            cl.SetFramebuffer(_gd.MainSwapchain.Framebuffer);
-            cl.ClearColorTarget(0, RgbaFloat.Black);
-            _imguiRenderer.Render(_gd, cl);
-            cl.End();
-            _gd.SubmitCommands(cl);
-            _gd.SwapBuffers(_gd.MainSwapchain);
+            else
+            {
+                if (Toolbar("pause##",_icons.Pause, "Pause (Shift+F5)"))
+                    _debugger.Host.Break();
+            }
         }
     }
 
-    public void Dispose()
+    static bool Toolbar(string name, IntPtr icon, string tooltip)
     {
-        _imguiRenderer.Dispose();
-        _gd.Dispose();
+        var result = ImGui.ImageButton(name, icon, new Vector2(16, 16), Vector2.Zero, Vector2.One);
+
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(tooltip);
+
+        return result;
     }
 }

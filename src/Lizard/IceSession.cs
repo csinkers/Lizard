@@ -7,13 +7,13 @@ public class IceSession : IDisposable
     public DebugClientI Client { get; }
     public DebugClientPrx ClientProxy { get; }
 
-    public IceSession()
+    public IceSession(string host, int port) // default host localhost, port 7243
     {
         var emptyArgs = Array.Empty<string>();
         _communicator = Ice.Util.initialize(ref emptyArgs);
 
         Ice.ObjectPrx? proxy = 
-            _communicator.stringToProxy("DebugHost:default -h localhost -p 7243")
+            _communicator.stringToProxy($"DebugHost:default -h {host} -p {port}")
             .ice_twoway()
             .ice_secure(false);
 
@@ -22,7 +22,7 @@ public class IceSession : IDisposable
         if (DebugHost == null)
             throw new ApplicationException("Invalid proxy");
 
-        var adapter = _communicator.createObjectAdapterWithEndpoints("Callback.Client", "default -h localhost");
+        var adapter = _communicator.createObjectAdapterWithEndpoints("Callback.Client", $"default -h {host}");
         Client = new DebugClientI();
         adapter.add(Client, Ice.Util.stringToIdentity("debugClient"));
         adapter.activate();

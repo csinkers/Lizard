@@ -2,21 +2,47 @@
 
 namespace Lizard.Watch;
 
-public class MemoryCache
+public class MemoryCache : IMemoryCache
 {
-    readonly IMemoryReader _reader;
     readonly HashSet<uint> _requestedPages = new();
     readonly BufferPool _pool = new();
     Dictionary<uint, MemoryBuffer> _current = new();
     Dictionary<uint, MemoryBuffer> _previous = new();
     List<MemoryBuffer> _currentBuffers = new();
     List<MemoryBuffer> _previousBuffers = new();
+    IMemoryReader? _reader;
 
     static uint PageNum(uint offset) => offset >> 12;
     static uint PageNumRoundUp(uint offset) => (offset + 4095) >> 12;
     static uint PageAddr(uint pageNum) => pageNum << 12;
 
-    public MemoryCache(IMemoryReader reader) => _reader = reader ?? throw new ArgumentNullException(nameof(reader));
+    public IMemoryReader? Reader
+    {
+        get => _reader;
+        set
+        {
+            Clear();
+            _reader = value;
+        }
+    }
+
+    public void Clear()
+    {
+        _requestedPages.Clear();
+        ClearBuffers(_currentBuffers);
+        ClearBuffers(_previousBuffers);
+        _current.Clear();
+        _previous.Clear();
+    }
+
+    void ClearBuffers(List<MemoryBuffer> buffers)
+    {
+        foreach (var curBuffer in buffers)
+            if (curBuffer.Data != null)
+                _pool.Return(curBuffer.Data);
+
+        buffers.Clear();
+    }
 
     public ReadOnlySpan<byte> Read(uint offset, uint size)
     {
@@ -42,12 +68,9 @@ public class MemoryCache
         var pages = _requestedPages.ToArray();
         (_previous, _current) = (_current, _previous);
         (_previousBuffers, _currentBuffers) = (_currentBuffers, _previousBuffers);
-        foreach (var curBuffer in _currentBuffers)
-            if (curBuffer.Data != null)
-                _pool.Return(curBuffer.Data);
+        ClearBuffers(_currentBuffers);
 
         _current.Clear();
-        _currentBuffers.Clear();
         _requestedPages.Clear();
         Array.Sort(pages);
 
@@ -85,6 +108,6 @@ public class MemoryCache
         var bufferEnd = PageAddr(lastPage + 1);
         var bufferSize = bufferEnd - buffer.Offset;
         buffer.Data = _pool.Borrow((int)bufferSize);
-        _reader.Read(buffer.Offset, buffer.Data);
+        Reader?.Read(buffer.Offset, buffer.Data);
     }
 }

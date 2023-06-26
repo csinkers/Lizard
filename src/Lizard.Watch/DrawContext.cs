@@ -5,18 +5,18 @@ namespace Lizard.Watch;
 
 public class DrawContext
 {
-    public DrawContext(string ghidraXmlPath, IMemoryReader reader, ITextureStore textureStore)
+    public DrawContext(string ghidraXmlPath, IMemoryCache memory, ITextureStore textureStore)
     {
         Renderers = new RendererCache();
         History = new HistoryCache(Renderers);
-        Memory = new MemoryCache(reader);
+        Memory = memory ?? throw new ArgumentNullException(nameof(memory));
         Data = ProgramData.Load(ghidraXmlPath);
         TextureStore = textureStore ?? throw new ArgumentNullException(nameof(textureStore));
     }
 
     public ProgramData Data { get; }
     public RendererCache Renderers { get; }
-    public MemoryCache Memory { get; }
+    public IMemoryCache Memory { get; }
     public HistoryCache History { get; }
     public ITextureStore TextureStore { get; }
     public long Now { get; set; }

@@ -3,7 +3,7 @@
 public interface IDebugger
 {
     ITracer Log { get; }
-    IMemoryAccess Memory { get; } // Cached memory access
+    IMemoryCache Memory { get; } // Cached memory access
     bool AddMenuItem(IMenuItem item);
     bool RemoveMenuItem(IMenuItem item);
     bool RegisterMemoryReader(IMemoryReader memoryReader);

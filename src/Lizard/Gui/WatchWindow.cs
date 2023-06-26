@@ -1,9 +1,15 @@
-﻿namespace Lizard.Gui;
+﻿using Lizard.Watch;
+
+namespace Lizard.Gui;
 
 public class WatchWindow : SingletonWindow
 {
-    public WatchWindow() : base("Watch") { }
+    readonly WatcherCore _watcherCore;
+    public WatchWindow(WatcherCore watcherCore) : base("Watch") 
+        => _watcherCore = watcherCore ?? throw new ArgumentNullException(nameof(watcherCore));
+
     protected override void DrawContents()
     {
+        _watcherCore.Draw();
     }
 }
