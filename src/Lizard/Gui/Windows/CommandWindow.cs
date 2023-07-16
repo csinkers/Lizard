@@ -13,6 +13,7 @@ public class CommandWindow : SingletonWindow
     bool _autoScroll = true;
     bool _scrollToBottom = true;
     bool _focus;
+    bool _pendingFocus;
 
     const PaletteIndex ErrorColor = PaletteIndex.Custom;
     const PaletteIndex WarningColor = PaletteIndex.Custom + 1;
@@ -46,6 +47,11 @@ public class CommandWindow : SingletonWindow
         _history.Cleared += () => _textEditor.AllText = "";
     }
 
+    public void Focus()
+    {
+        _pendingFocus = true;
+    }
+
     protected override void DrawContents()
     {
         ImGui.SetWindowPos(Vector2.Zero, ImGuiCond.FirstUseEver);
@@ -76,7 +82,6 @@ public class CommandWindow : SingletonWindow
             _focus = false;
         }
 
-        bool reclaimFocus = false;
         if (_inputBuffer.Draw("", ImGuiInputTextFlags.EnterReturnsTrue))
         {
             var command = _inputBuffer.Text;
@@ -84,12 +89,15 @@ public class CommandWindow : SingletonWindow
 
             _history.Add("> " + command, Severity.Info);
             CommandParser.RunCommand(command, _debugger);
-            reclaimFocus = true;
+            _pendingFocus = true;
         }
 
         ImGui.SetItemDefaultFocus();
-        if (reclaimFocus)
+        if (_pendingFocus)
+        {
             ImGui.SetKeyboardFocusHere(-1); // Auto focus previous widget
+            _pendingFocus = false;
+        }
 
         ImGui.SameLine();
         ImGui.Checkbox("Scroll", ref _autoScroll);

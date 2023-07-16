@@ -12,6 +12,10 @@ namespace Lizard.Gui;
 class UiManager : IDisposable
 {
     static readonly StringProperty ImGuiLayout = new("ImGuiLayout");
+    static readonly IntProperty Width = new("Width", 800);
+    static readonly IntProperty Height = new("Height", 1024);
+    static readonly IntProperty PositionX = new("PositionX", 100);
+    static readonly IntProperty PositionY = new("PositionY", 100);
 
     public delegate void WindowFunc();
     readonly Dictionary<string, IImGuiWindow> _windows = new();
@@ -20,8 +24,9 @@ class UiManager : IDisposable
     readonly GraphicsDevice _gd;
     readonly ImGuiRenderer _imguiRenderer;
     readonly CommandList _cl;
-    string? _pendingLoad;
-    public ProjectConfig Project { get; private set; } = new();
+    readonly HotkeyManager _hotkeys = new();
+    ProjectConfig? _pendingLoad;
+    public ProjectConfig Project { get; private set; }
     public ITextureStore TextureStore { get; }
     public GraphicsDevice GraphicsDevice => _gd;
 
@@ -30,20 +35,29 @@ class UiManager : IDisposable
         if (!_windows.TryAdd(window.Prefix, window))
             throw new InvalidOperationException($"Tried to add a window ({window.GetType().Name}) with prefix \"\", but that prefix is already in use by {_windows[window.Prefix].GetType().Name}");
     }
+
     public void RemoveWindow(IImGuiWindow window) { _windows.Remove(window.Prefix); }
     public void AddMenu(WindowFunc window) { _menus.Add(window); }
     public void RemoveMenu(WindowFunc window) { _menus.Remove(window); }
+    public void AddHotkey(KeyBinding binding, Action action) => _hotkeys.Add(binding, action);
+    public void RemoveHotkey(KeyBinding binding, Action action) => _hotkeys.Remove(binding);
     public IntPtr GetOrCreateImGuiBinding(Texture texture) => _imguiRenderer.GetOrCreateImGuiBinding(_gd.ResourceFactory, texture);
 
-    public UiManager()
+    public UiManager(ProjectConfig project)
     {
+        _pendingLoad = project ?? throw new ArgumentNullException(nameof(project));
+        var x = project.GetProperty(PositionX);
+        var y = project.GetProperty(PositionY);
+        var width = project.GetProperty(Width);
+        var height = project.GetProperty(Height);
+
 #if RENDERDOC
         RenderDoc.Load(out var renderDoc);
         bool capturePending = false;
 #endif
 
         VeldridStartup.CreateWindowAndGraphicsDevice(
-            new WindowCreateInfo(100, 100, 800, 1024, WindowState.Normal, "Lizard"),
+            new WindowCreateInfo(x, y, width, height, WindowState.Normal, "Lizard"),
             new GraphicsDeviceOptions(true) { SyncToVerticalBlank = true },
             GraphicsBackend.Direct3D11,
             out _window,
@@ -67,13 +81,9 @@ class UiManager : IDisposable
         ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(0.1f, 0.1f, 0.1f, 1));
     }
 
-    public void LoadProject(string path) => _pendingLoad = path;
-    void LoadProjectInner()
+    public void LoadProject(string path) => _pendingLoad = ProjectConfig.Load(path);
+    void PostLoad()
     {
-        var path = _pendingLoad;
-        _pendingLoad = null;
-        Project = ProjectConfig.Load(path);
-
         foreach (var kvp in _windows)
             kvp.Value.ClearState();
 
@@ -90,15 +100,17 @@ class UiManager : IDisposable
         }
 
         var layout = Project.GetProperty(ImGuiLayout);
-        if (layout == null)
-            throw new InvalidOperationException($"Could not load ImGui layout from project \"{path}\"");
-
-        ImGui.LoadIniSettingsFromMemory(layout);
+        if (layout != null)
+            ImGui.LoadIniSettingsFromMemory(layout);
     }
 
     public void SaveProject(string path)
     {
         Project.SetProperty(ImGuiLayout, ImGui.SaveIniSettingsToMemory());
+        Project.SetProperty(PositionX, _window.X);
+        Project.SetProperty(PositionY, _window.Y);
+        Project.SetProperty(Width, _window.Width);
+        Project.SetProperty(Height, _window.Height);
 
         foreach (var kvp in _windows)
             kvp.Value.Save(Project.Windows);
@@ -125,7 +137,11 @@ class UiManager : IDisposable
             return false;
 
         if (_pendingLoad != null)
-            LoadProjectInner();
+        {
+            Project = _pendingLoad;
+            PostLoad();
+            _pendingLoad = null;
+        }
 
         _imguiRenderer.Update(1 / 60.0f, input);
 
@@ -140,11 +156,14 @@ class UiManager : IDisposable
         }
 
         ImGui.PopStyleVar();
-
         ImGui.DockSpaceOverViewport();
 
         foreach (var kvp in _windows)
             kvp.Value.Draw();
+
+        var io = ImGui.GetIO();
+        if (!io.WantCaptureKeyboard)
+            _hotkeys.HandleInput(input);
 
         _cl.Begin();
         _cl.SetFramebuffer(_gd.MainSwapchain.Framebuffer);
@@ -163,4 +182,3 @@ class UiManager : IDisposable
         _gd.Dispose();
     }
 }
-

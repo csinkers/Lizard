@@ -3,6 +3,7 @@ using ImGuiNET;
 using Lizard.Gui.Windows;
 using Lizard.Watch;
 using SharpFileDialog;
+using Veldrid;
 
 namespace Lizard.Gui;
 
@@ -12,18 +13,17 @@ class Ui
     readonly WatcherCore _watcherCore;
     readonly UiManager _uiManager;
     readonly ToolbarIcons _icons;
+    readonly BreakpointsWindow _breakpointsWindow;
+    readonly CallStackWindow _callStackWindow;
+    readonly CodeWindow _codeWindow;
+    readonly ConnectWindow _connectWindow;
+    readonly CommandWindow _commandWindow;
+    readonly DisassemblyWindow _disassemblyWindow;
+    readonly LocalsWindow _localsWindow;
+    readonly RegistersWindow _registersWindow;
+    readonly WatchWindow _watchWindow;
+    // ErrorsWindow _errorsWindow;
     bool _done;
-
-    public BreakpointsWindow BreakpointsWindow { get; }
-    public CallStackWindow CallStackWindow { get; }
-    public CodeWindow CodeWindow { get; }
-    public ConnectWindow ConnectWindow { get; }
-    public CommandWindow CommandWindow { get; }
-    public DisassemblyWindow DisassemblyWindow { get; }
-    public LocalsWindow LocalsWindow { get; }
-    public RegistersWindow RegistersWindow { get; }
-    public WatchWindow WatchWindow { get; }
-    // public ErrorsWindow ErrorsWindow { get; }
 
     public Ui(UiManager uiManager, Debugger debugger, LogHistory logs, WatcherCore watcherCore)
     {
@@ -34,28 +34,35 @@ class Ui
 
         debugger.ExitRequested += () => _done = true;
 
-        BreakpointsWindow = new BreakpointsWindow();
-        CallStackWindow   = new CallStackWindow();
-        CodeWindow        = new CodeWindow();
-        CommandWindow     = new CommandWindow(debugger, logs);
-        ConnectWindow     = new ConnectWindow(debugger.SessionManager);
-        DisassemblyWindow = new DisassemblyWindow();
-        LocalsWindow      = new LocalsWindow();
-        RegistersWindow   = new RegistersWindow(debugger);
-        WatchWindow       = new WatchWindow(watcherCore);
+        _breakpointsWindow = new BreakpointsWindow();
+        _callStackWindow   = new CallStackWindow();
+        _codeWindow        = new CodeWindow();
+        _commandWindow     = new CommandWindow(debugger, logs);
+        _connectWindow     = new ConnectWindow(debugger.SessionManager);
+        _disassemblyWindow = new DisassemblyWindow();
+        _localsWindow      = new LocalsWindow();
+        _registersWindow   = new RegistersWindow(debugger);
+        _watchWindow       = new WatchWindow(watcherCore);
 
         uiManager.AddMenu(DrawFileMenu);
         uiManager.AddMenu(DrawWindowsMenu);
         uiManager.AddMenu(DrawToolbar);
-        uiManager.AddWindow(BreakpointsWindow);
-        uiManager.AddWindow(CallStackWindow);
-        uiManager.AddWindow(CodeWindow);
-        uiManager.AddWindow(CommandWindow);
-        uiManager.AddWindow(ConnectWindow);
-        uiManager.AddWindow(DisassemblyWindow);
-        uiManager.AddWindow(LocalsWindow);
-        uiManager.AddWindow(RegistersWindow);
-        uiManager.AddWindow(WatchWindow);
+        uiManager.AddWindow(_breakpointsWindow);
+        uiManager.AddWindow(_callStackWindow);
+        uiManager.AddWindow(_codeWindow);
+        uiManager.AddWindow(_commandWindow);
+        uiManager.AddWindow(_connectWindow);
+        uiManager.AddWindow(_disassemblyWindow);
+        uiManager.AddWindow(_localsWindow);
+        uiManager.AddWindow(_registersWindow);
+        uiManager.AddWindow(_watchWindow);
+
+        uiManager.AddHotkey(new KeyBinding(Key.S, ModifierKeys.Control), () =>
+        {
+            if (!string.IsNullOrEmpty(_uiManager.Project.Path))
+                Save(_uiManager.Project.Path);
+        });
+        uiManager.AddHotkey(new KeyBinding(Key.Grave, ModifierKeys.None), () => _commandWindow.Focus());
     }
 
     public void Run()
@@ -121,7 +128,7 @@ class Ui
             SaveAs();
 
         if (_debugger.Host == null && ImGui.MenuItem("Connect"))
-            ConnectWindow.Open();
+            _connectWindow.Open();
 
         if (_debugger.Host != null && ImGui.MenuItem("Disconnect"))
             _debugger.SessionManager.Disconnect();
@@ -136,6 +143,9 @@ class Ui
             }, "Ghidra Program Data XML (*.xml)|*.xml");
         }
 
+        if (ImGui.MenuItem("Exit"))
+            _done = true;
+
         ImGui.EndMenu();
     }
 
@@ -144,14 +154,14 @@ class Ui
         if (!ImGui.BeginMenu("Windows"))
             return;
 
-        if (ImGui.MenuItem("Breakpoints")) BreakpointsWindow.Open();
-        if (ImGui.MenuItem("Call Stack")) CallStackWindow.Open();
-        if (ImGui.MenuItem("Code")) CodeWindow.Open();
-        if (ImGui.MenuItem("Command")) CommandWindow.Open();
-        if (ImGui.MenuItem("Disassembly")) DisassemblyWindow.Open();
-        if (ImGui.MenuItem("Locals")) LocalsWindow.Open();
-        if (ImGui.MenuItem("Registers")) RegistersWindow.Open();
-        if (ImGui.MenuItem("Watch")) WatchWindow.Open();
+        if (ImGui.MenuItem("Breakpoints")) _breakpointsWindow.Open();
+        if (ImGui.MenuItem("Call Stack")) _callStackWindow.Open();
+        if (ImGui.MenuItem("Code")) _codeWindow.Open();
+        if (ImGui.MenuItem("Command")) _commandWindow.Open();
+        if (ImGui.MenuItem("Disassembly")) _disassemblyWindow.Open();
+        if (ImGui.MenuItem("Locals")) _localsWindow.Open();
+        if (ImGui.MenuItem("Registers")) _registersWindow.Open();
+        if (ImGui.MenuItem("Watch")) _watchWindow.Open();
         ImGui.EndMenu();
     }
 
@@ -160,7 +170,7 @@ class Ui
         if (_debugger.Host == null)
         {
             if (Toolbar("connect##", _icons.Debug, "Connect _debugger"))
-                ConnectWindow.Open();
+                _connectWindow.Open();
         }
         else
         {

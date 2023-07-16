@@ -1,4 +1,5 @@
-﻿using Lizard.Gui;
+﻿using Lizard.Config;
+using Lizard.Gui;
 using Lizard.Watch;
 using Exception = System.Exception;
 
@@ -6,17 +7,22 @@ namespace Lizard;
 
 static class Program
 {
-    public static int Main()
+    public static int Main(string[] args)
     {
         try
         {
+            var cmdLine = CommandLineArgs.Parse(args);
             var iceManager = new IceSessionManager();
 
             var history = new LogHistory();
             var memoryCache = new MemoryCache();
             var debugger = new Debugger(iceManager, history, memoryCache);
 
-            using var uiManager = new UiManager();
+            var project = cmdLine.ProjectPath == null 
+                ? new ProjectConfig() 
+                : ProjectConfig.Load(cmdLine.ProjectPath);
+
+            using var uiManager = new UiManager(project);
             var watcher = new WatcherCore(memoryCache, uiManager.TextureStore);
             var ui = new Ui(uiManager, debugger, history, watcher);
             ui.Run();
