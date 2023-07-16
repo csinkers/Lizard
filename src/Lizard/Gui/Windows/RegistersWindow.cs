@@ -1,9 +1,9 @@
 ﻿using System.Numerics;
 using ImGuiNET;
 
-namespace Lizard.Gui;
+namespace Lizard.Gui.Windows;
 
-class RegistersWindow : IImGuiWindow
+class RegistersWindow : SingletonWindow
 {
     const uint WhiteUInt = uint.MaxValue;
     static readonly Vector4 White = new(1.0f, 1.0f, 1.0f, 1.0f);
@@ -15,17 +15,14 @@ class RegistersWindow : IImGuiWindow
     readonly Debugger _debugger;
     Vector2 _regTxtSize;
     Vector2 _regChildSize;
-    bool _initialised;
-    bool _open = true;
     Vector2 _segTxtSize;
     Vector2 _segChildSize;
     Vector2 _flagTxtSize;
     Vector2 _flagChildSize;
+    bool _initialised;
 
-    public RegistersWindow(Debugger debugger)
+    public RegistersWindow(Debugger debugger) : base("Registers")
         => _debugger = debugger ?? throw new ArgumentNullException(nameof(debugger));
-
-    public void Open() => _open = true;
 
     void FirstDraw()
     {
@@ -50,12 +47,8 @@ class RegistersWindow : IImGuiWindow
             _flagTxtSize.Y * flagLine + style.FramePadding.Y * 2.0f + style.ItemSpacing.Y * 2.0f + style.ItemInnerSpacing.Y * flagLine);
     }
 
-    public void Draw()
+    protected override void DrawContents()
     {
-        if (!_open)
-            return;
-
-        ImGui.Begin("Registers", ref _open);
         if (!_initialised)
             FirstDraw();
 
@@ -122,8 +115,6 @@ class RegistersWindow : IImGuiWindow
 
         GetPaddedRect(out rectMinPos, out rectMaxPos);
         ImGui.GetWindowDrawList().AddRect(rectMinPos, rectMaxPos, WhiteUInt, 5.0f);
-
-        ImGui.End();
     }
 
     static void DrawReg4(string name, int value, int oldValue)

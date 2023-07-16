@@ -2,7 +2,7 @@
 using ImGuiColorTextEditNet;
 using ImGuiNET;
 
-namespace Lizard.Gui;
+namespace Lizard.Gui.Windows;
 
 public class CommandWindow : SingletonWindow
 {
@@ -27,7 +27,7 @@ public class CommandWindow : SingletonWindow
         _textEditor.SetColor(ErrorColor, 0xff0000ff);
         _textEditor.SetColor(WarningColor, 0xff00ffff);
         _textEditor.SetColor(InfoColor, 0xffffffff);
-        _textEditor.SetColor(DebugColor, 0xffc0c0c0);
+        _textEditor.SetColor(DebugColor, 0xffd0d0d0);
 
         _history.EntryAdded += x =>
         {

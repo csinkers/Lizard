@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using Lizard.Gui.Windows;
 using Lizard.Watch;
 using SharpFileDialog;
 
@@ -22,25 +23,26 @@ class Ui
     public LocalsWindow LocalsWindow { get; }
     public RegistersWindow RegistersWindow { get; }
     public WatchWindow WatchWindow { get; }
+    // public ErrorsWindow ErrorsWindow { get; }
 
-    public Ui(UiManager uiManager, Debugger debugger, LogHistory history, WatcherCore watcherCore)
+    public Ui(UiManager uiManager, Debugger debugger, LogHistory logs, WatcherCore watcherCore)
     {
-        _uiManager = uiManager ?? throw new ArgumentNullException(nameof(uiManager));
-        _debugger = debugger ?? throw new ArgumentNullException(nameof(debugger));
+        _uiManager   = uiManager ?? throw new ArgumentNullException(nameof(uiManager));
+        _debugger    = debugger ?? throw new ArgumentNullException(nameof(debugger));
         _watcherCore = watcherCore ?? throw new ArgumentNullException(nameof(watcherCore));
         _icons = new ToolbarIcons(uiManager, true);
 
         debugger.ExitRequested += () => _done = true;
 
         BreakpointsWindow = new BreakpointsWindow();
-        CallStackWindow = new CallStackWindow();
-        CodeWindow = new CodeWindow();
-        CommandWindow = new CommandWindow(debugger, history);
-        ConnectWindow = new ConnectWindow(debugger.SessionManager);
+        CallStackWindow   = new CallStackWindow();
+        CodeWindow        = new CodeWindow();
+        CommandWindow     = new CommandWindow(debugger, logs);
+        ConnectWindow     = new ConnectWindow(debugger.SessionManager);
         DisassemblyWindow = new DisassemblyWindow();
-        LocalsWindow = new LocalsWindow();
-        RegistersWindow = new RegistersWindow(debugger);
-        WatchWindow = new WatchWindow(watcherCore);
+        LocalsWindow      = new LocalsWindow();
+        RegistersWindow   = new RegistersWindow(debugger);
+        WatchWindow       = new WatchWindow(watcherCore);
 
         uiManager.AddMenu(DrawFileMenu);
         uiManager.AddMenu(DrawWindowsMenu);
@@ -63,10 +65,60 @@ class Ui
                 _done = true;
     }
 
+    void SaveAs()
+    {
+        using var saveFile = new SaveFileDialog();
+        saveFile.Save(x =>
+        {
+            if (!x.Success)
+                return;
+
+            var path = x.FileName;
+            if (string.IsNullOrEmpty(Path.GetExtension(path)))
+                path += ".lizard";
+
+            Save(path);
+        }, "Lizard Project (*.lizard)|*.lizard");
+    }
+
+    void Save(string path)
+    {
+        _uiManager.SaveProject(path);
+        /* try
+        {
+            _uiManager.SaveProject(path);
+        }
+        catch (Exception ex)
+        {
+            ErrorsWindow.Add(ex.ToString());
+        }*/
+    }
+
     void DrawFileMenu()
     {
         if (!ImGui.BeginMenu("File")) 
             return;
+
+        if (ImGui.MenuItem("Open Project"))
+        { 
+            using var openFile = new OpenFileDialog();
+            openFile.Open(x =>
+            {
+                if (x.Success)
+                    _uiManager.LoadProject(x.FileName);
+            }, "Lizard Project (*.lizard)|*.lizard");
+        }
+
+        if (ImGui.MenuItem("Save Project"))
+        {
+            if (!string.IsNullOrEmpty(_uiManager.Project.Path))
+                Save(_uiManager.Project.Path);
+            else
+                SaveAs();
+        }
+
+        if (ImGui.MenuItem("Save Project As"))
+            SaveAs();
 
         if (_debugger.Host == null && ImGui.MenuItem("Connect"))
             ConnectWindow.Open();

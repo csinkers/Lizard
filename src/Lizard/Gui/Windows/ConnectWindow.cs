@@ -1,14 +1,16 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using Lizard.Config.Properties;
 
-namespace Lizard.Gui;
+namespace Lizard.Gui.Windows;
 
 internal class ConnectWindow : SingletonWindow
 {
+    IntProperty _portProperty = new("Port", 7243);
     readonly IceSessionManager _sessionManager;
     readonly ImText _hostname = new(256, "localhost");
     string _error = "";
-    int _port = 7243;
+    int _port;
 
     public ConnectWindow(IceSessionManager sessionManager) : base("Connect", false)
     {

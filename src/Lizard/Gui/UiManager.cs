@@ -1,5 +1,7 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using Lizard.Config;
+using Lizard.Config.Properties;
 using Lizard.Interfaces;
 using Veldrid;
 using Veldrid.Sdl2;
@@ -9,18 +11,26 @@ namespace Lizard.Gui;
 
 class UiManager : IDisposable
 {
+    static readonly StringProperty ImGuiLayout = new("ImGuiLayout");
+
     public delegate void WindowFunc();
-    readonly List<IImGuiWindow> _windows = new();
+    readonly Dictionary<string, IImGuiWindow> _windows = new();
     readonly List<WindowFunc> _menus = new();
     readonly Sdl2Window _window;
     readonly GraphicsDevice _gd;
     readonly ImGuiRenderer _imguiRenderer;
     readonly CommandList _cl;
+    string? _pendingLoad;
+    public ProjectConfig Project { get; private set; } = new();
     public ITextureStore TextureStore { get; }
     public GraphicsDevice GraphicsDevice => _gd;
 
-    public void AddWindow(IImGuiWindow window) { _windows.Add(window); }
-    public void RemoveWindow(IImGuiWindow window) { _windows.Remove(window); }
+    public void AddWindow(IImGuiWindow window)
+    {
+        if (!_windows.TryAdd(window.Prefix, window))
+            throw new InvalidOperationException($"Tried to add a window ({window.GetType().Name}) with prefix \"\", but that prefix is already in use by {_windows[window.Prefix].GetType().Name}");
+    }
+    public void RemoveWindow(IImGuiWindow window) { _windows.Remove(window.Prefix); }
     public void AddMenu(WindowFunc window) { _menus.Add(window); }
     public void RemoveMenu(WindowFunc window) { _menus.Remove(window); }
     public IntPtr GetOrCreateImGuiBinding(Texture texture) => _imguiRenderer.GetOrCreateImGuiBinding(_gd.ResourceFactory, texture);
@@ -57,6 +67,46 @@ class UiManager : IDisposable
         ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(0.1f, 0.1f, 0.1f, 1));
     }
 
+    public void LoadProject(string path) => _pendingLoad = path;
+    void LoadProjectInner()
+    {
+        var path = _pendingLoad;
+        _pendingLoad = null;
+        Project = ProjectConfig.Load(path);
+
+        foreach (var kvp in _windows)
+            kvp.Value.ClearState();
+
+        foreach (var kvp in Project.Windows)
+        {
+            var id = WindowId.TryParse(kvp.Key);
+            if (id == null)
+                continue;
+
+            if (!_windows.TryGetValue(id.Prefix, out var window))
+                continue;
+
+            window.Load(id, kvp.Value);
+        }
+
+        var layout = Project.GetProperty(ImGuiLayout);
+        if (layout == null)
+            throw new InvalidOperationException($"Could not load ImGui layout from project \"{path}\"");
+
+        ImGui.LoadIniSettingsFromMemory(layout);
+    }
+
+    public void SaveProject(string path)
+    {
+        Project.SetProperty(ImGuiLayout, ImGui.SaveIniSettingsToMemory());
+
+        foreach (var kvp in _windows)
+            kvp.Value.Save(Project.Windows);
+
+        Project.Path = path;
+        Project.Save(path);
+    }
+
     public bool RenderFrame()
     {
         if (!_window.Exists)
@@ -74,6 +124,9 @@ class UiManager : IDisposable
         if (!_window.Exists)
             return false;
 
+        if (_pendingLoad != null)
+            LoadProjectInner();
+
         _imguiRenderer.Update(1 / 60.0f, input);
 
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(4, 4));
@@ -90,9 +143,8 @@ class UiManager : IDisposable
 
         ImGui.DockSpaceOverViewport();
 
-        foreach (var imGuiWindow in _windows)
-            imGuiWindow.Draw();
-
+        foreach (var kvp in _windows)
+            kvp.Value.Draw();
 
         _cl.Begin();
         _cl.SetFramebuffer(_gd.MainSwapchain.Framebuffer);
@@ -111,3 +163,4 @@ class UiManager : IDisposable
         _gd.Dispose();
     }
 }
+

@@ -1,4 +1,4 @@
-﻿namespace Lizard.Gui;
+﻿namespace Lizard.Gui.Windows;
 
 class DisassemblyWindow : SingletonWindow
 {

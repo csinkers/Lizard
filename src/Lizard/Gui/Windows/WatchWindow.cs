@@ -1,6 +1,6 @@
 ﻿using Lizard.Watch;
 
-namespace Lizard.Gui;
+namespace Lizard.Gui.Windows;
 
 public class WatchWindow : SingletonWindow
 {

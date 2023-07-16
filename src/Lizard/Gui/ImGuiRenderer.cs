@@ -54,6 +54,7 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         ImGui.SetCurrentContext(context);
 
         var io = ImGui.GetIO();
+        unsafe { io.NativePtr->IniFilename = null; } // Turn off ini file
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         io.Fonts.AddFontDefault();
         io.Fonts.Flags |= ImFontAtlasFlags.NoBakedLines;
@@ -354,7 +355,11 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
             case Key.PageDown: result = ImGuiKey.PageDown; return true;
             case Key.Home: result = ImGuiKey.Home; return true;
             case Key.End: result = ImGuiKey.End; return true;
-            case Key.CapsLock: result = ImGuiKey.CapsLock; return true;
+
+            case Key.CapsLock:
+                result = ImGuiKey.Backspace; //ImGuiKey.CapsLock; // Colemak
+                return true;
+
             case Key.ScrollLock: result = ImGuiKey.ScrollLock; return true;
             case Key.PrintScreen: result = ImGuiKey.PrintScreen; return true;
             case Key.Pause: result = ImGuiKey.Pause; return true;

@@ -1,28 +1,56 @@
-﻿using ImGuiNET;
+﻿using System.Numerics;
+using ImGuiNET;
+using Lizard.Config;
 
 namespace Lizard.Gui;
 
-public class SingletonWindow : IImGuiWindow
+public abstract class SingletonWindow : IImGuiWindow
 {
     readonly string _name;
-    bool _open = true;
+    bool _open;
 
-    protected SingletonWindow(string name, bool open = true)
+    protected SingletonWindow(string name, bool open = false)
     {
         _name = name;
         _open = open;
     }
 
+    public string Prefix => _name;
     public void Open() => _open = true;
     public void Close() => _open = false;
-    protected virtual void DrawContents() { } 
     public void Draw()
     {
         if (!_open)
             return;
 
+        ImGui.SetNextWindowSize(new Vector2(128, 128), ImGuiCond.FirstUseEver);
         ImGui.Begin(_name, ref _open);
         DrawContents();
         ImGui.End();
     }
+
+    public void ClearState() { }
+
+    public void Load(WindowId id, WindowConfig config)
+    {
+        if (!string.Equals(id.Prefix, _name, StringComparison.Ordinal))
+            throw new InvalidOperationException($"A window with prefix \"{id.Prefix}\" was passed to {GetType().Name} which expects a prefix of \"{Prefix}\"");
+
+        Load(config);
+    }
+
+    public void Save(Dictionary<string, WindowConfig> configs)
+    {
+        if (!configs.TryGetValue(_name, out var config))
+        {
+            config = new WindowConfig(_name);
+            configs[_name] = config;
+        }
+
+        Save(config);
+    }
+
+    protected abstract void DrawContents();
+    protected virtual void Load(WindowConfig config) => _open = config.Open;
+    protected virtual void Save(WindowConfig config) => config.Open = _open;
 }

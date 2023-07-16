@@ -1,4 +1,4 @@
-﻿namespace Lizard.Gui;
+﻿namespace Lizard.Gui.Windows;
 
 public class CallStackWindow : SingletonWindow
 {
