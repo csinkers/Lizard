@@ -1,20 +1,35 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using Lizard.Config;
 using Lizard.Config.Properties;
 
 namespace Lizard.Gui.Windows;
 
 internal class ConnectWindow : SingletonWindow
 {
-    IntProperty _portProperty = new("Port", 7243);
+    public static readonly StringProperty HostProperty = new(nameof(ConnectWindow), "Hostname", "localhost");
+    public static readonly IntProperty PortProperty = new(nameof(ConnectWindow), "Port", 7243);
+
     readonly IceSessionManager _sessionManager;
     readonly ImText _hostname = new(256, "localhost");
     string _error = "";
     int _port;
 
-    public ConnectWindow(IceSessionManager sessionManager) : base("Connect", false)
+    public ConnectWindow(IceSessionManager sessionManager) : base("Connect")
+        => _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
+
+    protected override void Load(WindowConfig config)
     {
-        _sessionManager = sessionManager;
+        _hostname.Text = config.GetProperty(HostProperty) ?? "";
+        _port = config.GetProperty(PortProperty);
+        base.Load(config);
+    }
+
+    protected override void Save(WindowConfig config)
+    {
+        base.Save(config);
+        config.SetProperty(HostProperty, _hostname.Text);
+        config.SetProperty(PortProperty, _port);
     }
 
     protected override void DrawContents()

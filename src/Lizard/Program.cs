@@ -1,6 +1,7 @@
 ﻿using Lizard.Config;
 using Lizard.Gui;
-using Lizard.Watch;
+using Lizard.Gui.Windows;
+using Lizard.Gui.Windows.Watch;
 using Exception = System.Exception;
 
 namespace Lizard;
@@ -12,19 +13,29 @@ static class Program
         try
         {
             var cmdLine = CommandLineArgs.Parse(args);
-            var iceManager = new IceSessionManager();
+            var project = cmdLine.ProjectPath == null 
+                ? new ProjectConfig() 
+                : ProjectConfig.Load(cmdLine.ProjectPath);
+
+            var projectManager = new ProjectManager(project);
+            var programDataManager = new ProgramDataManager(projectManager);
+            var iceManager = new IceSessionManager(projectManager, cmdLine.AutoConnect);
 
             var history = new LogHistory();
             var memoryCache = new MemoryCache();
             var debugger = new Debugger(iceManager, history, memoryCache);
 
-            var project = cmdLine.ProjectPath == null 
-                ? new ProjectConfig() 
-                : ProjectConfig.Load(cmdLine.ProjectPath);
+            using var uiManager = new UiManager(projectManager);
+            var watcher = new WatcherCore(programDataManager, memoryCache, uiManager.TextureStore);
+            var ui = new Ui(projectManager, programDataManager, uiManager, debugger, history, watcher);
 
-            using var uiManager = new UiManager(project);
-            var watcher = new WatcherCore(memoryCache, uiManager.TextureStore);
-            var ui = new Ui(uiManager, debugger, history, watcher);
+            if (cmdLine.AutoConnect)
+            {
+                var hostname = project.GetProperty(ConnectWindow.HostProperty)!;
+                var port = project.GetProperty(ConnectWindow.PortProperty);
+                iceManager.Connect(hostname, port);
+            }
+
             ui.Run();
             return 0;
         }

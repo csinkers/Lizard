@@ -1,4 +1,7 @@
-﻿namespace Lizard;
+﻿using System.Globalization;
+using Lizard.generated;
+
+namespace Lizard;
 
 public class IceSession : IDisposable
 {
@@ -9,8 +12,11 @@ public class IceSession : IDisposable
 
     public IceSession(string host, int port) // default host localhost, port 7243
     {
-        var emptyArgs = Array.Empty<string>();
-        _communicator = Ice.Util.initialize(ref emptyArgs);
+        var properties = Ice.Util.createProperties();
+        properties.setProperty("Ice.MessageSizeMax", (2 * 1024 * 1024).ToString(CultureInfo.InvariantCulture));
+
+        var initData = new Ice.InitializationData { properties = properties };
+        _communicator = Ice.Util.initialize(initData);
 
         Ice.ObjectPrx? proxy = 
             _communicator.stringToProxy($"DebugHost:default -h {host} -p {port}")

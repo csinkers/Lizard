@@ -1,4 +1,4 @@
-﻿using Lizard.Watch;
+﻿using Lizard.Gui.Windows.Watch;
 
 namespace Lizard.Gui.Windows;
 

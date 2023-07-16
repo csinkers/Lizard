@@ -1,6 +1,4 @@
-﻿using Lizard.Interfaces;
-
-namespace Lizard;
+﻿namespace Lizard;
 
 public class LogHistory : ITracer
 {

@@ -4,9 +4,9 @@ namespace Lizard.Config.Properties;
 
 public class IntProperty : IProperty<int>
 {
-    public IntProperty(string name, int defaultValue)
+    public IntProperty(string ns, string name, int defaultValue)
     {
-        Name = name;
+        Name = $"{ns}/{name}";
         DefaultValue = defaultValue;
     }
 

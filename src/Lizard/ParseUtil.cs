@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Lizard.generated;
 
 namespace Lizard;
 

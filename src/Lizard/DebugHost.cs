@@ -1,4 +1,6 @@
-﻿namespace Lizard;
+﻿using Lizard.generated;
+
+namespace Lizard;
 
 public class DebugHost
 {

@@ -4,7 +4,8 @@ namespace Lizard.Config.Properties;
 
 public class StringListProperty : IProperty<List<string>>
 {
-    public StringListProperty(string name) => Name = name;
+    public StringListProperty(string ns, string name) => Name = $"{ns}/{name}";
+
     public string Name { get; }
     public List<string> DefaultValue => new();
     public object? FromJson(JsonElement elem)

@@ -6,7 +6,7 @@ class ToolbarIcons
 {
     readonly bool _useDarkTheme;
     readonly Assembly _assembly;
-    string Prefix => _useDarkTheme ? "Lizard.IconsDark." : "Lizard.IconsLight.";
+    string Prefix => _useDarkTheme ? "Lizard.Gui.IconsDark." : "Lizard.Gui.IconsLight.";
 
     public IntPtr Continue { get; }
     public IntPtr Disconnect { get; }

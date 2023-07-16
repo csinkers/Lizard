@@ -1,4 +1,4 @@
-﻿using Lizard.Interfaces;
+﻿using Lizard.generated;
 
 namespace Lizard;
 
@@ -7,13 +7,10 @@ public delegate void StoppedDelegate(Registers state);
 public class Debugger : IMemoryReader
 {
     Registers _registers;
-    long _version;
 
     public event Action? ExitRequested;
     public ITracer Log { get; }
     public IceSessionManager SessionManager { get; }
-    public DebugHostPrx? Host => SessionManager.Host;
-    public DebugClientPrx? Callback => SessionManager.Callback;
     public IMemoryCache Memory { get; }
     public Registers OldRegisters { get; private set; }
     public Registers Registers
@@ -23,6 +20,8 @@ public class Debugger : IMemoryReader
     }
 
     public bool IsPaused { get; private set; }
+    DebugHostPrx? Host => SessionManager.Host;
+    public bool IsConnected => Host != null;
 
     public Debugger(IceSessionManager iceManager, ITracer log, IMemoryCache memory)
     {
@@ -31,14 +30,19 @@ public class Debugger : IMemoryReader
         Memory = memory ?? throw new ArgumentNullException(nameof(memory));
         Memory.Reader = this;
         SessionManager.Connected += OnSessionManagerConnected;
-        SessionManager.Stopped += Update;
+        SessionManager.Stopped += state => Update(state);
     }
 
     void OnSessionManagerConnected()
     {
         Memory.Clear();
         if (Host != null)
-            Update(Host.GetState());
+        {
+            var state = Host.GetState();
+            Update(state);
+            // Do a second update so the old registers will match the current ones and it won't show everything in red on connect
+            Update(state);
+        }
     }
 
     public bool TryFindSymbol(string name, out uint offset)
@@ -47,11 +51,11 @@ public class Debugger : IMemoryReader
         return false;
     }
 
-    public void Update(Registers state)
+    public Registers Update(Registers state)
     {
         IsPaused = state.stopped;
         Registers = state;
-        _version++;
+        return state;
     }
 
     public void Read(uint offset, byte[] buffer)
@@ -67,6 +71,31 @@ public class Debugger : IMemoryReader
 
     public void Exit() => ExitRequested?.Invoke();
 
+    public void Continue()
+    {
+        Host?.Continue();
+        IsPaused = false;
+    }
+
+    public Registers Break() => Host == null ? _registers : Update(Host.Break());
+    public Registers StepIn() => Host == null ? _registers : Update(Host.StepIn());
+    public Registers StepOver() => _registers; // TODO
+    public Registers StepOut() => _registers; // TODO
+    public Registers StepMultiple(int i) => Host == null ? _registers : Update(Host.StepMultiple(i));
+    public void RunToAddress(Address address) => Host?.RunToAddress(address);
+    public Registers GetState() => Host == null ? _registers : Update(Host.GetState());
+    public AssemblyLine[] Disassemble(Address address, int length) => Host?.Disassemble(address, length) ?? Array.Empty<AssemblyLine>();
+    public byte[] GetMemory(Address address, int length) => Host?.GetMemory(address, length) ?? Array.Empty<byte>();
+    public void SetMemory(Address address, byte[] bytes) => Host?.SetMemory(address, bytes);
+    public int GetMaxNonEmptyAddress(short segment) => Host?.GetMaxNonEmptyAddress(segment) ?? 0;
+    public IEnumerable<Address> SearchMemory(Address address, int length, byte[] toArray, int advance)
+        => Host?.SearchMemory(address, length, toArray, advance) ?? Enumerable.Empty<Address>();
+    public Breakpoint[] ListBreakpoints() => Host?.ListBreakpoints() ?? Array.Empty<Breakpoint>();
+    public void SetBreakpoint(Breakpoint bp) => Host?.SetBreakpoint(bp);
+    public void DelBreakpoint(Address addr) => Host?.DelBreakpoint(addr);
+    public void SetReg(Register reg, int value) => Host?.SetReg(reg, value);
+    public Descriptor[] GetGdt() => Host?.GetGdt() ?? Array.Empty<Descriptor>();
+    public Descriptor[] GetLdt() => Host?.GetLdt() ?? Array.Empty<Descriptor>();
     public void Dispose()
     {
     }

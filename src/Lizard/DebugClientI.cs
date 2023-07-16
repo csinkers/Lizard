@@ -1,4 +1,5 @@
 ﻿using Ice;
+using Lizard.generated;
 
 namespace Lizard;
 

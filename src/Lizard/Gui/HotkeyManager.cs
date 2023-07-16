@@ -4,31 +4,18 @@ namespace Lizard.Gui;
 
 public class HotkeyManager
 {
-    readonly HashSet<Key> _pressedKeys = new();
-    readonly Dictionary<KeyBinding, Action> _bindings = new();
+    readonly Dictionary<KeyBinding, (bool IsGlobal, Action Action)> _bindings = new();
 
-    public bool IsAltPressed => _pressedKeys.Contains(Key.AltLeft) || _pressedKeys.Contains(Key.AltRight);
-    public bool IsCtrlPressed  => _pressedKeys.Contains(Key.ControlLeft) || _pressedKeys.Contains(Key.ControlRight);
-    public bool IsShiftPressed  => _pressedKeys.Contains(Key.ShiftLeft) || _pressedKeys.Contains(Key.ShiftRight);
-
-    public void HandleInput(InputSnapshot input)
+    public void HandleInput(InputSnapshot input, bool imguiCaptured)
     {
         foreach (var keyEvent in input.KeyEvents)
         {
-            if (!keyEvent.Down)
-            {
-                _pressedKeys.Remove(keyEvent.Key);
-                continue;
-            }
-
-            _pressedKeys.Add(keyEvent.Key);
-
             if (IsModifier(keyEvent.Key))
                 continue;
 
             var binding = new KeyBinding(keyEvent.Key, keyEvent.Modifiers);
-            if (_bindings.TryGetValue(binding, out var action))
-                action();
+            if (_bindings.TryGetValue(binding, out var info) && (info.IsGlobal || !imguiCaptured))
+                info.Action();
         }
     }
 
@@ -42,9 +29,9 @@ public class HotkeyManager
             _ => false
         };
 
-    public void Add(KeyBinding binding, Action action)
+    public void Add(KeyBinding binding, Action action, bool isGlobal)
     {
-        if (!_bindings.TryAdd(binding, action))
+        if (!_bindings.TryAdd(binding, (isGlobal, action)))
             throw new InvalidOperationException($"Tried to register a hotkey for {binding}, but another action is already using that hotkey");
     }
 

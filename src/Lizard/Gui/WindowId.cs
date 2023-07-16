@@ -9,8 +9,8 @@ public class WindowId : IEquatable<WindowId>
 
     public string Prefix { get; }
     public int Id { get; }
-    public string LogicalName { get; } // e.g. Prefix_1
-    public string ImGuiName { get; private set; } // e.g. "Some Display Name###Prefix_1"
+    public string LogicalName => Prefix + Separator + Id.ToString(CultureInfo.InvariantCulture); // e.g. Prefix_1
+    public string? ImGuiName { get; private set; } // e.g. "Some Display Name###Prefix_1"
     public string? DisplayName
     {
         get => _displayName;
@@ -23,13 +23,12 @@ public class WindowId : IEquatable<WindowId>
         }
     }
 
-    public override string ToString() => ImGuiName;
+    public override string ToString() => ImGuiName ?? "";
 
     public WindowId(string prefix, int id)
     {
         Prefix = prefix;
         Id = id;
-        LogicalName = Prefix + Separator + Id.ToString(CultureInfo.InvariantCulture);
         DisplayName = null;
     }
 
@@ -66,7 +65,7 @@ public class WindowId : IEquatable<WindowId>
         }
 
         return int.TryParse(remainder, out var id)
-            ? new WindowId(prefix, id, displayName, name) 
+            ? new WindowId(prefix, id, displayName, name)
             : null;
     }
 

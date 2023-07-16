@@ -2,8 +2,10 @@
 
 public class CommandLineArgs
 {
-    public string? ProjectPath { get; }
     public static CommandLineArgs Parse(string[] args) => new(args);
+    public string? ProjectPath { get; }
+    public bool AutoConnect { get; }
+
     CommandLineArgs(string[] args)
     {
         for (int i = 0; i < args.Length; i++)
@@ -16,6 +18,9 @@ public class CommandLineArgs
 
                 ProjectPath = args[++i];
             }
+
+            if (arg is "-C" or "--CONNECT")
+                AutoConnect = true;
         }
     }
 }

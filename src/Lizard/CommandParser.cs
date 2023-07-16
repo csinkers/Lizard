@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 using System.Text;
-using Lizard.Interfaces;
+using Lizard.generated;
 
 namespace Lizard;
 
@@ -82,7 +82,7 @@ static class CommandParser
         }
     }
 
-    static void UpdateRegisters(Registers reg, Debugger d)
+    static void PrintRegisters(Registers reg, Debugger d)
     {
         d.Update(reg);
         var flagsSb = new StringBuilder();
@@ -128,35 +128,34 @@ static class CommandParser
             new(new []  { "clear", "cls", ".cls" }, "Clear the log history", (_,  d) => d.Log.Clear()),
             new(new []  {"exit", "quit" }, "Exits the debugger", (_, d) => d.Exit()),
 
-            new(new[] { "Connect", "!" }, "Register the callback proxy for 'breakpoint hit' alerts",
-                (_,  d) => d.Host?.Connect(d.Callback)),
-
-            new(new[] { "Continue", "g" }, "Resume execution", (_,  d) => d.Host?.Continue()),
+            new(new[] { "Continue", "g" }, "Resume execution", (_,  d) => d.Continue()),
 
             // TODO
             new(new[] { "Break", "b" }, "Pause execution", (_,  d) =>
             {
-                if (d.Host == null) return;
-                UpdateRegisters(d.Host.Break(), d);
+                if (!d.IsConnected) return;
+                PrintRegisters(d.Break(), d);
             }),
             new(new[] { "StepOver", "p" }, "Steps to the next instruction, ignoring function calls / interrupts etc", (_, d) =>
             {
-                // TODO
+                if (!d.IsConnected) return;
+                PrintRegisters(d.StepOver(), d);
             }),
             new(new[] { "StepIn", "n" }, "Steps to the next instruction, including into function calls etc", (_,  d) =>
             {
-                if (d.Host == null) return;
-                UpdateRegisters(d.Host.StepIn(), d);
+                if (!d.IsConnected) return;
+                PrintRegisters(d.StepIn(), d);
             }),
             new(new[] { "StepMultiple", "gn" }, "Runs the CPU for the given number of cycles", (getArg, d) =>
             {
                 var n = ParseUtil.ParseVal(getArg());
-                if (d.Host == null) return;
-                UpdateRegisters(d.Host.StepMultiple(n), d);
+                if (!d.IsConnected) return;
+                PrintRegisters(d.StepMultiple(n), d);
             }),
-            new(new[] { "StepOut", "go" }, "Run until the current function returns", (_, _) =>
+            new(new[] { "StepOut", "go" }, "Run until the current function returns", (_, d) =>
             {
-                // TODO
+                if (!d.IsConnected) return;
+                PrintRegisters(d.StepOut(), d);
             }),
             new(new[] { "RunToCall", "gc" }, "Run until the next 'call' instruction is encountered", (_,  _) =>
             {
@@ -166,13 +165,13 @@ static class CommandParser
             new(new[] { "RunToAddress", "ga" }, "Run until the given address is reached", (getArg,  d) =>
             {
                 var address = ParseUtil.ParseAddress(getArg(), d, true);
-                d.Host?.RunToAddress(address);
+                d.RunToAddress(address);
             }),
 
             new(new[] { "GetState", "r" }, "Get the current CPU state", (_,  d) =>
             {
-                if (d.Host == null) return;
-                UpdateRegisters(d.Host.GetState(), d);
+                if (!d.IsConnected) return;
+                PrintRegisters(d.GetState(), d);
             }),
             new(new[] { "Disassemble", "u" }, "Disassemble instructions at the given address", (getArg,  d) =>
             {
@@ -186,8 +185,8 @@ static class CommandParser
                     ? 10
                     : ParseUtil.ParseVal(lengthArg);
 
-                if (d.Host == null) return;
-                PrintAsm(d.Host.Disassemble(address, length), d.Log);
+                if (!d.IsConnected) return;
+                PrintAsm(d.Disassemble(address, length), d.Log);
             }),
 
             new(new[] { "GetMemory", "d", "dc" }, "Gets the contents of memory at the given address", (getArg,  d) =>
@@ -198,8 +197,8 @@ static class CommandParser
                     ? 64
                     : ParseUtil.ParseVal(lengthArg);
 
-                if (d.Host == null) return;
-                PrintBytes(address, d.Host.GetMemory(address, length), d.Log);
+                if (!d.IsConnected) return;
+                PrintBytes(address, d.GetMemory(address, length), d.Log);
             }),
 
             new(new[] { "SetMemory", "e" }, "Changes the contents of memory at the given address", (getArg,  d) =>
@@ -207,7 +206,7 @@ static class CommandParser
                 var address = ParseUtil.ParseAddress(getArg(), d, false);
                 var value = ParseUtil.ParseVal(getArg());
                 var bytes = BitConverter.GetBytes(value);
-                d.Host?.SetMemory(address, bytes);
+                d.SetMemory(address, bytes);
             }),
 
             new(new[] { "GetMaxAddress" }, "Gets the maximum address that has been used in the given segment", (getArg,  d) =>
@@ -219,8 +218,8 @@ static class CommandParser
                     return;
                 }
 
-                if (d.Host == null) return;
-                int maxAddress = d.Host.GetMaxNonEmptyAddress(segment);
+                if (!d.IsConnected) return;
+                int maxAddress = d.GetMaxNonEmptyAddress(segment);
                 d.Log.Info($"MaxAddress: 0x{(uint)maxAddress:X8}");
             }),
 
@@ -242,11 +241,11 @@ static class CommandParser
                     pattern.Add(b);
                 }
 
-                if (d.Host == null) return;
-                var results = d.Host.SearchMemory(address, length, pattern.ToArray(), 1);
+                if (!d.IsConnected) return;
+                var results = d.SearchMemory(address, length, pattern.ToArray(), 1);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
-                    PrintBytes(result, d.Host.GetMemory(result, displayLength), d.Log);
+                    PrintBytes(result, d.GetMemory(result, displayLength), d.Log);
             }),
 
             new(new[] { "SearchDwords", "s-d" }, "Searches for occurrences of one or more little-endian dwords in a memory range (e.g. \"s 0 -1 badf00d 12341234\")", (getArg,  d) =>
@@ -270,11 +269,11 @@ static class CommandParser
                     pattern.Add((byte)((dword >> 24) & 0xff));
                 }
 
-                if (d.Host == null) return;
-                var results = d.Host.SearchMemory(address, length, pattern.ToArray(), 4);
+                if (!d.IsConnected) return;
+                var results = d.SearchMemory(address, length, pattern.ToArray(), 4);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
-                    PrintBytes(result, d.Host.GetMemory(result, displayLength), d.Log);
+                    PrintBytes(result, d.GetMemory(result, displayLength), d.Log);
             }),
 
             new(new[] { "SearchAscii", "s-a" }, "Searches for occurrences of an ASCII pattern in a memory range (e.g. \"s-a 0 -1 test\"", (getArg,  d) =>
@@ -288,14 +287,14 @@ static class CommandParser
 
                 var bytes = Encoding.ASCII.GetBytes(pattern);
 
-                if (d.Host == null) return;
-                var results = d.Host.SearchMemory(address, length, bytes, 1);
+                if (!d.IsConnected) return;
+                var results = d.SearchMemory(address, length, bytes, 1);
                 int displayLength = 16 * ((pattern.Length + 15) / 16);
                 foreach (var result in results)
-                    PrintBytes(result, d.Host.GetMemory(result, displayLength), d.Log);
+                    PrintBytes(result, d.GetMemory(result, displayLength), d.Log);
             }),
 
-            new(new[] { ".dumpmem" }, "Dumps a section of memory to a local file", (getArg, d) =>
+            new(new[] { ".dumpmem" }, "<path> <addr> <len> : Dumps a section of memory to a local file, e.g. .dumpmem c:\\data.bin cs:0 0x800000", (getArg, d) =>
             {
                 var filename = getArg();
                 if (!Directory.Exists(Path.GetDirectoryName(filename)))
@@ -307,8 +306,8 @@ static class CommandParser
                     ? 64
                     : ParseUtil.ParseVal(lengthArg);
 
-                if (d.Host == null) return;
-                var bytes = d.Host.GetMemory(address, length);
+                if (!d.IsConnected) return;
+                var bytes = d.GetMemory(address, length);
 
                 if (bytes != null)
                     File.WriteAllBytes(filename, bytes);
@@ -316,8 +315,8 @@ static class CommandParser
 
             new(new[] { "ListBreakpoints", "bps", "bl" }, "Retrieves the current breakpoint list", (_,  d) =>
             {
-                if (d.Host == null) return;
-                PrintBps(d.Host.ListBreakpoints(), d.Log);
+                if (!d.IsConnected) return;
+                PrintBps(d.ListBreakpoints(), d.Log);
             }),
             new(new[] { "SetBreakpoint", "bp" }, "<address> [type] [ah] [al] - Sets or updates a breakpoint", (getArg,  d) =>
             {
@@ -332,32 +331,32 @@ static class CommandParser
                 byte al = s == "" ? (byte)0 : (byte)ParseUtil.ParseVal(s);
 
                 var bp = new Breakpoint(address, type, ah, al);
-                d.Host?.SetBreakpoint(bp);
+                d.SetBreakpoint(bp);
             }),
 
             new(new[] { "DelBreakpoint", "bd" }, "Removes the breakpoint at the given address", (getArg,  d) =>
             {
                 var addr = ParseUtil.ParseAddress(getArg(), d, true);
-                d.Host?.DelBreakpoint(addr);
+                d.DelBreakpoint(addr);
             }),
 
             new(new[] { "SetReg", "reg" }, "Updates the contents of a CPU register", (getArg,  d) =>
             {
                 Register reg = ParseUtil.ParseReg(getArg());
                 int value = ParseUtil.ParseVal(getArg());
-                d.Host?.SetReg(reg, value);
+                d.SetReg(reg, value);
             }),
 
             new(new[] { "GetGDT", "gdt"}, "Retrieves the Global Descriptor Table", (getArg, d) =>
             {
-                if (d.Host == null) return;
-                PrintDescriptors(d.Host.GetGdt(), false, d.Log);
+                if (!d.IsConnected) return;
+                PrintDescriptors(d.GetGdt(), false, d.Log);
             }),
 
             new(new[] { "GetLDT", "ldt"}, "Retrieves the Local Descriptor Table", (getArg, d) =>
             {
-                if (d.Host == null) return;
-                PrintDescriptors(d.Host.GetLdt(), true, d.Log);
+                if (!d.IsConnected) return;
+                PrintDescriptors(d.GetLdt(), true, d.Log);
             })
         }.SelectMany(x => x.Names.Select(name => (name, x)))
         .ToDictionary(x => x.name.ToUpperInvariant(), x => x.x);

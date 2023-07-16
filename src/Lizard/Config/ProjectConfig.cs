@@ -13,8 +13,11 @@ public class ProjectConfig : PropertyProvider
         var result = JsonSerializer.Deserialize<ProjectConfig>(stream)
             ?? throw new FormatException($"Could not load project from \"{path}\"");
 
-        foreach(var kvp in result.Windows)
+        foreach (var kvp in result.Windows)
+        {
             kvp.Value.Id = kvp.Key;
+            kvp.Value.Project = result;
+        }
 
         return result;
     }
@@ -28,4 +31,3 @@ public class ProjectConfig : PropertyProvider
         });
     }
 }
-

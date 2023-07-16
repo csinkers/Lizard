@@ -4,9 +4,9 @@ namespace Lizard.Config.Properties;
 
 public class EnumProperty<T> : IProperty<T> where T : struct, Enum
 {
-    public EnumProperty(string name, T defaultValue)
+    public EnumProperty(string ns, string name, T defaultValue)
     {
-        Name = name;
+        Name = $"{ns}/{name}";
         DefaultValue = defaultValue;
     }
 

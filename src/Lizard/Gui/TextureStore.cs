@@ -1,5 +1,4 @@
-﻿using Lizard.Interfaces;
-using Veldrid;
+﻿using Veldrid;
 
 namespace Lizard.Gui;
 

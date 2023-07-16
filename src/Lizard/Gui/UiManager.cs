@@ -2,7 +2,6 @@
 using ImGuiNET;
 using Lizard.Config;
 using Lizard.Config.Properties;
-using Lizard.Interfaces;
 using Veldrid;
 using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;
@@ -11,13 +10,14 @@ namespace Lizard.Gui;
 
 class UiManager : IDisposable
 {
-    static readonly StringProperty ImGuiLayout = new("ImGuiLayout");
-    static readonly IntProperty Width = new("Width", 800);
-    static readonly IntProperty Height = new("Height", 1024);
-    static readonly IntProperty PositionX = new("PositionX", 100);
-    static readonly IntProperty PositionY = new("PositionY", 100);
+    static readonly StringProperty ImGuiLayout = new(nameof(UiManager), "ImGuiLayout");
+    static readonly IntProperty Width = new(nameof(UiManager), "Width", 800);
+    static readonly IntProperty Height = new(nameof(UiManager), "Height", 1024);
+    static readonly IntProperty PositionX = new(nameof(UiManager), "PositionX", 100);
+    static readonly IntProperty PositionY = new(nameof(UiManager), "PositionY", 100);
 
     public delegate void WindowFunc();
+    readonly ProjectManager _projectManager;
     readonly Dictionary<string, IImGuiWindow> _windows = new();
     readonly List<WindowFunc> _menus = new();
     readonly Sdl2Window _window;
@@ -25,8 +25,8 @@ class UiManager : IDisposable
     readonly ImGuiRenderer _imguiRenderer;
     readonly CommandList _cl;
     readonly HotkeyManager _hotkeys = new();
-    ProjectConfig? _pendingLoad;
-    public ProjectConfig Project { get; private set; }
+    bool _projectDirty = true;
+
     public ITextureStore TextureStore { get; }
     public GraphicsDevice GraphicsDevice => _gd;
 
@@ -39,13 +39,17 @@ class UiManager : IDisposable
     public void RemoveWindow(IImGuiWindow window) { _windows.Remove(window.Prefix); }
     public void AddMenu(WindowFunc window) { _menus.Add(window); }
     public void RemoveMenu(WindowFunc window) { _menus.Remove(window); }
-    public void AddHotkey(KeyBinding binding, Action action) => _hotkeys.Add(binding, action);
+    public void AddHotkey(KeyBinding binding, Action action, bool isGlobal) => _hotkeys.Add(binding, action, isGlobal);
     public void RemoveHotkey(KeyBinding binding, Action action) => _hotkeys.Remove(binding);
     public IntPtr GetOrCreateImGuiBinding(Texture texture) => _imguiRenderer.GetOrCreateImGuiBinding(_gd.ResourceFactory, texture);
 
-    public UiManager(ProjectConfig project)
+    public UiManager(ProjectManager projectManager)
     {
-        _pendingLoad = project ?? throw new ArgumentNullException(nameof(project));
+        _projectManager = projectManager ?? throw new ArgumentNullException(nameof(projectManager));
+        _projectManager.ProjectLoaded += _ => _projectDirty = true;
+        _projectManager.ProjectSaving += SaveProject;
+
+        var project = _projectManager.Project;
         var x = project.GetProperty(PositionX);
         var y = project.GetProperty(PositionY);
         var width = project.GetProperty(Width);
@@ -81,13 +85,12 @@ class UiManager : IDisposable
         ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(0.1f, 0.1f, 0.1f, 1));
     }
 
-    public void LoadProject(string path) => _pendingLoad = ProjectConfig.Load(path);
-    void PostLoad()
+    void PostLoad(ProjectConfig project)
     {
         foreach (var kvp in _windows)
             kvp.Value.ClearState();
 
-        foreach (var kvp in Project.Windows)
+        foreach (var kvp in project.Windows)
         {
             var id = WindowId.TryParse(kvp.Key);
             if (id == null)
@@ -99,24 +102,21 @@ class UiManager : IDisposable
             window.Load(id, kvp.Value);
         }
 
-        var layout = Project.GetProperty(ImGuiLayout);
+        var layout = project.GetProperty(ImGuiLayout);
         if (layout != null)
             ImGui.LoadIniSettingsFromMemory(layout);
     }
 
-    public void SaveProject(string path)
+    void SaveProject(ProjectConfig project)
     {
-        Project.SetProperty(ImGuiLayout, ImGui.SaveIniSettingsToMemory());
-        Project.SetProperty(PositionX, _window.X);
-        Project.SetProperty(PositionY, _window.Y);
-        Project.SetProperty(Width, _window.Width);
-        Project.SetProperty(Height, _window.Height);
+        project.SetProperty(ImGuiLayout, ImGui.SaveIniSettingsToMemory());
+        project.SetProperty(PositionX, _window.X);
+        project.SetProperty(PositionY, _window.Y);
+        project.SetProperty(Width, _window.Width);
+        project.SetProperty(Height, _window.Height);
 
         foreach (var kvp in _windows)
-            kvp.Value.Save(Project.Windows);
-
-        Project.Path = path;
-        Project.Save(path);
+            kvp.Value.Save(project.Windows);
     }
 
     public bool RenderFrame()
@@ -136,11 +136,10 @@ class UiManager : IDisposable
         if (!_window.Exists)
             return false;
 
-        if (_pendingLoad != null)
+        if (_projectDirty)
         {
-            Project = _pendingLoad;
-            PostLoad();
-            _pendingLoad = null;
+            PostLoad(_projectManager.Project);
+            _projectDirty = false;
         }
 
         _imguiRenderer.Update(1 / 60.0f, input);
@@ -162,8 +161,7 @@ class UiManager : IDisposable
             kvp.Value.Draw();
 
         var io = ImGui.GetIO();
-        if (!io.WantCaptureKeyboard)
-            _hotkeys.HandleInput(input);
+        _hotkeys.HandleInput(input, io.WantCaptureKeyboard);
 
         _cl.Begin();
         _cl.SetFramebuffer(_gd.MainSwapchain.Framebuffer);
