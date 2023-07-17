@@ -6,13 +6,13 @@ namespace Lizard;
 
 static class CommandParser
 {
-    static void PrintAsm(AssemblyLine[] lines, ITracer log)
+    static void PrintAsm(AssemblyLine[] lines)
     {
         foreach (var line in lines)
-            log.Debug($"{line.address.segment:X}:{line.address.offset:X8} {line.line}");
+            Log.Debug($"{line.address.segment:X}:{line.address.offset:X8} {line.line}");
     }
 
-    static void PrintBytes(Address address, byte[] bytes, ITracer log)
+    static void PrintBytes(Address address, byte[] bytes)
     {
         const string hexChars = "0123456789ABCDEF";
         var result = new StringBuilder(128);
@@ -22,7 +22,7 @@ static class CommandParser
             if (i % 16 == 0)
             {
                 result.Append(chars);
-                log.Debug(result.ToString());
+                Log.Debug(result.ToString());
                 result.Clear();
                 chars.Clear();
                 result.Append($"{address.segment:X}:{address.offset + i:X8}: ");
@@ -41,16 +41,16 @@ static class CommandParser
             result.Append(chars);
 
         if (result.Length > 0)
-            log.Debug(result.ToString());
+            Log.Debug(result.ToString());
     }
 
-    static void PrintBps(Breakpoint[] breakpoints, ITracer log)
+    static void PrintBps(Breakpoint[] breakpoints)
     {
         foreach (var bp in breakpoints)
-            log.Debug($"{bp.address.segment:X}:{bp.address.offset:X8} {bp.type} {bp.ah:X2} {bp.al:X2}");
+            Log.Debug($"{bp.address.segment:X}:{bp.address.offset:X8} {bp.type} {bp.ah:X2} {bp.al:X2}");
     }
 
-    static void PrintDescriptors(Descriptor[] descriptors, bool ldt, ITracer log)
+    static void PrintDescriptors(Descriptor[] descriptors, bool ldt)
     {
         for (int i = 0; i < descriptors.Length; i++)
         {
@@ -68,7 +68,7 @@ static class CommandParser
                 case SegmentType.Sys386IntGate:
                 case SegmentType.Sys386TrapGate:
                     var gate = (GateDescriptor)descriptor;
-                    log.Debug($"{i:X4} {gate.type} {(gate.big ? "32" : "16")} {gate.selector:X4}: {gate.offset:X8} R{gate.dpl}");
+                    Log.Debug($"{i:X4} {gate.type} {(gate.big ? "32" : "16")} {gate.selector:X4}: {gate.offset:X8} R{gate.dpl}");
                     break;
 
                 default:
@@ -76,7 +76,7 @@ static class CommandParser
                     ushort selector = (ushort)((i << 3) | seg.dpl);
                     if (ldt)
                         selector |= 4;
-                    log.Debug($"{i:X4}={selector:X4} {seg.type} {(seg.big ? "32" : "16")} {seg.@base:X8} {seg.limit:X8} R{seg.dpl}");
+                    Log.Debug($"{i:X4}={selector:X4} {seg.type} {(seg.big ? "32" : "16")} {seg.@base:X8} {seg.limit:X8} R{seg.dpl}");
                     break;
             }
         }
@@ -98,11 +98,11 @@ static class CommandParser
         if ((flags & CpuFlags.IF) != 0) flagsSb.Append(" I");
         if ((flags & CpuFlags.TF) != 0) flagsSb.Append(" T");
 
-        d.Log.Debug($"EAX {reg.eax:X8} ESI {reg.esi:X8} DS {reg.ds:X4} ES {reg.es:X4}");
-        d.Log.Debug($"EBX {reg.ebx:X8} EDI {reg.edi:X8} FS {reg.fs:X4} GS {reg.gs:X4}");
-        d.Log.Debug($"ECX {reg.ecx:X8} EBP {reg.ebp:X8}");
-        d.Log.Debug($"EDX {reg.edx:X8} ESP {reg.esp:X8} SS {reg.ss:X4}");
-        d.Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8}{flagsSb}");
+        Log.Debug($"EAX {reg.eax:X8} ESI {reg.esi:X8} DS {reg.ds:X4} ES {reg.es:X4}");
+        Log.Debug($"EBX {reg.ebx:X8} EDI {reg.edi:X8} FS {reg.fs:X4} GS {reg.gs:X4}");
+        Log.Debug($"ECX {reg.ecx:X8} EBP {reg.ebp:X8}");
+        Log.Debug($"EDX {reg.edx:X8} ESP {reg.esp:X8} SS {reg.ss:X4}");
+        Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8}{flagsSb}");
     }
 
     static readonly Dictionary<string, Command> Commands = new Command[]
@@ -122,7 +122,7 @@ static class CommandParser
                 {
                     var names = string.Join(" ", cmd.Names);
                     var pad = new string(' ', maxLength - names.Length);
-                    d.Log.Debug($"{names}{pad}: {cmd.Description}");
+                    Log.Debug($"{names}{pad}: {cmd.Description}");
                 }
             }),
             new(new []  { "clear", "cls", ".cls" }, "Clear the log history", (_,  d) => d.Log.Clear()),
@@ -186,7 +186,7 @@ static class CommandParser
                     : ParseUtil.ParseVal(lengthArg);
 
                 if (!d.IsConnected) return;
-                PrintAsm(d.Disassemble(address, length), d.Log);
+                PrintAsm(d.Disassemble(address, length));
             }),
 
             new(new[] { "GetMemory", "d", "dc" }, "Gets the contents of memory at the given address", (getArg,  d) =>
@@ -198,7 +198,7 @@ static class CommandParser
                     : ParseUtil.ParseVal(lengthArg);
 
                 if (!d.IsConnected) return;
-                PrintBytes(address, d.GetMemory(address, length), d.Log);
+                PrintBytes(address, d.GetMemory(address, length));
             }),
 
             new(new[] { "SetMemory", "e" }, "Changes the contents of memory at the given address", (getArg,  d) =>
@@ -214,13 +214,13 @@ static class CommandParser
                 var segString = getArg();
                 if (!ParseUtil.TryParseSegment(segString, d, out var segment))
                 {
-                    d.Log.Error($"Could not parse \"{segString}\" as a segment");
+                    Log.Error($"Could not parse \"{segString}\" as a segment");
                     return;
                 }
 
                 if (!d.IsConnected) return;
                 int maxAddress = d.GetMaxNonEmptyAddress(segment);
-                d.Log.Info($"MaxAddress: 0x{(uint)maxAddress:X8}");
+                Log.Info($"MaxAddress: 0x{(uint)maxAddress:X8}");
             }),
 
             new(new[] { "Search", "s" }, "Searches for occurrences of a byte pattern in a memory range (e.g. \"s 0 -1 24 3a 99\"", (getArg,  d) =>
@@ -234,7 +234,7 @@ static class CommandParser
                 {
                     if (!byte.TryParse(arg, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var b))
                     {
-                        d.Log.Error($"Could not parse \"{arg}\" as a hex byte");
+                        Log.Error($"Could not parse \"{arg}\" as a hex byte");
                         return;
                     }
 
@@ -245,7 +245,7 @@ static class CommandParser
                 var results = d.SearchMemory(address, length, pattern.ToArray(), 1);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
-                    PrintBytes(result, d.GetMemory(result, displayLength), d.Log);
+                    PrintBytes(result, d.GetMemory(result, displayLength));
             }),
 
             new(new[] { "SearchDwords", "s-d" }, "Searches for occurrences of one or more little-endian dwords in a memory range (e.g. \"s 0 -1 badf00d 12341234\")", (getArg,  d) =>
@@ -259,7 +259,7 @@ static class CommandParser
                 {
                     if (!uint.TryParse(arg, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var dword))
                     {
-                        d.Log.Error($"Could not parse \"{arg}\" as a hex byte");
+                        Log.Error($"Could not parse \"{arg}\" as a hex byte");
                         return;
                     }
 
@@ -273,7 +273,7 @@ static class CommandParser
                 var results = d.SearchMemory(address, length, pattern.ToArray(), 4);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
-                    PrintBytes(result, d.GetMemory(result, displayLength), d.Log);
+                    PrintBytes(result, d.GetMemory(result, displayLength));
             }),
 
             new(new[] { "SearchAscii", "s-a" }, "Searches for occurrences of an ASCII pattern in a memory range (e.g. \"s-a 0 -1 test\"", (getArg,  d) =>
@@ -291,7 +291,7 @@ static class CommandParser
                 var results = d.SearchMemory(address, length, bytes, 1);
                 int displayLength = 16 * ((pattern.Length + 15) / 16);
                 foreach (var result in results)
-                    PrintBytes(result, d.GetMemory(result, displayLength), d.Log);
+                    PrintBytes(result, d.GetMemory(result, displayLength));
             }),
 
             new(new[] { ".dumpmem" }, "<path> <addr> <len> : Dumps a section of memory to a local file, e.g. .dumpmem c:\\data.bin cs:0 0x800000", (getArg, d) =>
@@ -316,7 +316,7 @@ static class CommandParser
             new(new[] { "ListBreakpoints", "bps", "bl" }, "Retrieves the current breakpoint list", (_,  d) =>
             {
                 if (!d.IsConnected) return;
-                PrintBps(d.ListBreakpoints(), d.Log);
+                PrintBps(d.ListBreakpoints());
             }),
             new(new[] { "SetBreakpoint", "bp" }, "<address> [type] [ah] [al] - Sets or updates a breakpoint", (getArg,  d) =>
             {
@@ -350,13 +350,13 @@ static class CommandParser
             new(new[] { "GetGDT", "gdt"}, "Retrieves the Global Descriptor Table", (getArg, d) =>
             {
                 if (!d.IsConnected) return;
-                PrintDescriptors(d.GetGdt(), false, d.Log);
+                PrintDescriptors(d.GetGdt(), false);
             }),
 
             new(new[] { "GetLDT", "ldt"}, "Retrieves the Local Descriptor Table", (getArg, d) =>
             {
                 if (!d.IsConnected) return;
-                PrintDescriptors(d.GetLdt(), true, d.Log);
+                PrintDescriptors(d.GetLdt(), true);
             })
         }.SelectMany(x => x.Names.Select(name => (name, x)))
         .ToDictionary(x => x.name.ToUpperInvariant(), x => x.x);
@@ -416,11 +416,11 @@ static class CommandParser
                 int curArg = 1;
                 command.Func(() => curArg >= parts.Count ? "" : parts[curArg++], d);
             }
-            else d.Log.Error($"Unknown command \"{parts[0]}\"");
+            else Log.Error($"Unknown command \"{parts[0]}\"");
         }
         catch (Exception ex)
         {
-            d.Log.Error("Parse error: " + ex.Message);
+            Log.Error("Parse error: " + ex.Message);
         }
     }
 }

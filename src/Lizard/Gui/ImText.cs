@@ -33,5 +33,10 @@ class ImText
     }
 
     public bool Draw(string label) => ImGui.InputText("", _buf, (uint)_buf.Length);
-    public bool Draw(string label, ImGuiInputTextFlags inputTextFlags) => ImGui.InputText("", _buf, (uint)_buf.Length, inputTextFlags);
+    public bool Draw(string label, ImGuiInputTextFlags inputTextFlags) 
+        => ImGui.InputText("", _buf, (uint)_buf.Length, inputTextFlags);
+    public bool Draw(string label, ImGuiInputTextFlags inputTextFlags, ImGuiInputTextCallback callback)
+        => ImGui.InputText("", _buf, (uint)_buf.Length, inputTextFlags, callback);
+    public bool Draw(string label, ImGuiInputTextFlags inputTextFlags, ImGuiInputTextCallback callback, IntPtr data)
+        => ImGui.InputText("", _buf, (uint)_buf.Length, inputTextFlags, callback, data);
 }

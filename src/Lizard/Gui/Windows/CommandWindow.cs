@@ -6,13 +6,15 @@ namespace Lizard.Gui.Windows;
 
 public class CommandWindow : SingletonWindow
 {
+    const int CommandHistoryLimit = 100;
     readonly Debugger _debugger;
-    readonly LogHistory _history;
+    readonly LogHistory _logs;
     readonly ImText _inputBuffer = new(512);
     readonly TextEditor _textEditor = new();
+    readonly IndexQueue<string> _commandHistory = new();
+    int _commandHistoryPosition;
     bool _autoScroll = true;
     bool _scrollToBottom = true;
-    bool _focus;
     bool _pendingFocus;
 
     const PaletteIndex ErrorColor = PaletteIndex.Custom;
@@ -23,14 +25,15 @@ public class CommandWindow : SingletonWindow
     public CommandWindow(Debugger debugger, LogHistory history) : base("Command")
     {
         _debugger = debugger ?? throw new ArgumentNullException(nameof(debugger));
-        _history = history ?? throw new ArgumentNullException(nameof(history));
+        _logs = history ?? throw new ArgumentNullException(nameof(history));
         _textEditor.Options.IsReadOnly = true;
         _textEditor.SetColor(ErrorColor, 0xff0000ff);
         _textEditor.SetColor(WarningColor, 0xff00ffff);
         _textEditor.SetColor(InfoColor, 0xffffffff);
         _textEditor.SetColor(DebugColor, 0xffd0d0d0);
 
-        _history.EntryAdded += x =>
+        _logs.Cleared += () => _textEditor.AllText = "";
+        _logs.EntryAdded += x =>
         {
             var color = x.Severity switch
             {
@@ -43,8 +46,6 @@ public class CommandWindow : SingletonWindow
             _textEditor.AppendLine(x.Line, color);
             _textEditor.ScrollToEnd();
         };
-
-        _history.Cleared += () => _textEditor.AllText = "";
     }
 
     public void Focus()
@@ -52,7 +53,7 @@ public class CommandWindow : SingletonWindow
         _pendingFocus = true;
     }
 
-    protected override void DrawContents()
+    protected override unsafe void DrawContents()
     {
         ImGui.SetWindowPos(Vector2.Zero, ImGuiCond.FirstUseEver);
 
@@ -76,19 +77,21 @@ public class CommandWindow : SingletonWindow
         ImGui.EndChild();
         ImGui.Separator();
 
-        if (_focus)
-        {
-            ImGui.SetKeyboardFocusHere(0);
-            _focus = false;
-        }
-
-        if (_inputBuffer.Draw("", ImGuiInputTextFlags.EnterReturnsTrue))
+        if (_inputBuffer.Draw("", ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.CallbackCompletion | ImGuiInputTextFlags.CallbackHistory, CommandCallback))
         {
             var command = _inputBuffer.Text;
             _inputBuffer.Text = "";
 
-            _history.Add("> " + command, Severity.Info);
-            CommandParser.RunCommand(command, _debugger);
+            if (!string.IsNullOrWhiteSpace(command))
+            {
+                _logs.Add("> " + command, Severity.Info);
+                CommandParser.RunCommand(command, _debugger);
+
+                if (_commandHistory.Count >= CommandHistoryLimit)
+                    _commandHistory.Dequeue();
+                _commandHistory.Enqueue(command);
+            }
+
             _pendingFocus = true;
         }
 
@@ -101,5 +104,36 @@ public class CommandWindow : SingletonWindow
 
         ImGui.SameLine();
         ImGui.Checkbox("Scroll", ref _autoScroll);
+    }
+
+    unsafe int CommandCallback(ImGuiInputTextCallbackData* dataPtr)
+    {
+        var data = new ImGuiInputTextCallbackDataPtr(dataPtr);
+        switch (data.EventFlag)
+        {
+            case ImGuiInputTextFlags.CallbackCompletion:
+                // data.InsertChars(data.CursorPos, "..");
+                return 0;
+
+            case ImGuiInputTextFlags.CallbackHistory:
+                if (_commandHistory.Count == 0)
+                    break;
+
+                if (data.EventKey == ImGuiKey.UpArrow && _commandHistoryPosition < _commandHistory.Count)
+                {
+                    _commandHistoryPosition++;
+                    data.DeleteChars(0, data.BufTextLen);
+                    data.InsertChars(0, _commandHistory[^_commandHistoryPosition] ?? "");
+                }
+                else if (data.EventKey == ImGuiKey.DownArrow && _commandHistoryPosition > 1)
+                {
+                    _commandHistoryPosition--;
+                    data.DeleteChars(0, data.BufTextLen);
+                    data.InsertChars(0, _commandHistory[^_commandHistoryPosition] ?? "");
+                }
+                break;
+        }
+
+        return 0;
     }
 }

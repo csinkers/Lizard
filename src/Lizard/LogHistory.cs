@@ -2,11 +2,14 @@
 
 public class LogHistory : ITracer
 {
-    const int MaxHistory = 1000;
+    const int MaxHistory = 10000;
     readonly object _syncRoot = new();
     readonly Queue<LogEntry> _history = new();
     public event Action<LogEntry>? EntryAdded;
     public event Action? Cleared;
+
+    public static LogHistory Instance { get; } = new();
+    LogHistory() {}
 
     public void Add(string line) => Add(line, Severity.Debug);
     public void Add(string line, Severity severity)

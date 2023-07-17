@@ -21,13 +21,12 @@ static class Program
             var programDataManager = new ProgramDataManager(projectManager);
             var iceManager = new IceSessionManager(projectManager, cmdLine.AutoConnect);
 
-            var history = new LogHistory();
             var memoryCache = new MemoryCache();
-            var debugger = new Debugger(iceManager, history, memoryCache);
+            var debugger = new Debugger(iceManager, LogHistory.Instance, memoryCache);
 
             using var uiManager = new UiManager(projectManager);
             var watcher = new WatcherCore(programDataManager, memoryCache, uiManager.TextureStore);
-            var ui = new Ui(projectManager, programDataManager, uiManager, debugger, history, watcher);
+            var ui = new Ui(projectManager, programDataManager, uiManager, debugger, LogHistory.Instance, watcher);
 
             if (cmdLine.AutoConnect)
             {
