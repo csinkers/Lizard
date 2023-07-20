@@ -6,6 +6,7 @@ namespace Lizard;
 
 public class IceSessionManager
 {
+    readonly ReentrantLock _lock = new();
     IceSession? _ice;
 
     public IceSessionManager(ProjectManager projectManager, bool autoConnect)
@@ -30,13 +31,28 @@ public class IceSessionManager
 
     public void Connect(string hostname, int port)
     {
-        Disconnect();
-        _ice = new IceSession(hostname, port);
-        _ice.Client.StoppedEvent += OnStopped;
+        _lock.Lock();
+        try
+        {
+            DisconnectInner();
+            _ice = new IceSession(hostname, port);
+            _ice.Client.StoppedEvent += OnStopped;
+        }
+        finally { _lock.Unlock(); }
         Connected?.Invoke();
     }
 
     public void Disconnect()
+    {
+        _lock.Lock();
+        try
+        {
+            DisconnectInner();
+        }
+        finally { _lock.Unlock(); }
+    }
+
+    void DisconnectInner()
     {
         Disconnected?.Invoke();
         if (_ice != null)
@@ -47,6 +63,10 @@ public class IceSessionManager
 
         _ice = null;
     }
+
+    public bool TryLock() => _lock.TryLock();
+    public void Unlock() => _lock.Unlock();
+
 
     void OnStopped(Registers state) => Stopped?.Invoke(state);
 }

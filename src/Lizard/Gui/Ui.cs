@@ -40,7 +40,7 @@ class Ui
         _codeWindow        = new CodeWindow();
         _commandWindow     = new CommandWindow(debugger, logs);
         _connectWindow     = new ConnectWindow(debugger.SessionManager);
-        _disassemblyWindow = new DisassemblyWindow();
+        _disassemblyWindow = new DisassemblyWindow(debugger);
         _localsWindow      = new LocalsWindow();
         _registersWindow   = new RegistersWindow(debugger);
         _watchWindow       = new WatchWindow(watcherCore);
@@ -78,8 +78,12 @@ class Ui
     public void Run()
     {
         while (!_done)
+        {
             if (!_uiManager.RenderFrame())
                 _done = true;
+
+            _debugger.FlushDeferredResults();
+        }
     }
 
     void SaveAs()

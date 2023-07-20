@@ -10,8 +10,8 @@ public class HotkeyManager
     {
         foreach (var keyEvent in input.KeyEvents)
         {
-            if (IsModifier(keyEvent.Key))
-                continue;
+            if (!keyEvent.Down) continue;
+            if (IsModifier(keyEvent.Key)) continue;
 
             var binding = new KeyBinding(keyEvent.Key, keyEvent.Modifiers);
             if (_bindings.TryGetValue(binding, out var info) && (info.IsGlobal || !imguiCaptured))

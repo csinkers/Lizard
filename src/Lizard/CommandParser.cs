@@ -359,7 +359,7 @@ static class CommandParser
                 PrintDescriptors(d.GetLdt(), true);
             })
         }.SelectMany(x => x.Names.Select(name => (name, x)))
-        .ToDictionary(x => x.name.ToUpperInvariant(), x => x.x);
+        .ToDictionary(x => x.name, x => x.x, StringComparer.OrdinalIgnoreCase);
 
     static List<string> SplitArgs(string line)
     {
@@ -421,6 +421,20 @@ static class CommandParser
         catch (Exception ex)
         {
             Log.Error("Parse error: " + ex.Message);
+        }
+    }
+
+    public static void GetCompletions(string text, List<string> results, int maxResults)
+    {
+        results.Clear();
+        foreach (var command in Commands)
+        {
+            if (!command.Key.StartsWith(text, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            results.Add(command.Key);
+            if (results.Count >= maxResults)
+                break;
         }
     }
 }

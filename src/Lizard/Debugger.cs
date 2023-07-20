@@ -6,6 +6,9 @@ public delegate void StoppedDelegate(Registers state);
 
 public class Debugger : IMemoryReader
 {
+    readonly RequestQueue _queue = new();
+    readonly CancellationTokenSource _tokenSource = new();
+    readonly Thread _queueThread;
     Registers _registers;
 
     public event Action? ExitRequested;
@@ -19,6 +22,7 @@ public class Debugger : IMemoryReader
         private set { OldRegisters = _registers; _registers = value; }
     }
 
+    public int Version { get; private set; }
     public bool IsPaused { get; private set; }
     DebugHostPrx? Host => SessionManager.Host;
     public bool IsConnected => Host != null;
@@ -31,6 +35,23 @@ public class Debugger : IMemoryReader
         Memory.Reader = this;
         SessionManager.Connected += OnSessionManagerConnected;
         SessionManager.Stopped += state => Update(state);
+
+        _queueThread = new Thread(QueueThreadMethod) { Name = "Request Queue"};
+        _queueThread.Start();
+    }
+
+    void QueueThreadMethod()
+    {
+        try
+        {
+            while (!_tokenSource.Token.WaitHandle.WaitOne(20))
+            {
+                    var version = Version;
+
+                    _queue.ProcessPendingRequests(SessionManager, version, _tokenSource.Token);
+            }
+        }
+        catch (OperationCanceledException) { }
     }
 
     void OnSessionManagerConnected()
@@ -51,9 +72,15 @@ public class Debugger : IMemoryReader
         return false;
     }
 
+    public void Defer(IRequest request) => _queue.Add(request);
+    public void FlushDeferredResults() => _queue.ApplyResults();
+
     public Registers Update(Registers state)
     {
         IsPaused = state.stopped;
+        if (Registers.eip != state.eip)
+            Version++;
+
         Registers = state;
         return state;
     }
@@ -98,6 +125,8 @@ public class Debugger : IMemoryReader
     public Descriptor[] GetLdt() => Host?.GetLdt() ?? Array.Empty<Descriptor>();
     public void Dispose()
     {
+        _tokenSource.Cancel();
+        _queueThread.Join();
     }
 }
 

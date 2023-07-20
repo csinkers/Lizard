@@ -58,6 +58,8 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         io.Fonts.AddFontDefault();
         io.Fonts.Flags |= ImFontAtlasFlags.NoBakedLines;
+        io.KeyRepeatDelay = 0.7f;
+        io.KeyRepeatRate = 0.08f;
 
         ResourceFactory factory = gd.ResourceFactory;
         _vertexBuffer = factory.CreateBuffer(new BufferDescription(10000, BufferUsage.VertexBuffer | BufferUsage.Dynamic));
@@ -87,6 +89,7 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
             new ResourceLayoutElementDescription("ProjectionMatrixBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex),
             new ResourceLayoutElementDescription("MainSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
         _layout.Name = "ImGui.NET Resource Layout";
+
         _textureLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
             new ResourceLayoutElementDescription("MainTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment)));
         _textureLayout.Name = "ImGui.NET Texture Layout";
@@ -217,7 +220,7 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
     /// <summary>
     /// Recreates the device texture used to render text.
     /// </summary>
-    public unsafe void RecreateFontDeviceTexture() => RecreateFontDeviceTexture(_gd);
+    public void RecreateFontDeviceTexture() => RecreateFontDeviceTexture(_gd);
 
     /// <summary>
     /// Recreates the device texture used to render text.
@@ -263,14 +266,14 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
     /// <summary>
     /// Renders the ImGui draw list data.
     /// </summary>
-    public unsafe void Render(GraphicsDevice gd, CommandList cl)
+    public void Render(GraphicsDevice gd, CommandList cl)
     {
-        if (_frameBegun)
-        {
-            _frameBegun = false;
-            ImGui.Render();
-            RenderImDrawData(ImGui.GetDrawData(), gd, cl);
-        }
+        if (!_frameBegun)
+            return;
+
+        _frameBegun = false;
+        ImGui.Render();
+        RenderImDrawData(ImGui.GetDrawData(), gd, cl);
     }
 
     /// <summary>
@@ -290,9 +293,7 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
     void BeginUpdate(float deltaSeconds)
     {
         if (_frameBegun)
-        {
             ImGui.Render();
-        }
 
         SetPerFrameImGuiData(deltaSeconds);
     }
@@ -313,10 +314,11 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
     /// </summary>
     void SetPerFrameImGuiData(float deltaSeconds)
     {
-        ImGuiIOPtr io = ImGui.GetIO();
+        var io = ImGui.GetIO();
         io.DisplaySize = new Vector2(
             _windowWidth / _scaleFactor.X,
             _windowHeight / _scaleFactor.Y);
+
         io.DisplayFramebufferScale = _scaleFactor;
         io.DeltaTime = deltaSeconds; // DeltaTime is in seconds.
     }
@@ -385,7 +387,7 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         }
     }
 
-    void UpdateImGuiInput(InputSnapshot snapshot)
+    static void UpdateImGuiInput(InputSnapshot snapshot)
     {
         ImGuiIOPtr io = ImGui.GetIO();
         io.AddMousePosEvent(snapshot.MousePosition.X, snapshot.MousePosition.Y);
