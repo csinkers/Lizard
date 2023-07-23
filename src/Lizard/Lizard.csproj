@@ -102,17 +102,17 @@
     <PackageReference Include="zeroc.icebuilder.msbuild" Version="5.0.9" />
   </ItemGroup>
 
-  <ItemGroup Condition="!Exists('..\..\deps\ImGuiColorTextEditNet\')">
+  <ItemGroup Condition="!Exists('..\..\..\ImGuiColorTextEditNet\')">
     <PackageReference Include="ImGuiColorTextEditNet" Version="0.1.4" />
   </ItemGroup>
-  <ItemGroup Condition="Exists('..\..\deps\ImGuiColorTextEditNet\')">
-    <ProjectReference Include="..\..\deps\ImGuiColorTextEditNet\src\TextEdit\ImGuiColorTextEditNet.csproj" />
+  <ItemGroup Condition="Exists('..\..\..\ImGuiColorTextEditNet\')">
+    <ProjectReference Include="..\..\..\ImGuiColorTextEditNet\src\TextEdit\ImGuiColorTextEditNet.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="!Exists('..\..\deps\GhidraProgramData\')">
+  <ItemGroup Condition="!Exists('..\..\..\GhidraProgramData\')">
     <PackageReference Include="GhidraProgramData" Version="0.1.0" />
   </ItemGroup>
-  <ItemGroup Condition="Exists('..\..\deps\GhidraProgramData\')">
-    <ProjectReference Include="..\..\deps\GhidraProgramData\src\GhidraProgramData\GhidraProgramData.csproj" />
+  <ItemGroup Condition="Exists('..\..\..\GhidraProgramData\')">
+    <ProjectReference Include="..\..\..\GhidraProgramData\src\GhidraProgramData\GhidraProgramData.csproj" />
   </ItemGroup>
 
   <ItemGroup>

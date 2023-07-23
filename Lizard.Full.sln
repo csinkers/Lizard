@@ -5,11 +5,11 @@ VisualStudioVersion = 17.5.33627.172
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lizard", "src\Lizard\Lizard.csproj", "{701F4282-01D3-4F96-B40A-E841346F82C1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImGuiColorTextEditNet", "deps\ImGuiColorTextEditNet\src\TextEdit\ImGuiColorTextEditNet.csproj", "{0C7A8CE2-A69F-4F0B-A6D9-67EFEF9C7A44}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImGuiColorTextEditNet", "..\ImGuiColorTextEditNet\src\TextEdit\ImGuiColorTextEditNet.csproj", "{0C7A8CE2-A69F-4F0B-A6D9-67EFEF9C7A44}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dependencies", "Dependencies", "{D9763A9A-20A3-466D-B851-6A02C673AE79}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GhidraProgramData", "deps\GhidraProgramData\src\GhidraProgramData\GhidraProgramData.csproj", "{9793B356-BFAA-4F01-99BC-CDFC3CA6CA36}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GhidraProgramData", "..\GhidraProgramData\src\GhidraProgramData\GhidraProgramData.csproj", "{9793B356-BFAA-4F01-99BC-CDFC3CA6CA36}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpFileDialog", "src\SharpFileDialog\SharpFileDialog.csproj", "{2F8F337D-147F-4FF4-AEC7-6AF489782A99}"
 EndProject
