@@ -1,4 +1,5 @@
 ﻿using GhidraProgramData;
+using GhidraProgramData.Types;
 using Lizard.Gui.Windows.Watch.Renderers;
 
 namespace Lizard.Gui.Windows.Watch;

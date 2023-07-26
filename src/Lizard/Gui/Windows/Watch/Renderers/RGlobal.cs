@@ -1,4 +1,5 @@
-﻿using GhidraProgramData;
+﻿using System.Buffers;
+using GhidraProgramData.Types;
 using ImGuiNET;
 
 namespace Lizard.Gui.Windows.Watch.Renderers;
@@ -18,22 +19,42 @@ public class RGlobal : IGhidraRenderer
         return history;
     }
 
-    public bool Draw(History history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer, DrawContext context)
+    public bool Draw(History history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer, DrawContext context) =>
+        _type.Size > 512
+            ? DrawLarge(history, context)
+            : DrawSmall(history, context);
+
+    bool DrawSmall(History history, DrawContext context)
     {
-        // var history = context.History.GetOrCreateHistory(Name, Data.Type);
-        // var active = IsActive;
-        // ImGui.Checkbox(CheckboxId, ref active);
-        // IsActive = active;
-        // ImGui.SameLine();
+        Span<byte> curBuffer = stackalloc byte[(int)_type.Size];
+        Span<byte> prevBuffer = stackalloc byte[(int)_type.Size];
 
-        // var color = Util.ColorForAge(context.Now - history.LastModifiedTicks);
-        // ImGui.TextColored(color, _label);
-        // ImGui.SameLine();
+        var cur = context.Memory.Read(_type.Address, _type.Size, curBuffer);
+        var prev = context.Memory.TryReadPrevious(_type.Address, _type.Size, prevBuffer);
 
+        return DrawInner(history, context, cur, prev);
+    }
+
+    bool DrawLarge(History history, DrawContext context)
+    {
+        var curArray = ArrayPool<byte>.Shared.Rent((int)_type.Size);
+        var prevArray = ArrayPool<byte>.Shared.Rent((int)_type.Size);
+        try
+        {
+            var cur = context.Memory.Read(_type.Address, _type.Size, curArray);
+            var prev = context.Memory.TryReadPrevious(_type.Address, _type.Size, prevArray);
+            return DrawInner(history, context, cur, prev);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(curArray);
+            ArrayPool<byte>.Shared.Return(prevArray);
+        }
+    }
+
+    bool DrawInner(History history, DrawContext context, ReadOnlySpan<byte> cur, ReadOnlySpan<byte> prev)
+    {
         ImGui.PushID(_type.Key.Name);
-        var cur = context.Memory.Read(_type.Address, _type.Size);
-        var prev = context.Refreshed ? context.Memory.ReadPrevious(_type.Address, _type.Size) : ReadOnlySpan<byte>.Empty;
-
         var renderer = context.Renderers.Get(_type.Type);
         bool result = renderer.Draw(history, _type.Address, cur, prev, context);
         ImGui.PopID();

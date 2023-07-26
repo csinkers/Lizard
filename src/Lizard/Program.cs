@@ -6,7 +6,7 @@ using Exception = System.Exception;
 
 namespace Lizard;
 
-static class Program
+internal static class Program
 {
     public static int Main(string[] args)
     {
@@ -22,7 +22,7 @@ static class Program
             var iceManager = new IceSessionManager(projectManager, cmdLine.AutoConnect);
 
             var memoryCache = new MemoryCache();
-            var debugger = new Debugger(iceManager, LogHistory.Instance, memoryCache);
+            using var debugger = new Debugger(iceManager, LogHistory.Instance, memoryCache);
 
             using var uiManager = new UiManager(projectManager);
             var watcher = new WatcherCore(programDataManager, memoryCache, uiManager.TextureStore);

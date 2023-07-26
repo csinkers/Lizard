@@ -3,7 +3,7 @@ using Lizard.generated;
 
 namespace Lizard;
 
-static class ParseUtil
+internal static class ParseUtil
 {
     public static Address ParseAddress(string s, Debugger d, bool code)
     {

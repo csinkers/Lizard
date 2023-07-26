@@ -1,7 +1,8 @@
-﻿namespace Lizard;
+﻿using GhidraProgramData;
+
+namespace Lizard;
 
 public interface ISymbolStore
 {
-    int Offset { get; }
-    SymbolInfo? Lookup(uint address);
+    Symbol? LookupSymbol(uint memoryAddress);
 }

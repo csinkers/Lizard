@@ -109,7 +109,7 @@
     <ProjectReference Include="..\..\..\ImGuiColorTextEditNet\src\TextEdit\ImGuiColorTextEditNet.csproj" />
   </ItemGroup>
   <ItemGroup Condition="!Exists('..\..\..\GhidraProgramData\')">
-    <PackageReference Include="GhidraProgramData" Version="0.1.0" />
+    <PackageReference Include="GhidraProgramData" Version="0.1.1" />
   </ItemGroup>
   <ItemGroup Condition="Exists('..\..\..\GhidraProgramData\')">
     <ProjectReference Include="..\..\..\GhidraProgramData\src\GhidraProgramData\GhidraProgramData.csproj" />

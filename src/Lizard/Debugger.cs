@@ -10,6 +10,7 @@ public class Debugger : IMemoryReader
     readonly CancellationTokenSource _tokenSource = new();
     readonly Thread _queueThread;
     Registers _registers;
+    int _version;
 
     public event Action? ExitRequested;
     public ITracer Log { get; }
@@ -22,7 +23,16 @@ public class Debugger : IMemoryReader
         private set { OldRegisters = _registers; _registers = value; }
     }
 
-    public int Version { get; private set; }
+    public int Version
+    {
+        get => _version;
+        private set
+        {
+            _version = value;
+            Memory.Dirty();
+        }
+    }
+
     public bool IsPaused { get; private set; }
     DebugHostPrx? Host => SessionManager.Host;
     public bool IsConnected => Host != null;
@@ -45,11 +55,7 @@ public class Debugger : IMemoryReader
         try
         {
             while (!_tokenSource.Token.WaitHandle.WaitOne(20))
-            {
-                    var version = Version;
-
-                    _queue.ProcessPendingRequests(SessionManager, version, _tokenSource.Token);
-            }
+                _queue.ProcessPendingRequests(SessionManager, Version, _tokenSource.Token);
         }
         catch (OperationCanceledException) { }
     }

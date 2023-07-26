@@ -2,6 +2,7 @@
 using ImGuiNET;
 using Lizard.Config;
 using Lizard.Config.Properties;
+using Lizard.Gui.Windows.Watch;
 using Veldrid;
 using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;

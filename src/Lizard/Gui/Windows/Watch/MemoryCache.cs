@@ -2,17 +2,18 @@
 
 public class MemoryCache : IMemoryCache
 {
-    readonly HashSet<uint> _requestedPages = new();
-    readonly BufferPool _pool = new();
-    Dictionary<uint, MemoryBuffer> _current = new();
-    Dictionary<uint, MemoryBuffer> _previous = new();
-    List<MemoryBuffer> _currentBuffers = new();
-    List<MemoryBuffer> _previousBuffers = new();
-    IMemoryReader? _reader;
+    const int PageSizeBits = 12;
+    const int PageSize = 1 << PageSizeBits;
 
-    static uint PageNum(uint offset) => offset >> 12;
-    static uint PageNumRoundUp(uint offset) => offset + 4095 >> 12;
-    static uint PageAddr(uint pageNum) => pageNum << 12;
+    readonly BufferPool _pool = new();
+    Dictionary<uint, byte[]> _current = new();
+    Dictionary<uint, byte[]> _previous = new();
+    IMemoryReader? _reader;
+    bool _dirty;
+
+    static uint PageNum(uint offset) => offset >> PageSizeBits;
+    static uint PageNumRoundUp(uint offset) => offset + 4095 >> PageSizeBits;
+    static uint PageAddr(uint pageNum) => pageNum << PageSizeBits;
 
     public IMemoryReader? Reader
     {
@@ -24,88 +25,94 @@ public class MemoryCache : IMemoryCache
         }
     }
 
+    public void Dirty() => _dirty = true;
+
     public void Clear()
     {
-        _requestedPages.Clear();
-        ClearBuffers(_currentBuffers);
-        ClearBuffers(_previousBuffers);
+        foreach (var kvp in _current) _pool.Return(kvp.Value);
+        foreach (var kvp in _previous) _pool.Return(kvp.Value);
         _current.Clear();
         _previous.Clear();
+        _dirty = false;
     }
 
-    void ClearBuffers(List<MemoryBuffer> buffers)
+    public ReadOnlySpan<byte> Read(uint offset, uint size, Span<byte> backingArray)
     {
-        foreach (var curBuffer in buffers)
-            if (curBuffer.Data != null)
-                _pool.Return(curBuffer.Data);
-
-        buffers.Clear();
-    }
-
-    public ReadOnlySpan<byte> Read(uint offset, uint size)
-    {
-        uint fromPage = PageNum(offset);
-        uint toPage = PageNumRoundUp(offset + size);
-
-        for (uint i = fromPage; i < toPage; i++)
-            _requestedPages.Add(i);
-
-        if (!_current.TryGetValue(fromPage, out var buffer))
-            return ReadOnlySpan<byte>.Empty;
-
-        return buffer.Read(offset, size);
-    }
-
-    public ReadOnlySpan<byte> ReadPrevious(uint offset, uint size)
-        => _previous.TryGetValue(PageNum(offset), out var buffer)
-            ? buffer.Read(offset, size)
-            : ReadOnlySpan<byte>.Empty;
-
-    public void Refresh()
-    {
-        var pages = _requestedPages.ToArray();
-        (_previous, _current) = (_current, _previous);
-        (_previousBuffers, _currentBuffers) = (_currentBuffers, _previousBuffers);
-        ClearBuffers(_currentBuffers);
-
-        _current.Clear();
-        _requestedPages.Clear();
-        Array.Sort(pages);
-
-        uint lastPage = 0;
-        MemoryBuffer? buffer = null;
-
-        for (int i = 0; i < pages.Length; i++)
+        if (_dirty)
         {
-            uint page = pages[i];
-
-            if (buffer == null) // First iteration
-            {
-                buffer = new MemoryBuffer { Offset = PageAddr(page) };
-                _currentBuffers.Add(buffer);
-            }
-            else if (lastPage + 1 != page) // Not contiguous, need to read in the last one and create a new one going forward
-            {
-                PopulateBuffer(buffer, lastPage);
-                buffer = new MemoryBuffer { Offset = PageAddr(page) };
-                _currentBuffers.Add(buffer);
-            }
-
-            _current[page] = buffer;
-            lastPage = page;
+            (_previous, _current) = (_current, _previous);
+            foreach (var kvp in _current) _pool.Return(kvp.Value);
+            _current.Clear();
+            _dirty = false;
+            _pool.Flush();
         }
 
-        if (buffer != null) // Read in the final buffer
-            PopulateBuffer(buffer, lastPage);
-
-        _pool.Flush(); // Throw away any buffers that couldn't be reused
+        return ReadInner(offset, size, backingArray, GetPage);
     }
 
-    void PopulateBuffer(MemoryBuffer buffer, uint lastPage)
+    byte[] GetPage(uint pageNum)
     {
-        var bufferEnd = PageAddr(lastPage + 1);
-        var bufferSize = bufferEnd - buffer.Offset;
-        buffer.Data = _pool.Borrow((int)bufferSize);
-        Reader?.Read(buffer.Offset, buffer.Data);
+        if (_current.TryGetValue(pageNum, out var buffer))
+            return buffer;
+
+        var pageOffset = PageAddr(pageNum);
+        buffer = _pool.Borrow(PageSize);
+        _reader?.Read(pageOffset, buffer);
+        _current[pageNum] = buffer;
+        return buffer;
+    }
+
+    public ReadOnlySpan<byte> TryReadPrevious(uint offset, uint size, Span<byte> backingArray)
+        => ReadInner(offset, size, backingArray, TryGetPreviousPage);
+
+    byte[]? TryGetPreviousPage(uint pageNum)
+    {
+        _previous.TryGetValue(pageNum, out var buffer);
+        return buffer;
+    }
+
+    static ReadOnlySpan<byte> ReadInner(uint offset, uint size, Span<byte> backingArray, Func<uint, byte[]?> tryGetPage)
+    {
+        uint firstPage = PageNum(offset);
+        uint lastPage = PageNumRoundUp(offset + size) - 1;
+        uint endOffset = offset + size;
+
+        if (firstPage == lastPage) // Entire range is inside one page so can return a span of the cached page without any copying
+        {
+            var buffer = tryGetPage(firstPage);
+            if (buffer == null)
+                return ReadOnlySpan<byte>.Empty;
+
+            var pageOffset = PageAddr(firstPage);
+            return buffer.AsSpan((int)(offset - pageOffset), (int)size);
+        }
+
+        bool copying = true;
+        int bytesCopied = 0;
+        for (uint i = firstPage; i <= lastPage; i++)
+        {
+            var buffer = tryGetPage(firstPage);
+            if (buffer == null)
+            {
+                copying = false;
+                continue;
+            }
+
+            if (!copying) // Still want to loop through the rest so any missing pages get requested
+                continue;
+
+            var pageOffset = PageAddr(firstPage);
+            var nextPageOffset = pageOffset + PageSize;
+
+            int len = endOffset >= nextPageOffset // If it ends after this page then just copy the whole page
+                ? PageSize
+                : (int)(endOffset - pageOffset);
+
+            var fromSpan = buffer.AsSpan(0, len);
+            fromSpan.CopyTo(backingArray[bytesCopied..]);
+            bytesCopied += fromSpan.Length;
+        }
+
+        return backingArray[..bytesCopied];
     }
 }

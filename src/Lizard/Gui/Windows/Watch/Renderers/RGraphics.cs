@@ -1,6 +1,8 @@
-﻿using System.Numerics;
+﻿using System.Buffers;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using GhidraProgramData;
+using GhidraProgramData.Types;
 using ImGuiNET;
 
 namespace Lizard.Gui.Windows.Watch.Renderers;
@@ -63,30 +65,55 @@ public class RGraphics : IGhidraRenderer
 
         ImGui.TextUnformatted($"-GFX {width}x{height} @ {rawAddress:X}-");
 
-        var paletteBuf = context.ReadBytes(h.Palette, 256 * 4);
-        var pixelData = context.Memory.Read(rawAddress, width * height);
-
-        if (paletteBuf.IsEmpty) { ImGui.Text("!! NO PAL !!"); return false; }
-        if (pixelData.IsEmpty) { ImGui.Text("!! NO IMG !!"); return false; }
-
-        uint sum = 0;
-        foreach (var b in paletteBuf) sum = unchecked(sum + b);
-        foreach (var b in pixelData) sum = unchecked(sum + b);
-
-        var (handle, texture) = context.TextureStore.Get(h.TextureHandle, width, height);
-        if (handle != h.TextureHandle || sum != h.LastCheckSum)
+        Span<byte> paletteSpan = stackalloc byte[256 * 4];
+        var pixelArray = ArrayPool<byte>.Shared.Rent((int)(width * height));
+        try
         {
-            context.TextureStore.Update(texture, width, height, (int)stride, pixelData, MemoryMarshal.Cast<byte, uint>(paletteBuf));
-            h.TextureHandle = handle;
-            h.LastCheckSum = sum;
+            var paletteBuf = context.ReadBytes(h.Palette, 256 * 4, paletteSpan);
+            var pixelData = context.Memory.Read(rawAddress, width * height, pixelArray);
+
+            if (paletteBuf.IsEmpty)
+            {
+                ImGui.Text("!! NO PAL !!");
+                return false;
+            }
+
+            if (pixelData.IsEmpty)
+            {
+                ImGui.Text("!! NO IMG !!");
+                return false;
+            }
+
+            uint sum = 0;
+            foreach (var b in paletteBuf) sum = unchecked(sum + b);
+            foreach (var b in pixelData) sum = unchecked(sum + b);
+
+            var (handle, texture) = context.TextureStore.Get(h.TextureHandle, width, height);
+            if (handle != h.TextureHandle || sum != h.LastCheckSum)
+            {
+                context.TextureStore.Update(
+                    texture,
+                    width,
+                    height,
+                    (int)stride,
+                    pixelData,
+                    MemoryMarshal.Cast<byte, uint>(paletteBuf));
+
+                h.TextureHandle = handle;
+                h.LastCheckSum = sum;
+            }
+
+            var imguiBinding = context.TextureStore.GetImGuiBinding(handle);
+            if (imguiBinding == IntPtr.Zero)
+                ImGui.Text("!! NO IMG !!");
+            else
+                ImGui.Image(imguiBinding, new Vector2(width, height));
+
+            return false;
         }
-
-        var imguiBinding = context.TextureStore.GetImGuiBinding(handle);
-        if (imguiBinding == IntPtr.Zero)
-            ImGui.Text("!! NO IMG !!");
-        else
-            ImGui.Image(imguiBinding, new Vector2(width, height));
-
-        return false;
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(pixelArray);
+        }
     }
 }

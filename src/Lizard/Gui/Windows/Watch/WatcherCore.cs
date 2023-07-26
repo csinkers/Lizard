@@ -65,14 +65,14 @@ public sealed class WatcherCore
 
         rootRenderer.Draw(history, 0, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, _drawContext);
         _drawContext.Refreshed = false;
+        _drawContext.History.CycleHistory();
     }
 
     public void Update()
     {
         if (_drawContext != null)
         {
-            _drawContext.History.CycleHistory();
-            _drawContext.Memory.Refresh();
+            _drawContext.Memory.Dirty();
             _drawContext.Refreshed = true;
         }
 

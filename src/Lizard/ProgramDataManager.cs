@@ -1,19 +1,34 @@
-﻿using GhidraProgramData;
+﻿using System.Globalization;
+using GhidraProgramData;
 using Lizard.Config.Properties;
 
 namespace Lizard;
 
 public class ProgramDataManager : ISymbolStore
 {
-    readonly ProjectManager _projectManager;
     static readonly StringProperty ProgramDataPath = new(nameof(ProgramDataManager), "ProgramDataPath");
-    static readonly IntProperty OffsetProperty = new(nameof(ProgramDataManager), "Offset", 0);
+    static readonly StringListProperty MappingProperty = new(nameof(ProgramDataManager), "MemoryMapping");
+
+    readonly ProjectManager _projectManager;
+    MemoryMapping _mapping = new();
+
     public ProgramData? Data { get; private set; }
+
+    public MemoryMapping Mapping
+    {
+        get => _mapping;
+        set
+        {
+            _mapping = value;
+            MappingChanged?.Invoke();
+        }
+    }
+
     public string? DataPath { get; private set; }
-    public int Offset { get; private set; }
 
     public event Action? DataLoading;
     public event Action<ProgramData?>? DataLoaded;
+    public event Action? MappingChanged;
 
     public ProgramDataManager(ProjectManager projectManager)
     {
@@ -22,27 +37,48 @@ public class ProgramDataManager : ISymbolStore
         projectManager.ProjectSaving += project =>
         {
             project.SetProperty(ProgramDataPath, DataPath);
-            project.SetProperty(OffsetProperty, Offset);
+            project.SetProperty(MappingProperty, SaveMapping(Mapping));
         };
 
         LoadFromProject();
     }
 
-    void LoadFromProject()
+    static MemoryMapping LoadMapping(List<string> list)
     {
-        var project = _projectManager.Project;
-        var path = project.GetProperty(ProgramDataPath);
-        var offset = project.GetProperty(OffsetProperty);
-        Load(path, offset);
+        var mapping = new MemoryMapping();
+        foreach (var region in list)
+        {
+            var parts = region.Split(' ');
+            if (parts.Length != 4)
+                continue;
+
+            var fileStart = ParseHex(parts[0]);
+            var memoryStart = ParseHex(parts[1]);
+            var length = ParseHex(parts[2]);
+            var type = Enum.Parse<MemoryType>(parts[3]);
+            mapping.Add(memoryStart, fileStart, length, type);
+        }
+
+        return mapping;
     }
 
-    public void Load(string? path, int offset)
+    static uint ParseHex(string s) => uint.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+    static List<string> SaveMapping(MemoryMapping mapping) 
+        => mapping.Regions
+            .Select(region => $"{region.FileStart:x} {region.MemoryStart:x} {region.Length:x} {region.Type}")
+            .ToList();
+
+    public Symbol? LookupSymbol(uint memoryAddress) =>
+        Mapping.ToFile(memoryAddress) is var (fileOffset, _) 
+            ? Data?.LookupSymbol(fileOffset) 
+            : null;
+
+    public void Load(string? path)
     {
         DataLoading?.Invoke();
 
         Data = null;
         DataPath = path;
-        Offset = offset;
 
         if (!string.IsNullOrEmpty(path) && File.Exists(path))
             Data = ProgramData.Load(path);
@@ -50,19 +86,12 @@ public class ProgramDataManager : ISymbolStore
         DataLoaded?.Invoke(Data);
     }
 
-    public SymbolInfo? Lookup(uint address)
+    void LoadFromProject()
     {
-        if (Data == null)
-            return null;
-
-        var (symAddress, name, context) = Data.Lookup(address);
-        var symbolType = context switch
-        {
-            GFunction _ => SymbolType.Function,
-            GGlobal _ => SymbolType.Global,
-            _ => SymbolType.Unknown
-        };
-
-        return new(symAddress, name, symbolType, context);
+        var project = _projectManager.Project;
+        var path = project.GetProperty(ProgramDataPath);
+        var list = project.GetProperty(MappingProperty);
+        Load(path);
+        Mapping = LoadMapping(list);
     }
 }

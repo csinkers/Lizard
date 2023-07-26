@@ -1,4 +1,4 @@
-﻿namespace Lizard;
+﻿namespace Lizard.Gui.Windows.Watch;
 
 public interface ITextureStore
 {

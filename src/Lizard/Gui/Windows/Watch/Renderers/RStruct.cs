@@ -1,4 +1,6 @@
 ﻿using GhidraProgramData;
+using GhidraProgramData.Directives;
+using GhidraProgramData.Types;
 using ImGuiNET;
 
 namespace Lizard.Gui.Windows.Watch.Renderers;
