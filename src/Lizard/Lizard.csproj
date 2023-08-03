@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -109,7 +109,7 @@
     <ProjectReference Include="..\..\..\ImGuiColorTextEditNet\src\TextEdit\ImGuiColorTextEditNet.csproj" />
   </ItemGroup>
   <ItemGroup Condition="!Exists('..\..\..\GhidraProgramData\')">
-    <PackageReference Include="GhidraProgramData" Version="0.1.1" />
+    <PackageReference Include="GhidraProgramData" Version="0.1.2" />
   </ItemGroup>
   <ItemGroup Condition="Exists('..\..\..\GhidraProgramData\')">
     <ProjectReference Include="..\..\..\GhidraProgramData\src\GhidraProgramData\GhidraProgramData.csproj" />

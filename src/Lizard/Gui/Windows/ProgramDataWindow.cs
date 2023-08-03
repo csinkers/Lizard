@@ -20,8 +20,9 @@ public class ProgramDataWindow : SingletonWindow
 
     readonly ProgramDataManager _programDataManager;
     readonly ImText _path = new(260, "");
+    readonly ImText _codePath = new(260, "");
     readonly List<TempRegion> _mapping = new();
-    string _lastError;
+    string _lastError = "";
 
     static string FormatHex(uint v) => v.ToString("X8");
 
@@ -29,11 +30,13 @@ public class ProgramDataWindow : SingletonWindow
     {
         _programDataManager = programDataManager ?? throw new ArgumentNullException(nameof(programDataManager));
         _path.Text = _programDataManager.DataPath ?? "";
+        _codePath.Text = _programDataManager.CodePath ?? "";
         LoadFromMapping(_programDataManager.Mapping);
 
         _programDataManager.DataLoaded += _ =>
         {
             _path.Text = _programDataManager.DataPath ?? "";
+            _codePath.Text = _programDataManager.CodePath ?? "";
             LoadFromMapping(_programDataManager.Mapping);
         };
     }
@@ -54,9 +57,9 @@ public class ProgramDataWindow : SingletonWindow
 
     protected override void DrawContents()
     {
-        _path.Draw("Path");
+        _path.Draw("Program XML Data Path");
         ImGui.SameLine();
-        if (ImGui.Button("Browse"))
+        if (ImGui.Button("Browse##1"))
         {
             using var openFile = new OpenFileDialog();
             openFile.Open(x =>
@@ -66,8 +69,23 @@ public class ProgramDataWindow : SingletonWindow
             }, "Ghidra Program Data XML (*.xml)|*.xml");
         }
 
+        _codePath.Draw("Decompiled Code Path");
+        ImGui.SameLine();
+        if (ImGui.Button("Browse##2"))
+        {
+            using var openFile = new OpenFileDialog();
+            openFile.Open(x =>
+            {
+                if (x.Success)
+                    _codePath.Text = x.FileName;
+            }, "Decompiled C code (*.c)|*.c");
+        }
+
         if (ImGui.Button("Load Program Data"))
-            _programDataManager.Load(_path.Text);
+        {
+            try { _programDataManager.Load(_path.Text, _codePath.Text); }
+            catch (Exception ex) { _lastError = ex.Message; }
+        }
 
         ImGui.Text("Memory Mapping");
         int indexToRemove = -1;

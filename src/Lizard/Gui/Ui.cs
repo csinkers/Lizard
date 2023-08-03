@@ -37,7 +37,7 @@ class Ui
 
         _breakpointsWindow = new BreakpointsWindow();
         _callStackWindow   = new CallStackWindow();
-        _codeWindow        = new CodeWindow();
+        _codeWindow        = new CodeWindow(debugger, programDataManager);
         _commandWindow     = new CommandWindow(debugger, logs);
         _connectWindow     = new ConnectWindow(debugger.SessionManager);
         _disassemblyWindow = new DisassemblyWindow(debugger);
