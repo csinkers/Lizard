@@ -9,15 +9,17 @@ class DisassemblyWindow : SingletonWindow
 {
     const int MaxInstructionBytes = 16;
     const int MaxByteStringLength = MaxInstructionBytes * 2 + (MaxInstructionBytes - 1);
+    const int LinesToShow = 48;
 
-    record Line(string Address, string Bytes, string Asm);
+    record Line(Address Address, string Bytes, string Asm)
+    {
+        public string AddrString { get; } = $"{Address.segment:X4}:{Address.offset:X8}";
+    };
 
     readonly Debugger _debugger;
     readonly TextEditor _textViewer;
-    Address _selectedAddress;
-    int _linesShown = 48;
     int _version = -1;
-    bool _showBytes = true;
+    bool _showBytes;
     (Address Start, Line[] Lines)? _lastResult;
 
     public DisassemblyWindow(Debugger debugger) : base("Disassembly")
@@ -41,19 +43,19 @@ class DisassemblyWindow : SingletonWindow
         _debugger.Defer(new Request<Line[]>(version,
             host =>
             {
-                var rawLines = host.Disassemble(address, _linesShown);
+                var rawLines = host.Disassemble(address, LinesToShow);
                 var sb = new StringBuilder(MaxByteStringLength);
                 var formattedLines = new Line[rawLines.Length];
 
                 for (var i = 0; i < rawLines.Length; i++)
                 {
                     var rawLine = rawLines[i];
-                    var addrString = $"{rawLine.address.segment:X4}:{rawLine.address.offset:X8}";
                     sb.Clear();
                     for (int j = 0; j < rawLine.bytes.Length; j++)
                         sb.AppendFormat(j > 0 ? " {0:X2}" : "{0:X2}", rawLine.bytes[j]);
+                    sb.Append(' ');
 
-                    formattedLines[i] = new Line(addrString, sb.ToString(), rawLine.line);
+                    formattedLines[i] = new Line(rawLine.address, sb.ToString(), rawLine.line);
                 }
 
                 return formattedLines;
@@ -61,11 +63,23 @@ class DisassemblyWindow : SingletonWindow
             result =>
             {
                 _lastResult = (address, result);
-                _textViewer.TextLines = result.Select(x => _showBytes ? $"{x.Address} {x.Bytes,-MaxByteStringLength} {x.Asm}" : $"{x.Address} {x.Asm}").ToList();
+                int maxLength = result.Max(x => x.Bytes.Length);
+
+                _textViewer.TextLines = result.Select(x => 
+                    _showBytes 
+                        ? $"{x.AddrString} {x.Bytes.PadRight(maxLength)} {x.Asm}" 
+                        : $"{x.AddrString} {x.Asm}")
+                    .ToList();
+
+                for (int i = 0; i < result.Length; i++)
+                {
+                    if (result[i].Address != address) continue;
+                    _textViewer.Selection.HighlightedLine = i;
+                    break;
+                }
             }));
 
         _version = version;
-        _selectedAddress = address;
     }
 
     protected override void DrawContents()

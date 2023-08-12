@@ -16,6 +16,7 @@ public class ProjectManager : IProjectManager
     {
         ProjectLoading?.Invoke();
         Project = ProjectConfig.Load(path);
+        Project.Path = path;
         ProjectLoaded?.Invoke(Project);
     }
 

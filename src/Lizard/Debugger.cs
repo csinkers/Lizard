@@ -1,4 +1,5 @@
-﻿using Lizard.generated;
+﻿using GhidraProgramData;
+using Lizard.generated;
 
 namespace Lizard;
 
@@ -6,6 +7,7 @@ public delegate void StoppedDelegate(Registers state);
 
 public class Debugger : IMemoryReader
 {
+    readonly ProgramDataManager _programDataManager;
     readonly RequestQueue _queue = new();
     readonly CancellationTokenSource _tokenSource = new();
     readonly Thread _queueThread;
@@ -37,8 +39,9 @@ public class Debugger : IMemoryReader
     DebugHostPrx? Host => SessionManager.Host;
     public bool IsConnected => Host != null;
 
-    public Debugger(IceSessionManager iceManager, ITracer log, IMemoryCache memory)
+    public Debugger(IceSessionManager iceManager, ITracer log, IMemoryCache memory, ProgramDataManager programDataManager)
     {
+        _programDataManager = programDataManager ?? throw new ArgumentNullException(nameof(programDataManager));
         SessionManager = iceManager ?? throw new ArgumentNullException(nameof(iceManager));
         Log = log ?? throw new ArgumentNullException(nameof(log));
         Memory = memory ?? throw new ArgumentNullException(nameof(memory));
@@ -72,11 +75,10 @@ public class Debugger : IMemoryReader
         }
     }
 
-    public bool TryFindSymbol(string name, out uint offset)
-    {
-        offset = 0;
-        return false;
-    }
+    public Symbol? TryFindSymbol(uint offset) => _programDataManager.LookupSymbol(offset);
+    public Symbol? TryFindSymbol(string name) => _programDataManager.LookupSymbol(name);
+    public (uint MemoryOffset, MemoryRegion Region)? ToMemory(uint fileOffset) => _programDataManager.Mapping.ToMemory(fileOffset);
+    public (uint FileOffset, MemoryRegion Region)? ToFile(uint memoryOffset) => _programDataManager.Mapping.ToFile(memoryOffset);
 
     public void Defer(IRequest request) => _queue.Add(request);
     public void FlushDeferredResults() => _queue.ApplyResults();

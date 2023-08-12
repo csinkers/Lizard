@@ -32,11 +32,11 @@ class ImText
         }
     }
 
-    public bool Draw(string label) => ImGui.InputText("", _buffer, (uint)_buffer.Length);
+    public bool Draw(string label) => ImGui.InputText(label, _buffer, (uint)_buffer.Length);
     public bool Draw(string label, ImGuiInputTextFlags inputTextFlags) 
-        => ImGui.InputText("", _buffer, (uint)_buffer.Length, inputTextFlags);
+        => ImGui.InputText(label, _buffer, (uint)_buffer.Length, inputTextFlags);
     public bool Draw(string label, ImGuiInputTextFlags inputTextFlags, ImGuiInputTextCallback callback)
-        => ImGui.InputText("", _buffer, (uint)_buffer.Length, inputTextFlags, callback);
+        => ImGui.InputText(label, _buffer, (uint)_buffer.Length, inputTextFlags, callback);
     public bool Draw(string label, ImGuiInputTextFlags inputTextFlags, ImGuiInputTextCallback callback, IntPtr data)
-        => ImGui.InputText("", _buffer, (uint)_buffer.Length, inputTextFlags, callback, data);
+        => ImGui.InputText(label, _buffer, (uint)_buffer.Length, inputTextFlags, callback, data);
 }

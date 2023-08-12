@@ -41,14 +41,11 @@ public class CommandWindow : SingletonWindow
             };
 
             _textEditor.AppendLine(x.Line, color);
-            _textEditor.ScrollToEnd();
+            _textEditor.Movement.MoveToEndOfFile();
         };
     }
 
-    public void Focus()
-    {
-        _pendingFocus = true;
-    }
+    public void Focus() => _pendingFocus = true;
 
     protected override unsafe void DrawContents()
     {

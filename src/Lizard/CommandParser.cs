@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using Lizard.generated;
 
@@ -12,36 +13,118 @@ static class CommandParser
             Log.Debug($"{line.address.segment:X}:{line.address.offset:X8} {line.line}");
     }
 
-    static void PrintBytes(Address address, byte[] bytes)
+    const string HexChars = "0123456789ABCDEF";
+
+    delegate void LinePrinter(StringBuilder sb, ReadOnlySpan<byte> bytes, int bytesPerLine);
+    static void PrintLineBytes(StringBuilder sb, ReadOnlySpan<byte> bytes, int bytesPerLine)
     {
-        const string hexChars = "0123456789ABCDEF";
-        var result = new StringBuilder(128);
-        var chars = new StringBuilder(16);
-        for (var i = 0; i < bytes.Length; i++)
+        for (int j = 0; j < bytesPerLine; j++)
         {
-            if (i % 16 == 0)
+            if (j < bytes.Length)
             {
-                result.Append(chars);
-                Log.Debug(result.ToString());
-                result.Clear();
-                chars.Clear();
-                result.Append($"{address.segment:X}:{address.offset + i:X8}: ");
+                var b = bytes[j];
+                sb.Append(HexChars[b >> 4]);
+                sb.Append(HexChars[b & 0xf]);
+                sb.Append(j % 2 == 0 ? '-' : ' ');
+            }
+            else
+                sb.Append("   ");
+        }
+    }
+
+    static void PrintLineDwords(StringBuilder sb, ReadOnlySpan<byte> bytes, int bytesPerLine)
+    {
+        var uints = MemoryMarshal.Cast<byte, uint>(bytes);
+        for (int j = 0; j < bytesPerLine / 4; j++)
+        {
+            if (j < uints.Length)
+            {
+                var u = uints[j];
+                sb.Append(u.ToString("X8"));
+                sb.Append(j % 2 == 0 ? '-' : ' ');
+            }
+            else
+                sb.Append("         ");
+        }
+    }
+
+    static void PrintMem(Address address, byte[] bytes, LinePrinter printer)
+    {
+        var sb = new StringBuilder(128);
+
+        int bytesPerLine = 16;
+        for (var i = 0; i < bytes.Length; i += bytesPerLine)
+        {
+            sb.Clear();
+            sb.Append($"{address.segment:X}:{address.offset + i:X8}: ");
+
+            var lineBytes = bytes.AsSpan(i);
+            printer(sb, lineBytes, bytesPerLine);
+
+            for (int j = 0; j < lineBytes.Length && j < bytesPerLine; j++)
+            {
+                char c = (char)lineBytes[j];
+                if (c < 0x20 || c > 0x7f) c = '.';
+                sb.Append(c);
             }
 
-            var b = bytes[i];
-            result.Append(hexChars[b >> 4]);
-            result.Append(hexChars[b & 0xf]);
-            result.Append(i % 2 == 0 ? '-' : ' ');
-            char c = (char)b;
-            if (c < 0x20 || c > 0x7f) c = '.';
-            chars.Append(c);
+            Log.Debug(sb.ToString());
         }
+    }
 
-        if (chars.Length > 0)
-            result.Append(chars);
+    static void PrintMemBytes(Address address, byte[] bytes, Debugger _) => PrintMem(address, bytes, PrintLineBytes);
+    static void PrintMemDwords(Address address, byte[] bytes, Debugger _) => PrintMem(address, bytes, PrintLineDwords);
 
-        if (result.Length > 0)
-            Log.Debug(result.ToString());
+    static string DescribeAddress(uint address, Debugger d)
+    {
+        var symbol = d.TryFindSymbol(address);
+        if (symbol == null)
+            return $"{address:X8}";
+
+        var mem = d.ToMemory(symbol.Address)!.Value;
+        var offset = address - symbol.Address;
+        if (address < mem.MemoryOffset)
+            return $"{address:X8}";
+
+        if (address == mem.MemoryOffset)
+            return $"{address:X8} {symbol.Name}";
+
+        return $"{address:X8} {symbol.Name}+{address - mem.MemoryOffset:x}";
+    }
+
+    static void PrintMemSymbols(Address address, byte[] bytes, Debugger d)
+    {
+        var uints = MemoryMarshal.Cast<byte, uint>(bytes);
+        for (int i = 0; i < uints.Length; i++)
+            Log.Debug($"{address.segment:X}:{address.offset + i:X8}: {DescribeAddress(uints[i], d)}");
+    }
+
+    static void PrintMemPointers(Address address, byte[] bytes, Debugger d)
+    {
+        var uints = MemoryMarshal.Cast<byte, uint>(bytes);
+        Span<byte> temp = stackalloc byte[4];
+        for (int i = 0; i < uints.Length; i++)
+        {
+            var byteVal = d.Memory.Read(uints[i], 4, temp);
+            var value = MemoryMarshal.Cast<byte, uint>(byteVal)[0];
+
+            Log.Debug($"{address.segment:X}:{address.offset + i:X8}: {uints[i]:X8} {DescribeAddress(value, d)}");
+        }
+    }
+
+    static DebugCommand BasePrintMem(Action<Address, byte[], Debugger> printFunc)
+    {
+        return (getArg, d) =>
+        {
+            var address = ParseUtil.ParseAddress(getArg(), d, false);
+            var lengthArg = getArg();
+            var length = lengthArg == ""
+                ? 64
+                : ParseUtil.ParseVal(lengthArg);
+
+            if (!d.IsConnected) return;
+            printFunc(address, d.GetMemory(address, length), d);
+        };
     }
 
     static void PrintBps(Breakpoint[] breakpoints)
@@ -107,7 +190,7 @@ static class CommandParser
 
     static readonly Dictionary<string, Command> Commands = new Command[]
         {
-            new(new[] {"help", "?"}, "Show help", (_,  d) =>
+            new(new[] { "help", "?" }, "Show help", (_,  d) =>
             {
                 var commands = Commands!.Values.Distinct().OrderBy(x => x.Names[0]).ToList();
                 int maxLength = 0;
@@ -126,7 +209,7 @@ static class CommandParser
                 }
             }),
             new(new []  { "clear", "cls", ".cls" }, "Clear the log history", (_,  d) => d.Log.Clear()),
-            new(new []  {"exit", "quit" }, "Exits the debugger", (_, d) => d.Exit()),
+            new(new []  { "exit", "quit" }, "Exits the debugger", (_, d) => d.Exit()),
 
             new(new[] { "Continue", "g" }, "Resume execution", (_,  d) => d.Continue()),
 
@@ -189,17 +272,10 @@ static class CommandParser
                 PrintAsm(d.Disassemble(address, length));
             }),
 
-            new(new[] { "GetMemory", "d", "dc" }, "Gets the contents of memory at the given address", (getArg,  d) =>
-            {
-                var address = ParseUtil.ParseAddress(getArg(), d, false);
-                var lengthArg = getArg();
-                var length = lengthArg == ""
-                    ? 64
-                    : ParseUtil.ParseVal(lengthArg);
-
-                if (!d.IsConnected) return;
-                PrintBytes(address, d.GetMemory(address, length));
-            }),
+            new(new[] { "GetMemory", "d", "db" }, "Gets the contents of memory at the given address", BasePrintMem(PrintMemBytes)),
+            new(new[] { "dc" }, "Gets the contents of memory at the given address, formatting as DWORDs", BasePrintMem(PrintMemDwords)),
+            new(new[] { "dps" }, "Gets the contents of memory at the given address, formatting as symbols", BasePrintMem(PrintMemSymbols)),
+            new(new[] { "dpp" }, "Gets the contents of memory at the given address, formatting as pointers", BasePrintMem(PrintMemPointers)),
 
             new(new[] { "SetMemory", "e" }, "Changes the contents of memory at the given address", (getArg,  d) =>
             {
@@ -245,7 +321,7 @@ static class CommandParser
                 var results = d.SearchMemory(address, length, pattern.ToArray(), 1);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
-                    PrintBytes(result, d.GetMemory(result, displayLength));
+                    PrintMemBytes(result, d.GetMemory(result, displayLength), d);
             }),
 
             new(new[] { "SearchDwords", "s-d" }, "Searches for occurrences of one or more little-endian dwords in a memory range (e.g. \"s 0 -1 badf00d 12341234\")", (getArg,  d) =>
@@ -273,7 +349,7 @@ static class CommandParser
                 var results = d.SearchMemory(address, length, pattern.ToArray(), 4);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
-                    PrintBytes(result, d.GetMemory(result, displayLength));
+                    PrintMemBytes(result, d.GetMemory(result, displayLength), d);
             }),
 
             new(new[] { "SearchAscii", "s-a" }, "Searches for occurrences of an ASCII pattern in a memory range (e.g. \"s-a 0 -1 test\"", (getArg,  d) =>
@@ -291,7 +367,7 @@ static class CommandParser
                 var results = d.SearchMemory(address, length, bytes, 1);
                 int displayLength = 16 * ((pattern.Length + 15) / 16);
                 foreach (var result in results)
-                    PrintBytes(result, d.GetMemory(result, displayLength));
+                    PrintMemBytes(result, d.GetMemory(result, displayLength), d);
             }),
 
             new(new[] { ".dumpmem" }, "<path> <addr> <len> : Dumps a section of memory to a local file, e.g. .dumpmem c:\\data.bin cs:0 0x800000", (getArg, d) =>
@@ -308,9 +384,7 @@ static class CommandParser
 
                 if (!d.IsConnected) return;
                 var bytes = d.GetMemory(address, length);
-
-                if (bytes != null)
-                    File.WriteAllBytes(filename, bytes);
+                File.WriteAllBytes(filename, bytes);
             }),
 
             new(new[] { "ListBreakpoints", "bps", "bl" }, "Retrieves the current breakpoint list", (_,  d) =>
@@ -347,13 +421,13 @@ static class CommandParser
                 d.SetReg(reg, value);
             }),
 
-            new(new[] { "GetGDT", "gdt"}, "Retrieves the Global Descriptor Table", (getArg, d) =>
+            new(new[] { "GetGDT", "gdt" }, "Retrieves the Global Descriptor Table", (getArg, d) =>
             {
                 if (!d.IsConnected) return;
                 PrintDescriptors(d.GetGdt(), false);
             }),
 
-            new(new[] { "GetLDT", "ldt"}, "Retrieves the Local Descriptor Table", (getArg, d) =>
+            new(new[] { "GetLDT", "ldt" }, "Retrieves the Local Descriptor Table", (getArg, d) =>
             {
                 if (!d.IsConnected) return;
                 PrintDescriptors(d.GetLdt(), true);

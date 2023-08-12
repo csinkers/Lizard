@@ -15,16 +15,21 @@ internal static class Program
         try
         {
             var cmdLine = CommandLineArgs.Parse(args);
-            var project = cmdLine.ProjectPath == null 
-                ? new ProjectConfig() 
-                : ProjectConfig.Load(cmdLine.ProjectPath);
+            ProjectConfig project;
+            if (cmdLine.ProjectPath == null)
+                project = new ProjectConfig();
+            else
+            {
+                project = ProjectConfig.Load(cmdLine.ProjectPath);
+                project.Path = cmdLine.ProjectPath;
+            }
 
             var projectManager = new ProjectManager(project);
             var programDataManager = new ProgramDataManager(projectManager);
             var iceManager = new IceSessionManager(projectManager, cmdLine.AutoConnect);
 
             var memoryCache = new MemoryCache();
-            using var debugger = new Debugger(iceManager, LogHistory.Instance, memoryCache);
+            using var debugger = new Debugger(iceManager, LogHistory.Instance, memoryCache, programDataManager);
 
             using var uiManager = new UiManager(projectManager);
             var watcher = new WatcherCore(programDataManager, memoryCache, uiManager.TextureStore);

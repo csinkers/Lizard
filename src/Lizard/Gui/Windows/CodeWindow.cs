@@ -82,8 +82,10 @@ public class CodeWindow : SingletonWindow
         }
 
         // Still in the same function, just need to highlight the current line.
-        var coords = new Coordinates(lineNumber, 0);
-        _textViewer.Selection.Select(coords, coords, SelectionMode.Line);
+        _textViewer.Selection.HighlightedLine = lineNumber;
+        _textViewer.ScrollToLine(lineNumber);
+        // var coords = new Coordinates(lineNumber, 0);
+        // _textViewer.Selection.Select(coords, coords, SelectionMode.Line);
     }
 
     protected override void DrawContents()

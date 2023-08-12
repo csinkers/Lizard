@@ -77,6 +77,8 @@ public class ProgramDataManager : ISymbolStore
             ? Data?.LookupSymbol(fileOffset) 
             : null;
 
+    public Symbol? LookupSymbol(string name) => Data?.LookupSymbol(name); 
+
     public void Load(string? path, string? codePath)
     {
         DataLoading?.Invoke();

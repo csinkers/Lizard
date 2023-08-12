@@ -56,6 +56,7 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         var io = ImGui.GetIO();
         unsafe { io.NativePtr->IniFilename = null; } // Turn off ini file
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
         io.Fonts.AddFontDefault();
         io.Fonts.Flags |= ImFontAtlasFlags.NoBakedLines;
         io.KeyRepeatDelay = 0.7f;

@@ -66,25 +66,29 @@ internal static class ParseUtil
     static uint ParseOffset(string s, Debugger d, out short segmentHint)
     {
         segmentHint = 0;
-        if (!uint.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var offset))
-        {
-            var upper = s.ToUpperInvariant();
-            switch (upper)
-            {
-                case "EAX": segmentHint = d.Registers.ds; return (uint)d.Registers.eax;
-                case "EBX": segmentHint = d.Registers.ds; return (uint)d.Registers.ebx;
-                case "ECX": segmentHint = d.Registers.ds; return (uint)d.Registers.ecx;
-                case "EDX": segmentHint = d.Registers.ds; return (uint)d.Registers.edx;
-                case "ESI": segmentHint = d.Registers.ds; return (uint)d.Registers.esi;
-                case "EDI": segmentHint = d.Registers.ds; return (uint)d.Registers.edi;
-                case "EBP": segmentHint = d.Registers.ss; return (uint)d.Registers.ebp;
-                case "ESP": segmentHint = d.Registers.ss; return (uint)d.Registers.esp;
-                case "EIP": segmentHint = d.Registers.cs; return (uint)d.Registers.eip;
-            }
+        if (uint.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var offset))
+            return offset;
 
-            if (!d.TryFindSymbol(s, out offset))
-                throw new FormatException($"Could not resolve an address for \"{s}\"");
+        var upper = s.ToUpperInvariant();
+        switch (upper)
+        {
+            case "EAX": segmentHint = d.Registers.ds; return (uint)d.Registers.eax;
+            case "EBX": segmentHint = d.Registers.ds; return (uint)d.Registers.ebx;
+            case "ECX": segmentHint = d.Registers.ds; return (uint)d.Registers.ecx;
+            case "EDX": segmentHint = d.Registers.ds; return (uint)d.Registers.edx;
+            case "ESI": segmentHint = d.Registers.ds; return (uint)d.Registers.esi;
+            case "EDI": segmentHint = d.Registers.ds; return (uint)d.Registers.edi;
+            case "EBP": segmentHint = d.Registers.ss; return (uint)d.Registers.ebp;
+            case "ESP": segmentHint = d.Registers.ss; return (uint)d.Registers.esp;
+            case "EIP": segmentHint = d.Registers.cs; return (uint)d.Registers.eip;
         }
+
+        var sym = d.TryFindSymbol(s);
+        if (sym == null)
+            throw new FormatException($"Could not resolve an address for \"{s}\"");
+
+        offset = d.ToMemory(sym.Address)?.MemoryOffset 
+                 ?? throw new FormatException($"Symbol address {sym.Address:X8} could not be mapped to a memory address");
 
         return offset;
     }
