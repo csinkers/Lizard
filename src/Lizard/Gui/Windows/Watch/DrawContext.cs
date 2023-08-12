@@ -1,19 +1,17 @@
-﻿using GhidraProgramData;
-
-namespace Lizard.Gui.Windows.Watch;
+﻿namespace Lizard.Gui.Windows.Watch;
 
 public class DrawContext
 {
-    public DrawContext(ProgramData data, IMemoryCache memory, ITextureStore textureStore)
+    public DrawContext(ProgramDataManager programData, IMemoryCache memory, ITextureStore textureStore)
     {
         Renderers = new RendererCache();
-        History = new HistoryCache(Renderers);
+        History = new HistoryCache(Renderers, programData.Mapping);
         Memory = memory ?? throw new ArgumentNullException(nameof(memory));
-        Data = data ?? throw new ArgumentNullException(nameof(data));
+        ProgramData = programData ?? throw new ArgumentNullException(nameof(programData));
         TextureStore = textureStore ?? throw new ArgumentNullException(nameof(textureStore));
     }
 
-    public ProgramData Data { get; }
+    public ProgramDataManager ProgramData { get; }
     public RendererCache Renderers { get; }
     public IMemoryCache Memory { get; }
     public HistoryCache History { get; }
@@ -51,7 +49,7 @@ public class DrawContext
 
     public string DescribeAddress(uint address)
     {
-        var symbol = Data.LookupSymbol(address);
+        var symbol = ProgramData.LookupSymbol(address);
         if (symbol == null)
             return "(null)";
 

@@ -73,6 +73,9 @@ public class MemoryCache : IMemoryCache
 
     static ReadOnlySpan<byte> ReadInner(uint offset, uint size, Span<byte> backingArray, Func<uint, byte[]?> tryGetPage)
     {
+        if (size == 0)
+            return ReadOnlySpan<byte>.Empty;
+
         uint firstPage = PageNum(offset);
         uint lastPage = PageNumRoundUp(offset + size) - 1;
         uint endOffset = offset + size;
@@ -91,7 +94,7 @@ public class MemoryCache : IMemoryCache
         int bytesCopied = 0;
         for (uint i = firstPage; i <= lastPage; i++)
         {
-            var buffer = tryGetPage(firstPage);
+            var buffer = tryGetPage(i);
             if (buffer == null)
             {
                 copying = false;
@@ -101,14 +104,19 @@ public class MemoryCache : IMemoryCache
             if (!copying) // Still want to loop through the rest so any missing pages get requested
                 continue;
 
-            var pageOffset = PageAddr(firstPage);
+            var pageOffset = PageAddr(i);
             var nextPageOffset = pageOffset + PageSize;
 
-            int len = endOffset >= nextPageOffset // If it ends after this page then just copy the whole page
-                ? PageSize
+            // If it ends after this page then copy to the end of the page
+            int startOffset = offset >= pageOffset && offset < nextPageOffset 
+                ? (int)(offset - pageOffset) 
+                : 0;
+
+            int len = endOffset >= nextPageOffset
+                ? PageSize - startOffset
                 : (int)(endOffset - pageOffset);
 
-            var fromSpan = buffer.AsSpan(0, len);
+            var fromSpan = buffer.AsSpan(startOffset, len);
             fromSpan.CopyTo(backingArray[bytesCopied..]);
             bytesCopied += fromSpan.Length;
         }

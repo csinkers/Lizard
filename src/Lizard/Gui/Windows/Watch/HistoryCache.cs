@@ -7,9 +7,13 @@ public class HistoryCache : IHistoryCreationContext
     Dictionary<string, History> _history = new();
     DateTime _lastCycleTime;
     readonly RendererCache _renderers;
+    readonly MemoryMapping _mapping;
 
-    public HistoryCache(RendererCache renderers)
-        => _renderers = renderers ?? throw new ArgumentNullException(nameof(renderers));
+    public HistoryCache(RendererCache renderers, MemoryMapping mapping)
+    {
+        _renderers = renderers ?? throw new ArgumentNullException(nameof(renderers));
+        _mapping = mapping ?? throw new ArgumentNullException(nameof(mapping));
+    }
 
     public History? TryGetHistory(string path)
     {
@@ -21,6 +25,18 @@ public class HistoryCache : IHistoryCreationContext
 
         _history[path] = history; // Wasn't used in the current cache, so put it in
         return history;
+    }
+
+    public uint ToMemoryAddress(uint fileAddress)
+    {
+        var result = _mapping.ToMemory(fileAddress);
+        return result?.MemoryOffset ?? 0;
+    }
+
+    public uint ToFileAddress(uint memoryAddress)
+    {
+        var result = _mapping.ToFile(memoryAddress);
+        return result?.FileOffset ?? 0;
     }
 
     string? IHistoryCreationContext.ResolvePath(string path, string context)

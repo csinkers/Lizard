@@ -82,6 +82,7 @@ class Ui
             if (!_uiManager.RenderFrame())
                 _done = true;
 
+            _debugger.Refresh();
             _debugger.FlushDeferredResults();
         }
     }

@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using GhidraProgramData.Types;
 using Lizard.generated;
 
 namespace Lizard;
@@ -56,7 +57,7 @@ static class CommandParser
         for (var i = 0; i < bytes.Length; i += bytesPerLine)
         {
             sb.Clear();
-            sb.Append($"{address.segment:X}:{address.offset + i:X8}: ");
+            sb.Append($"{address.segment:X}:{address.offset + i:X8} ");
 
             var lineBytes = bytes.AsSpan(i);
             printer(sb, lineBytes, bytesPerLine);
@@ -82,21 +83,27 @@ static class CommandParser
             return $"{address:X8}";
 
         var mem = d.ToMemory(symbol.Address)!.Value;
-        var offset = address - symbol.Address;
         if (address < mem.MemoryOffset)
             return $"{address:X8}";
 
-        if (address == mem.MemoryOffset)
-            return $"{address:X8} {symbol.Name}";
+        var symType = symbol.Context switch
+        {
+            GFunction _ => " [FUNC]",
+            GGlobal _ => " [Global]",
+            _ => ""
+        };
 
-        return $"{address:X8} {symbol.Name}+{address - mem.MemoryOffset:x}";
+        if (address == mem.MemoryOffset)
+            return $"{address:X8} {symbol.Name}{symType}";
+
+        return $"{address:X8} {symbol.Name}+{address - mem.MemoryOffset:x}{symType}";
     }
 
     static void PrintMemSymbols(Address address, byte[] bytes, Debugger d)
     {
         var uints = MemoryMarshal.Cast<byte, uint>(bytes);
         for (int i = 0; i < uints.Length; i++)
-            Log.Debug($"{address.segment:X}:{address.offset + i:X8}: {DescribeAddress(uints[i], d)}");
+            Log.Debug($"{address.segment:X}:{address.offset + i:X8} {DescribeAddress(uints[i], d)}");
     }
 
     static void PrintMemPointers(Address address, byte[] bytes, Debugger d)
@@ -108,7 +115,7 @@ static class CommandParser
             var byteVal = d.Memory.Read(uints[i], 4, temp);
             var value = MemoryMarshal.Cast<byte, uint>(byteVal)[0];
 
-            Log.Debug($"{address.segment:X}:{address.offset + i:X8}: {uints[i]:X8} {DescribeAddress(value, d)}");
+            Log.Debug($"{address.segment:X}:{address.offset + i:X8} {uints[i]:X8} {DescribeAddress(value, d)}");
         }
     }
 

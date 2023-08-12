@@ -11,6 +11,8 @@ public class Debugger : IMemoryReader
     readonly RequestQueue _queue = new();
     readonly CancellationTokenSource _tokenSource = new();
     readonly Thread _queueThread;
+    readonly TimeSpan _refreshInterval = TimeSpan.FromMilliseconds(300);
+    DateTime _lastVersionBump = DateTime.MinValue;
     Registers _registers;
     int _version;
 
@@ -82,6 +84,19 @@ public class Debugger : IMemoryReader
 
     public void Defer(IRequest request) => _queue.Add(request);
     public void FlushDeferredResults() => _queue.ApplyResults();
+
+    public void Refresh()
+    {
+        if (IsPaused)
+            return;
+
+        var now = DateTime.UtcNow;
+        if (now > _lastVersionBump + _refreshInterval)
+        {
+            Version++;
+            _lastVersionBump = now;
+        }
+    }
 
     public Registers Update(Registers state)
     {

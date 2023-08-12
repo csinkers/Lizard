@@ -115,6 +115,8 @@ class RegistersWindow : SingletonWindow
 
         GetPaddedRect(out rectMinPos, out rectMaxPos);
         ImGui.GetWindowDrawList().AddRect(rectMinPos, rectMaxPos, WhiteUInt, 5.0f);
+
+        // DrawReg8("Version", _debugger.Version, _debugger.Version);
     }
 
     static void DrawReg4(string name, int value, int oldValue)

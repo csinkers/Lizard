@@ -2,6 +2,8 @@
 
 public interface IHistoryCreationContext
 {
-    string? ResolvePath(string path, string context);
     RendererCache Renderers { get; }
+    string? ResolvePath(string path, string context);
+    uint ToMemoryAddress(uint fileAddress);
+    uint ToFileAddress(uint memoryAddress);
 }

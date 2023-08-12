@@ -50,17 +50,18 @@ public sealed class WatcherCore
         {
             _drawContext = _programDataManager.Data == null 
                 ? null 
-                : new DrawContext(_programDataManager.Data, _memory, _textures);
+                : new DrawContext(_programDataManager, _memory, _textures);
+
             _programDataDirty = false;
         }
 
-        if (_drawContext == null)
+        if (_drawContext?.ProgramData.Data == null)
             return;
 
         _drawContext.Now = DateTime.UtcNow.Ticks;
         _drawContext.Filter = Filter;
 
-        var rootRenderer = _drawContext.Renderers.Get(_drawContext.Data.Root);
+        var rootRenderer = _drawContext.Renderers.Get(_drawContext.ProgramData.Data.Root);
         var history = _drawContext.History.GetOrCreateHistory(Constants.RootNamespaceName, rootRenderer);
 
         rootRenderer.Draw(history, 0, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, _drawContext);

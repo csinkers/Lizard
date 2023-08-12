@@ -26,6 +26,9 @@ public class CodeWindow : SingletonWindow
 
     void Refresh()
     {
+        if (!_debugger.IsPaused)
+            return;
+
         var version = _debugger.Version;
         if (version <= _version)
             return;
