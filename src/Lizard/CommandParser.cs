@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using GhidraProgramData.Types;
-using Lizard.generated;
+using LizardProtocol;
 
 namespace Lizard;
 
@@ -137,7 +137,7 @@ static class CommandParser
     static void PrintBps(Breakpoint[] breakpoints)
     {
         foreach (var bp in breakpoints)
-            Log.Debug($"{bp.address.segment:X}:{bp.address.offset:X8} {bp.type} {bp.ah:X2} {bp.al:X2}");
+            Log.Debug($"{bp.id} {bp.address.segment:X}:{bp.address.offset:X8} {bp.type} {bp.ah:X2} {bp.al:X2}{(bp.enabled ? "" : " [disabled]")}");
     }
 
     static void PrintDescriptors(Descriptor[] descriptors, bool ldt)
@@ -258,11 +258,24 @@ static class CommandParser
                 d.RunToAddress(address);
             }),
 
-            new(new[] { "GetState", "r" }, "Get the current CPU state", (_,  d) =>
+            new(new[] { "GetState", "r" }, "Get the current CPU state or update the contents of a CPU register", (getArg,  d) =>
             {
                 if (!d.IsConnected) return;
-                PrintRegisters(d.GetState(), d);
+
+                var arg1 = getArg();
+                var arg2 = getArg();
+
+                if (string.IsNullOrEmpty(arg1) || string.IsNullOrEmpty(arg2))
+                {
+                    PrintRegisters(d.GetState(), d);
+                    return;
+                }
+
+                Register reg = ParseUtil.ParseReg(arg1);
+                int value = ParseUtil.ParseVal(arg2);
+                d.SetReg(reg, value);
             }),
+
             new(new[] { "Disassemble", "u" }, "Disassemble instructions at the given address", (getArg,  d) =>
             {
                 var addressArg = getArg();
@@ -411,23 +424,35 @@ static class CommandParser
                 s = getArg();
                 byte al = s == "" ? (byte)0 : (byte)ParseUtil.ParseVal(s);
 
-                var bp = new Breakpoint(address, type, ah, al);
+                var bp = new Breakpoint(-1, address, type, true, ah, al);
                 d.SetBreakpoint(bp);
             }),
 
-            new(new[] { "DelBreakpoint", "bd" }, "Removes the breakpoint at the given address", (getArg,  d) =>
+            new(new[] { "EnableBreakpoint", "be" }, "Enables the breakpoint with the given id", (getArg,  d) =>
             {
-                var addr = ParseUtil.ParseAddress(getArg(), d, true);
-                d.DelBreakpoint(addr);
+                var id = ParseUtil.ParseVal(getArg());
+                d.EnableBreakpoint(id, true);
             }),
 
-            new(new[] { "SetReg", "reg" }, "Updates the contents of a CPU register", (getArg,  d) =>
+            new(new[] { "DisableBreakpoint", "bd" }, "Disables the breakpoint with the given id", (getArg,  d) =>
             {
-                Register reg = ParseUtil.ParseReg(getArg());
-                int value = ParseUtil.ParseVal(getArg());
-                d.SetReg(reg, value);
+                var id = ParseUtil.ParseVal(getArg());
+                d.EnableBreakpoint(id, false);
             }),
 
+            new(new[] { "DelBreakpoint", "bc" }, "Removes the breakpoint with the given id. * will remove all breakpoints.", (getArg,  d) =>
+            {
+                var idString = getArg();
+                if (idString == "*")
+                {
+                    var all = d.ListBreakpoints();
+                    foreach(var bp in all)
+                        d.DelBreakpoint(bp.id);
+                }
+
+                var id = ParseUtil.ParseVal(idString);
+                d.DelBreakpoint(id);
+            }),
             new(new[] { "GetGDT", "gdt" }, "Retrieves the Global Descriptor Table", (getArg, d) =>
             {
                 if (!d.IsConnected) return;

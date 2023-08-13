@@ -1,4 +1,4 @@
-﻿using Lizard.generated;
+﻿using LizardProtocol;
 using Lizard.Gui.Windows;
 using Action = System.Action;
 

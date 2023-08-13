@@ -1,5 +1,5 @@
 ﻿using GhidraProgramData;
-using Lizard.generated;
+using LizardProtocol;
 
 namespace Lizard;
 
@@ -129,7 +129,7 @@ public class Debugger : IMemoryReader
 
     public Registers Break() => Host == null ? _registers : Update(Host.Break());
     public Registers StepIn() => Host == null ? _registers : Update(Host.StepIn());
-    public Registers StepOver() => _registers; // TODO
+    public Registers StepOver() => Host == null ? _registers : Update(Host.StepOver());
     public Registers StepOut() => _registers; // TODO
     public Registers StepMultiple(int i) => Host == null ? _registers : Update(Host.StepMultiple(i));
     public void RunToAddress(Address address) => Host?.RunToAddress(address);
@@ -141,9 +141,10 @@ public class Debugger : IMemoryReader
     public IEnumerable<Address> SearchMemory(Address address, int length, byte[] toArray, int advance)
         => Host?.SearchMemory(address, length, toArray, advance) ?? Enumerable.Empty<Address>();
     public Breakpoint[] ListBreakpoints() => Host?.ListBreakpoints() ?? Array.Empty<Breakpoint>();
-    public void SetBreakpoint(Breakpoint bp) => Host?.SetBreakpoint(bp);
-    public void DelBreakpoint(Address addr) => Host?.DelBreakpoint(addr);
-    public void SetReg(Register reg, int value) => Host?.SetReg(reg, value);
+    public void SetBreakpoint(Breakpoint bp) { Host?.SetBreakpoint(bp); Version++; }
+    public void EnableBreakpoint(int id, bool enable) { Host?.EnableBreakpoint(id, enable); Version++; }
+    public void DelBreakpoint(int id) { Host?.DelBreakpoint(id); Version++; }
+    public void SetReg(Register reg, int value) { Host?.SetRegister(reg, value); Version++; } 
     public Descriptor[] GetGdt() => Host?.GetGdt() ?? Array.Empty<Descriptor>();
     public Descriptor[] GetLdt() => Host?.GetLdt() ?? Array.Empty<Descriptor>();
     public void Dispose()

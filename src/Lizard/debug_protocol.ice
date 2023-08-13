@@ -1,8 +1,9 @@
-module Lizard
+module LizardProtocol
 {
 	struct Address { short segment; int offset; }
 	sequence<byte> ByteSequence;
 
+	// Used for things like SetRegister
 	enum Register { Flags,
 		EAX, EBX, ECX, EDX,
 		ESI, EDI,
@@ -25,15 +26,23 @@ module Lizard
 	enum BreakpointType 
 	{
 		Unknown,
-		Normal,
-		Read,
-		Write,
-		Interrupt,
-		InterruptWithAH,
-		InterruptWithAX
+		Normal, // Regular breakpoint
+		Ephemeral, // Automatically deleted when it's hit, for things like step-out, step-over, run to address etc
+		Read, // Memory breakpoint on read
+		Write, // Memory breakpoint on write
+		Interrupt, // Break when interrupt called
+		InterruptWithAH, // Break when interrupt called
+		InterruptWithAX // Break when interrupt called
 	}
 
-	struct Breakpoint { Address address; BreakpointType type; byte ah; byte al; }
+	struct Breakpoint {
+		int id;
+		Address address;
+		BreakpointType type;
+		bool enabled;
+		byte ah;
+		byte al;
+	}
 	sequence<Breakpoint> BreakpointSequence;
 
 	struct AssemblyLine { Address address; string line; ByteSequence bytes; }
@@ -156,6 +165,7 @@ module Lizard
 		void Continue();
 		Registers Break();
 		Registers StepIn();
+		Registers StepOver();
 		Registers StepMultiple(int cycles);
 		void RunToAddress(Address address);
 		Registers GetState();
@@ -168,9 +178,10 @@ module Lizard
 
 		BreakpointSequence ListBreakpoints();
 		void SetBreakpoint(Breakpoint breakpoint);
-		void DelBreakpoint(Address address);
+		void EnableBreakpoint(int id, bool enabled);
+		void DelBreakpoint(int id);
 
-		void SetReg(Register reg, int value);
+		void SetRegister(Register reg, int value);
 
 		Descriptors GetGdt();
 		Descriptors GetLdt();

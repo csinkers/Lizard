@@ -35,7 +35,7 @@ class Ui
 
         debugger.ExitRequested += () => _done = true;
 
-        _breakpointsWindow = new BreakpointsWindow();
+        _breakpointsWindow = new BreakpointsWindow(debugger);
         _callStackWindow   = new CallStackWindow();
         _codeWindow        = new CodeWindow(debugger, programDataManager);
         _commandWindow     = new CommandWindow(debugger, logs);

@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using ImGuiColorTextEditNet;
 using ImGuiNET;
-using Lizard.generated;
+using LizardProtocol;
 
 namespace Lizard.Gui.Windows;
 

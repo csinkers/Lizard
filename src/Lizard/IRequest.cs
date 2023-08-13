@@ -1,4 +1,4 @@
-﻿using Lizard.generated;
+﻿using LizardProtocol;
 
 namespace Lizard;
 
