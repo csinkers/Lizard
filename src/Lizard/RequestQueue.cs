@@ -14,7 +14,7 @@ public class RequestQueue
             _pending.Add(action);
     }
 
-    public void ProcessPendingRequests(IceSessionManager sessionManager, int version, CancellationToken token)
+    public void ProcessPendingRequests(IDebugTargetProvider targetProvider, int version, CancellationToken token)
     {
         for(;;)
         {
@@ -22,7 +22,7 @@ public class RequestQueue
             if (request.Version < version)
                 continue;
 
-            if (!sessionManager.TryLock()) // Make sure the session won't be recreated when we're about to call it
+            if (!targetProvider.TryLock()) // Make sure the session won't be recreated when we're about to call it
             {
                 _pending.Add(request, token); // Re-enqueue
                 continue;
@@ -30,13 +30,13 @@ public class RequestQueue
 
             try
             {
-                var host = sessionManager.Host;
+                var host = targetProvider.Host;
                 if (host == null)
                     continue;
 
                 request.Execute(host);
             }
-            finally { sessionManager.Unlock(); }
+            finally { targetProvider.Unlock(); }
 
             lock (_syncRoot)
                 _completed.Enqueue(request);

@@ -1,0 +1,28 @@
+Keyboard shortcuts for tool windows
+    Add to titles
+    Add to menus
+    Alt+1 - Command window
+    Alt+2 - Watch
+    Alt+3 - Locals
+    Alt+4 - Registers
+    Alt+5 - Memory
+    Alt+6 - Call Stack
+    Alt+7 - Dasm
+    Alt+8 - Code
+    Alt+9 - 
+
+Dasm window:
+    Find function
+    Show decompiled
+    Dissasemble from start of func
+    Allow setting dasm address
+    Button to reset to showing cur eip
+
+Stack trace:
+    Add algorithm
+
+Cmd Window:
+    PgUp & PgDn should scroll history when input box selected
+    ` to show pointer hints?
+
+

@@ -93,6 +93,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Gee.External.Capstone" Version="2.3.0" />
     <PackageReference Include="ImGui.NET" Version="1.89.7.1" />
     <PackageReference Include="Veldrid" Version="4.9.0" />
     <PackageReference Include="Veldrid.ImageSharp" Version="4.9.0" />

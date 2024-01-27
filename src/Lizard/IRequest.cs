@@ -1,10 +1,8 @@
-﻿using LizardProtocol;
-
-namespace Lizard;
+﻿namespace Lizard;
 
 public interface IRequest
 {
     int Version { get; }
-    void Execute(DebugHostPrx host);
+    void Execute(IDebugTarget target);
     void Complete();
 }

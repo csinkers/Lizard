@@ -39,7 +39,7 @@ class Ui
         _callStackWindow   = new CallStackWindow();
         _codeWindow        = new CodeWindow(debugger, programDataManager);
         _commandWindow     = new CommandWindow(debugger, logs);
-        _connectWindow     = new ConnectWindow(debugger.SessionManager);
+        _connectWindow     = new ConnectWindow(debugger);
         _disassemblyWindow = new DisassemblyWindow(debugger);
         _localsWindow      = new LocalsWindow();
         _registersWindow   = new RegistersWindow(debugger);
@@ -146,7 +146,7 @@ class Ui
             SaveAs();
 
         if (_debugger.IsConnected && ImGui.MenuItem("Disconnect"))
-            _debugger.SessionManager.Disconnect();
+            _debugger.Disconnect();
 
         if (ImGui.MenuItem("Load Program Data"))
             _programDataWindow.Open();
@@ -183,7 +183,7 @@ class Ui
         }
 
         if (Toolbar("disconnect##", _icons.Disconnect, "Disconnect"))
-            _debugger.SessionManager.Disconnect();
+            _debugger.Disconnect();
 
         if (_debugger.IsPaused)
         {

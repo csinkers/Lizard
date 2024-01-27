@@ -1,6 +1,4 @@
-﻿using System.Buffers.Text;
-using System.Text;
-using Lizard.Config;
+﻿using Lizard.Config;
 using Lizard.Gui;
 using Lizard.Gui.Windows;
 using Lizard.Gui.Windows.Watch;
@@ -27,9 +25,10 @@ internal static class Program
             var projectManager = new ProjectManager(project);
             var programDataManager = new ProgramDataManager(projectManager);
             var iceManager = new IceSessionManager(projectManager, cmdLine.AutoConnect);
+            var hostProvider = new IceDebugTargetProvider(iceManager, programDataManager);
 
             var memoryCache = new MemoryCache();
-            using var debugger = new Debugger(iceManager, LogHistory.Instance, memoryCache, programDataManager);
+            using var debugger = new Debugger(hostProvider, LogHistory.Instance, memoryCache);
 
             using var uiManager = new UiManager(projectManager);
             var watcher = new WatcherCore(programDataManager, memoryCache, uiManager.TextureStore);

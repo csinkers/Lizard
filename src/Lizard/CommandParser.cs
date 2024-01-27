@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using GhidraProgramData.Types;
@@ -390,7 +391,7 @@ static class CommandParser
                     PrintMemBytes(result, d.GetMemory(result, displayLength), d);
             }),
 
-            new(new[] { ".dumpmem" }, "<path> <addr> <len> : Dumps a section of memory to a local file, e.g. .dumpmem c:\\data.bin cs:0 0x800000", (getArg, d) =>
+            new(new[] { ".writemem" }, "<path> <addr> <len> : Writes a section of memory to a local file, e.g. .dumpmem c:\\data.bin cs:0 0x800000", (getArg, d) =>
             {
                 var filename = getArg();
                 if (!Directory.Exists(Path.GetDirectoryName(filename)))
@@ -405,6 +406,23 @@ static class CommandParser
                 if (!d.IsConnected) return;
                 var bytes = d.GetMemory(address, length);
                 File.WriteAllBytes(filename, bytes);
+            }),
+
+            new(new[] { ".dump" }, "<path> : Saves a dump file containing the entire memory space as well as the current processor context", (getArg, d) =>
+            {
+                var filename = getArg();
+                if (!Directory.Exists(Path.GetDirectoryName(filename)))
+                    throw new DirectoryNotFoundException("The directory could not be found");
+
+                if (!d.IsConnected) { Log.Error("Can only write a dump when a debug target is attached"); return; } 
+                if (!d.IsPaused) { Log.Error("Can only write a dump when execution is paused"); return; }
+
+                var state = d.GetState();
+                int maxAddress = d.GetMaxNonEmptyAddress(state.cs);
+                var bytes = d.GetMemory(new Address(state.cs, 0), maxAddress);
+                var metadata = d.GetDumpData(state);
+
+                DumpFile.Save(filename, metadata, bytes);
             }),
 
             new(new[] { "ListBreakpoints", "bps", "bl" }, "Retrieves the current breakpoint list", (_,  d) =>

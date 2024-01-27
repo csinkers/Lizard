@@ -7,7 +7,7 @@ public delegate void StoppedDelegate(Registers state);
 
 public class Debugger : IMemoryReader
 {
-    readonly ProgramDataManager _programDataManager;
+    readonly IDebugTargetProvider  _targetProvider;
     readonly RequestQueue _queue = new();
     readonly CancellationTokenSource _tokenSource = new();
     readonly Thread _queueThread;
@@ -18,7 +18,6 @@ public class Debugger : IMemoryReader
 
     public event Action? ExitRequested;
     public ITracer Log { get; }
-    public IceSessionManager SessionManager { get; }
     public IMemoryCache Memory { get; }
     public Registers OldRegisters { get; private set; }
     public Registers Registers
@@ -38,18 +37,20 @@ public class Debugger : IMemoryReader
     }
 
     public bool IsPaused { get; private set; }
-    DebugHostPrx? Host => SessionManager.Host;
+    IDebugTarget? Host => _targetProvider.Host;
     public bool IsConnected => Host != null;
 
-    public Debugger(IceSessionManager iceManager, ITracer log, IMemoryCache memory, ProgramDataManager programDataManager)
+    public void Connect(string hostname, int port) => _targetProvider.Connect(hostname, port);
+    public void Disconnect() => _targetProvider.Disconnect();
+
+    public Debugger(IDebugTargetProvider targetProvider, ITracer log, IMemoryCache memory)
     {
-        _programDataManager = programDataManager ?? throw new ArgumentNullException(nameof(programDataManager));
-        SessionManager = iceManager ?? throw new ArgumentNullException(nameof(iceManager));
+        _targetProvider = targetProvider ?? throw new ArgumentNullException(nameof(targetProvider));
         Log = log ?? throw new ArgumentNullException(nameof(log));
         Memory = memory ?? throw new ArgumentNullException(nameof(memory));
         Memory.Reader = this;
-        SessionManager.Connected += OnSessionManagerConnected;
-        SessionManager.Stopped += state => Update(state);
+        _targetProvider.Connected += OnSessionManagerConnected;
+        _targetProvider.Stopped += state => Update(state);
 
         _queueThread = new Thread(QueueThreadMethod) { Name = "Request Queue"};
         _queueThread.Start();
@@ -60,7 +61,7 @@ public class Debugger : IMemoryReader
         try
         {
             while (!_tokenSource.Token.WaitHandle.WaitOne(20))
-                _queue.ProcessPendingRequests(SessionManager, Version, _tokenSource.Token);
+                _queue.ProcessPendingRequests(_targetProvider, Version, _tokenSource.Token);
         }
         catch (OperationCanceledException) { }
     }
@@ -77,10 +78,10 @@ public class Debugger : IMemoryReader
         }
     }
 
-    public Symbol? TryFindSymbol(uint offset) => _programDataManager.LookupSymbol(offset);
-    public Symbol? TryFindSymbol(string name) => _programDataManager.LookupSymbol(name);
-    public (uint MemoryOffset, MemoryRegion Region)? ToMemory(uint fileOffset) => _programDataManager.Mapping.ToMemory(fileOffset);
-    public (uint FileOffset, MemoryRegion Region)? ToFile(uint memoryOffset) => _programDataManager.Mapping.ToFile(memoryOffset);
+    public Symbol? TryFindSymbol(uint offset) => _targetProvider.ProgramData.LookupSymbol(offset);
+    public Symbol? TryFindSymbol(string name) => _targetProvider.ProgramData.LookupSymbol(name);
+    public (uint MemoryOffset, MemoryRegion Region)? ToMemory(uint fileOffset) => _targetProvider.ProgramData.Mapping.ToMemory(fileOffset);
+    public (uint FileOffset, MemoryRegion Region)? ToFile(uint memoryOffset) => _targetProvider.ProgramData.Mapping.ToFile(memoryOffset);
 
     public void Defer(IRequest request) => _queue.Add(request);
     public void FlushDeferredResults() => _queue.ApplyResults();
@@ -152,5 +153,32 @@ public class Debugger : IMemoryReader
         _tokenSource.Cancel();
         _queueThread.Join();
     }
-}
 
+    public DumpData GetDumpData(Registers registers) =>
+        new()
+        {
+            Version = 1,
+            Registers = new DumpRegisters
+            {
+                cs = registers.cs,
+                ds = registers.ds,
+                es = registers.es,
+                fs = registers.fs,
+                gs = registers.gs,
+                ss = registers.ss,
+                eax = registers.eax,
+                ebx = registers.ebx,
+                ecx = registers.ecx,
+                edx = registers.edx,
+                esi = registers.esi,
+                edi = registers.edi,
+                ebp = registers.ebp,
+                esp = registers.esp,
+                eip = registers.eip,
+                flags = registers.flags,
+            },
+            Mapping = _targetProvider.ProgramData.SaveMapping(),
+            DataPath = _targetProvider.ProgramData.DataPath,
+            CodePath = _targetProvider.ProgramData.CodePath
+        };
+}

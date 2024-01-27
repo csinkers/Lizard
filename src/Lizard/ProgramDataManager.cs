@@ -41,7 +41,7 @@ public class ProgramDataManager : ISymbolStore
         {
             project.SetProperty(ProgramDataPathProperty, DataPath);
             project.SetProperty(CodePathProperty, CodePath);
-            project.SetProperty(MappingProperty, SaveMapping(Mapping));
+            project.SetProperty(MappingProperty, SaveMapping());
         };
 
         LoadFromProject();
@@ -67,8 +67,8 @@ public class ProgramDataManager : ISymbolStore
     }
 
     static uint ParseHex(string s) => uint.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-    static List<string> SaveMapping(MemoryMapping mapping) 
-        => mapping.Regions
+    public List<string> SaveMapping() 
+        => Mapping.Regions
             .Select(region => $"{region.FileStart:x} {region.MemoryStart:x} {region.Length:x} {region.Type}")
             .ToList();
 

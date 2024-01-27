@@ -28,7 +28,7 @@ public class BreakpointsWindow : SingletonWindow
         if (_version != _debugger.Version)
         {
             _breakpoints.Clear();
-            _breakpoints.AddRange(_debugger.SessionManager.Host?.ListBreakpoints() ?? Array.Empty<Breakpoint>());
+            _breakpoints.AddRange(_debugger.ListBreakpoints());
             _addressStrings = _breakpoints.Select(x => x.type switch
             {
                 BreakpointType.Normal    => $"{x.address.segment}:{x.address.offset}",
