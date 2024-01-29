@@ -1,9 +1,13 @@
 ﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using GhidraProgramData;
 using GhidraProgramData.Types;
+using ImGuiColorTextEditNet;
 using Lizard.Gui;
+using Lizard.Gui.Windows;
 using LizardProtocol;
+using Exception = System.Exception;
 
 namespace Lizard;
 
@@ -78,34 +82,79 @@ static class CommandParser
     static void PrintMemBytes(Address address, byte[] bytes, CommandContext _) => PrintMem(address, bytes, PrintLineBytes);
     static void PrintMemDwords(Address address, byte[] bytes, CommandContext _) => PrintMem(address, bytes, PrintLineDwords);
 
-    static string DescribeAddress(uint address, CommandContext context)
+    static void DescribeAddress(uint address, Line line, CommandContext context)
     {
+        if (!context.Mapping.ToFile(address, out _, out var region))
+        {
+            line.Append(PaletteIndex.Number, $"{address:X8}");
+            return;
+        }
+
+        PrintAddress(address, line, region);
+
         var symbol = context.LookupSymbolForAddress(address);
         if (symbol == null)
-            return $"{address:X8}";
+            return;
 
-        var mem = context.Mapping.ToMemory(symbol.Address)!.Value;
-        if (address < mem.MemoryOffset)
-            return $"{address:X8}";
+        if (!context.Mapping.ToMemory(symbol.Address, out var symMemOffset, out var symbolRegion))
+            return;
 
-        var symType = symbol.Context switch
+        if (address < symMemOffset)
+            return;
+
+        if (symbolRegion != region)
+            return;
+
+        line.Append(" ");
+
+        var (symType, color) = symbol.Context switch
         {
-            GFunction _ => " [FUNC]",
-            GGlobal _ => " [Global]",
-            _ => ""
+            GFunction _ => (" [FUNC]", CommandWindow.CodeColor),
+            GGlobal _ => (" [Global]", CommandWindow.DataColor),
+            _ => ("", PaletteIndex.Number),
         };
 
-        if (address == mem.MemoryOffset)
-            return $"{address:X8} {symbol.Name}{symType}";
+        line.Append(color, symbol.Name);
+        if (address != symMemOffset)
+            line.Append(color, $"+{address - symMemOffset:x}");
 
-        return $"{address:X8} {symbol.Name}+{address - mem.MemoryOffset:x}{symType}";
+        line.Append(color, symType);
     }
 
     static void PrintMemSymbols(Address address, byte[] bytes, CommandContext c)
     {
         var uints = MemoryMarshal.Cast<byte, uint>(bytes);
         for (int i = 0; i < uints.Length; i++)
-            Log.Debug($"{address.segment:X}:{address.offset + i:X8} {DescribeAddress(uints[i], c)}");
+        {
+            var line = new Line();
+            PrintAddress((uint)(address.offset + i), line, c);
+            line.Append(" ");
+            DescribeAddress(uints[i], line, c);
+            Log.Debug(line);
+        }
+    }
+
+    static void PrintAddress(uint address, Line line, CommandContext c)
+    {
+        if (c.Mapping.ToFile(address, out _, out var region))
+            PrintAddress(address, line, region);
+        else
+            line.Append(PaletteIndex.Number, address.ToString("X8"));
+    }
+
+    static void PrintAddress(uint address, Line line, MemoryRegion region)
+    {
+        var text = address.ToString("X8");
+        var color = region.Type switch
+        {
+            MemoryType.Unknown => PaletteIndex.Number,
+            MemoryType.Code => CommandWindow.CodeColor,
+            MemoryType.Data => CommandWindow.DataColor,
+            MemoryType.Stack => CommandWindow.StackColor,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
+        line.Append(color, text);
     }
 
     static void PrintMemPointers(Address address, byte[] bytes, CommandContext c)
@@ -117,7 +166,12 @@ static class CommandParser
             var byteVal = c.Session.Memory.Read(uints[i], 4, temp);
             var value = MemoryMarshal.Cast<byte, uint>(byteVal)[0];
 
-            Log.Debug($"{address.segment:X}:{address.offset + i:X8} {uints[i]:X8} {DescribeAddress(value, c)}");
+            var line = new Line();
+            PrintAddress((uint)(address.offset + i), line, c);
+            line.Append(" ");
+            PrintAddress(uints[i], line, c);
+            line.Append(" ");
+            DescribeAddress(value, line, c);
         }
     }
 
@@ -174,26 +228,43 @@ static class CommandParser
         }
     }
 
-    static void PrintRegisters(Registers reg)
+    static void PrintRegisters(Registers reg, CommandContext c)
     {
-        var flagsSb = new StringBuilder();
-        var flags = (CpuFlags)reg.flags;
-        if ((flags & CpuFlags.CF) != 0) flagsSb.Append(" C");
-        if ((flags & CpuFlags.ZF) != 0) flagsSb.Append(" Z");
-        if ((flags & CpuFlags.SF) != 0) flagsSb.Append(" S");
-        if ((flags & CpuFlags.OF) != 0) flagsSb.Append(" O");
-        if ((flags & CpuFlags.AF) != 0) flagsSb.Append(" A");
-        if ((flags & CpuFlags.PF) != 0) flagsSb.Append(" P");
-
-        if ((flags & CpuFlags.DF) != 0) flagsSb.Append(" D");
-        if ((flags & CpuFlags.IF) != 0) flagsSb.Append(" I");
-        if ((flags & CpuFlags.TF) != 0) flagsSb.Append(" T");
-
         Log.Debug($"EAX {reg.eax:X8} ESI {reg.esi:X8} DS {reg.ds:X4} ES {reg.es:X4}");
         Log.Debug($"EBX {reg.ebx:X8} EDI {reg.edi:X8} FS {reg.fs:X4} GS {reg.gs:X4}");
         Log.Debug($"ECX {reg.ecx:X8} EBP {reg.ebp:X8}");
         Log.Debug($"EDX {reg.edx:X8} ESP {reg.esp:X8} SS {reg.ss:X4}");
-        Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8}{flagsSb}");
+
+        var symbol = c.LookupSymbolForAddress((uint)reg.eip);
+        if (symbol != null)
+        {
+            if (!c.Mapping.ToMemory(symbol.Address, out var symMemOffset, out _))
+                Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8} ???");
+            else if (symMemOffset == reg.eip)
+                Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8} {symbol.Name}");
+            else
+                Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8} {symbol.Name}+{reg.eip - symbol.Address:X}");
+        }
+        else
+        {
+            Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8} ???");
+        }
+
+        var flagsSb = new StringBuilder();
+        flagsSb.Append('[');
+        var flags = (CpuFlags)reg.flags;
+        flagsSb.Append((flags & CpuFlags.CF) != 0 ? 'C' : ' ');
+        flagsSb.Append((flags & CpuFlags.ZF) != 0 ? 'Z' : ' ');
+        flagsSb.Append((flags & CpuFlags.SF) != 0 ? 'S' : ' ');
+        flagsSb.Append((flags & CpuFlags.OF) != 0 ? 'O' : ' ');
+        flagsSb.Append((flags & CpuFlags.AF) != 0 ? 'A' : ' ');
+        flagsSb.Append((flags & CpuFlags.PF) != 0 ? 'P' : ' ');
+
+        flagsSb.Append((flags & CpuFlags.DF) != 0 ? 'D' : ' ');
+        flagsSb.Append((flags & CpuFlags.IF) != 0 ? 'I' : ' ');
+        flagsSb.Append((flags & CpuFlags.TF) != 0 ? 'T' : ' ');
+        flagsSb.Append(']');
+        Log.Debug(flagsSb.ToString());
     }
 
     static readonly Dictionary<string, Command> Commands = new Command[]
@@ -227,21 +298,21 @@ static class CommandParser
 
             // TODO
             new(new[] { "Break", "b" }, "Pause execution", 
-                (_,  c) => PrintRegisters(c.Session.Break())),
+                (_,  c) => PrintRegisters(c.Session.Break(), c)),
 
             new(new[] { "StepOver", "p" }, "Steps to the next instruction, ignoring function calls / interrupts etc", 
-                (_, c) => PrintRegisters(c.Session.StepOver())),
+                (_, c) => PrintRegisters(c.Session.StepOver(), c)),
 
             new(new[] { "StepIn", "n" }, "Steps to the next instruction, including into function calls etc", 
-                (_,  c) => PrintRegisters(c.Session.StepIn())),
+                (_,  c) => PrintRegisters(c.Session.StepIn(), c)),
 
             new(new[] { "StepMultiple", "gn" }, "Runs the CPU for the given number of cycles", (getArg, c) =>
             {
                 var n = ParseUtil.ParseVal(getArg());
-                PrintRegisters(c.Session.StepMultiple(n));
+                PrintRegisters(c.Session.StepMultiple(n), c);
             }),
             new(new[] { "StepOut", "go" }, "Run until the current function returns", 
-                (_, c) => PrintRegisters(c.Session.StepOut())),
+                (_, c) => PrintRegisters(c.Session.StepOut(), c)),
 
             new(new[] { "RunToCall", "gc" }, "Run until the next 'call' instruction is encountered", (_,  _) =>
             {
@@ -261,7 +332,7 @@ static class CommandParser
 
                 if (string.IsNullOrEmpty(arg1) || string.IsNullOrEmpty(arg2))
                 {
-                    PrintRegisters(c.Session.GetState());
+                    PrintRegisters(c.Session.GetState(), c);
                     return;
                 }
 
@@ -461,8 +532,20 @@ static class CommandParser
                     if (symbol == null)
                         Log.Warn("No symbol found");
                     else
-                        Log.Debug($"{symbol.Address:X8} {symbol.Name}");
-                })
+                    {
+                        c.Mapping.ToMemory(symbol.Address, out var symMem, out _);
+                        Log.Debug($"{symMem:X8} {symbol.Name} + {address.offset - symMem:x} = {address.offset:X8}");
+                    }
+                }),
+            new(new[] { "k" }, "Print a stack trace",
+                (getArg, c) => PrintStackTrace(c)),
+            new(new[] { ".ghidra_script" }, "Generate a python script for ghidra to add symbols to a dump file",
+                (getArg, c) =>
+                {
+                    var path = getArg();
+                    GenerateGhidraDumpFixups(path, c);
+                }),
+
         }.SelectMany(x => x.Names.Select(name => (name, x)))
         .ToDictionary(x => x.name, x => x.x, StringComparer.OrdinalIgnoreCase);
 
@@ -540,6 +623,99 @@ static class CommandParser
             results.Add(command.Key);
             if (results.Count >= maxResults)
                 break;
+        }
+    }
+
+    class StackFrame
+    {
+        public int InstructionPointer;
+        public int BasePointer;
+        public Symbol? Symbol;
+        public int[] Parameters;
+        public int[] Locals;
+    }
+
+    static MemoryRegion? GetStackRegion(CommandContext c) =>
+        c.Mapping.Regions
+            .OrderBy(x => x.MemoryStart)
+            .FirstOrDefault(x => x.Type == MemoryType.Stack);
+
+    static void PrintStackTrace(CommandContext c)
+    {
+        var r = c.Session.Registers;
+
+        var stackRegion = GetStackRegion(c);
+        if (stackRegion == null)
+        {
+            Log.Warn("No stack region found");
+            return;
+        }
+
+        var stack = new List<StackFrame>();
+
+        int stackBase = (int)stackRegion.MemoryStart;
+        int stackLimit = (int)stackRegion.MemoryEnd;
+
+
+        int ip = r.eip;
+        int bp = r.ebp;
+    }
+
+    static void GenerateGhidraDumpFixups(string path, CommandContext c)
+    {
+        // c.Mapping, c.Symbols
+        // Define functions
+        // Define globals
+        if (c.Symbols.Data == null)
+        {
+            Log.Warn("No symbol data loaded");
+            return;
+        }
+
+        using var fileStream = File.Open(path, FileMode.Create, FileAccess.Write);
+        using var sw = new StreamWriter(fileStream);
+
+        // Write preamble
+        sw.WriteLine(@"
+from ghidra.program.model.symbol.SourceType import *
+import string
+
+functionManager = currentProgram.getFunctionManager()
+def make_func(address, name):
+    func = functionManager.getFunctionAt(toAddr(address))
+    if func is not None:
+        func.setName(name, USER_DEFINED)
+    else:
+        func = createFunction(toAddr(address), name)
+
+def make_label(address, name):
+    createLabel(toAddr(address), name, False)
+
+");
+/*
+ */
+        string Esc(string s) => s.Replace("\"", "\\\"");
+
+        var r = c.Session.Registers;
+        sw.WriteLine($"make_label(0x{r.ebp:x}, \"base_pointer\")");
+        sw.WriteLine($"make_label(0x{r.eip:x}, \"instruction_pointer\")");
+        sw.WriteLine($"make_label(0x{r.esp:x}, \"stack_pointer\")");
+
+        var stackRegion = GetStackRegion(c);
+        if (stackRegion != null)
+        {
+            sw.WriteLine($"make_label(0x{stackRegion.MemoryStart:x}, \"stack_limit\")");
+            sw.WriteLine($"make_label(0x{stackRegion.MemoryEnd:x}, \"stack_base\")");
+        }
+
+        foreach (var symbol in c.Symbols.Data.Symbols)
+        {
+            if (!c.Mapping.ToMemory(symbol.Address, out var memAddress, out _))
+                continue;
+
+            sw.WriteLine(symbol.Context is GFunction
+                ? $"make_func(0x{memAddress:x}, \"{Esc(symbol.Name)}\")"
+                : $"make_label(0x{memAddress:x}, \"{Esc(symbol.Name)}\")");
         }
     }
 }

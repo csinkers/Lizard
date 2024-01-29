@@ -1,8 +1,9 @@
 ﻿using System.Numerics;
+using ImGuiColorTextEditNet;
 
 namespace Lizard;
 
-public record LogEntry(Severity Severity, string Line)
+public record LogEntry(Severity Severity, Line Line)
 {
     public Vector4 Color =>
         Severity switch

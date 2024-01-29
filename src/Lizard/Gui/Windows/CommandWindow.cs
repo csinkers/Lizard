@@ -14,10 +14,13 @@ public class CommandWindow : SingletonWindow
     bool _scrollToBottom = true;
     bool _pendingFocus;
 
-    const PaletteIndex ErrorColor = PaletteIndex.Custom;
-    const PaletteIndex WarningColor = PaletteIndex.Custom + 1;
-    const PaletteIndex InfoColor = PaletteIndex.Custom + 2;
-    const PaletteIndex DebugColor = PaletteIndex.Custom + 3;
+    public const PaletteIndex ErrorColor = PaletteIndex.Custom;
+    public const PaletteIndex WarningColor = PaletteIndex.Custom + 1;
+    public const PaletteIndex InfoColor = PaletteIndex.Custom + 2;
+    public const PaletteIndex DebugColor = PaletteIndex.Custom + 3;
+    public const PaletteIndex CodeColor = PaletteIndex.Custom + 4;
+    public const PaletteIndex DataColor = PaletteIndex.Custom + 5;
+    public const PaletteIndex StackColor = PaletteIndex.Custom + 6;
 
     public CommandWindow(CommandContext context, LogHistory history) : base("Command")
     {
@@ -28,19 +31,14 @@ public class CommandWindow : SingletonWindow
         _textEditor.SetColor(WarningColor, 0xff00ffff);
         _textEditor.SetColor(InfoColor, 0xffffffff);
         _textEditor.SetColor(DebugColor, 0xffd0d0d0);
+        _textEditor.SetColor(CodeColor, 0xffc570ff);
+        _textEditor.SetColor(DataColor, 0xffffc677);
+        _textEditor.SetColor(StackColor, 0xfffcff7f);
 
         _logs.Cleared += () => _textEditor.AllText = "";
         _logs.EntryAdded += x =>
         {
-            var color = x.Severity switch
-            {
-                Severity.Info => InfoColor,
-                Severity.Warn => WarningColor,
-                Severity.Error => ErrorColor,
-                _ => DebugColor
-            };
-
-            _textEditor.AppendLine(x.Line, color);
+            _textEditor.AppendLine(x.Line);
             _textEditor.Movement.MoveToEndOfFile();
         };
     }

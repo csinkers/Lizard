@@ -90,8 +90,8 @@ internal static class ParseUtil
         if (sym == null)
             throw new FormatException($"Could not resolve an address for \"{s}\"");
 
-        offset = c.Mapping.ToMemory(sym.Address)?.MemoryOffset 
-                 ?? throw new FormatException($"Symbol address {sym.Address:X8} could not be mapped to a memory address");
+        if (!c.Mapping.ToMemory(sym.Address, out offset, out _))
+            throw new FormatException($"Symbol address {sym.Address:X8} could not be mapped to a memory address");
 
         return offset;
     }

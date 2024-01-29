@@ -21,7 +21,7 @@ public class CommandContext
     public ProjectManager ProjectManager { get; }
 
     public Symbol? LookupSymbolForAddress(uint memoryAddress) =>
-        Mapping.ToFile(memoryAddress) is var (fileOffset, _) 
+        Mapping.ToFile(memoryAddress, out var fileOffset, out _)
             ? Symbols.Data?.LookupSymbol(fileOffset) 
             : null;
 

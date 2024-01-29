@@ -51,7 +51,7 @@ public class BreakpointsWindow : SingletonWindow
                 if (sym == null)
                     return "";
 
-                var baseAddr = _context.Mapping.ToMemory(sym.Address)?.MemoryOffset ?? 0;
+                _context.Mapping.ToMemory(sym.Address, out var baseAddr, out _);
                 var offset = (uint)x.address.offset - baseAddr;
                 return offset == 0 ? $"{sym.Key}" : $"{sym.Key}+0x{offset:X}";
             }).ToArray();

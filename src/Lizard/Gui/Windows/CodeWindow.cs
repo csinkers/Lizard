@@ -35,8 +35,7 @@ public class CodeWindow : SingletonWindow
         _version = version;
 
         var eip = (uint)session.Registers.eip;
-        var mappedEip = _context.Mapping.ToFile(eip);
-        if (mappedEip == null)
+        if (!_context.Mapping.ToFile(eip, out var mappedEip, out _))
         {
             _decompiled = null;
             _function = null;
@@ -72,7 +71,7 @@ public class CodeWindow : SingletonWindow
         var bestOffset = long.MaxValue;
         for (int i = 0; i < _decompiled.Lines.Length; i++)
         {
-            var offset = (long)mappedEip.Value.FileOffset - _decompiled.LineAddresses[i];
+            var offset = (long)mappedEip - _decompiled.LineAddresses[i];
             if (offset < 0)
                 continue;
 

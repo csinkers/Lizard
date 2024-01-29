@@ -27,17 +27,11 @@ public class HistoryCache : IHistoryCreationContext
         return history;
     }
 
-    public uint ToMemoryAddress(uint fileAddress)
-    {
-        var result = _mapping.ToMemory(fileAddress);
-        return result?.MemoryOffset ?? 0;
-    }
+    public uint ToMemoryAddress(uint fileAddress) 
+        => _mapping.ToMemory(fileAddress, out var memOffset, out _) ? memOffset : 0;
 
-    public uint ToFileAddress(uint memoryAddress)
-    {
-        var result = _mapping.ToFile(memoryAddress);
-        return result?.FileOffset ?? 0;
-    }
+    public uint ToFileAddress(uint memoryAddress) 
+        => _mapping.ToFile(memoryAddress, out var fileOffset, out _) ? fileOffset : 0;
 
     string? IHistoryCreationContext.ResolvePath(string path, string context)
     {

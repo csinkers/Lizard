@@ -54,37 +54,48 @@ public class MemoryMapping
         }
     }
 
-    public (uint MemoryOffset, MemoryRegion Region)? ToMemory(uint fileOffset)
+    public bool ToMemory(uint fileOffset, out uint memoryOffset, out MemoryRegion region)
     {
-        foreach (var region in _fileOrder)
+        memoryOffset = 0;
+        region = null!;
+
+        foreach (var r in _fileOrder)
         {
-            if (fileOffset < region.FileStart || fileOffset >= region.FileEnd)
+            if (fileOffset < r.FileStart || fileOffset >= r.FileEnd)
                 continue;
 
-            var result = fileOffset + region.Offset;
+            var result = fileOffset + r.Offset;
             if (result > uint.MaxValue)
-                return null;
-            return ((uint)result, region);
+                return false;
+
+            memoryOffset = (uint)result;
+            region = r;
+            return true;
         }
 
-        return null;
+        return false;
     }
 
-    public (uint FileOffset, MemoryRegion Region)? ToFile(uint memoryOffset)
+    public bool ToFile(uint memoryOffset, out uint fileOffset, out MemoryRegion region)
     {
-        foreach (var region in _fileOrder)
+        fileOffset = 0;
+        region = null!;
+
+        foreach (var r in _fileOrder)
         {
-            if (memoryOffset < region.MemoryStart || memoryOffset >= region.MemoryEnd)
+            if (memoryOffset < r.MemoryStart || memoryOffset >= r.MemoryEnd)
                 continue;
 
-            var result = memoryOffset - region.Offset;
+            var result = memoryOffset - r.Offset;
             if (result < 0)
-                return null;
+                return false;
 
-            return ((uint)result, region);
+            fileOffset = (uint)result;
+            region = r;
+            return true;
         }
 
-        return null;
+        return false;
     }
 
     public void LoadProject(ProjectConfig project)
