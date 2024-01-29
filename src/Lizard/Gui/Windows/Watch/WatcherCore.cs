@@ -4,8 +4,7 @@ namespace Lizard.Gui.Windows.Watch;
 
 public sealed class WatcherCore
 {
-    readonly ProgramDataManager _programDataManager;
-    readonly IMemoryCache _memory;
+    readonly CommandContext _context;
     readonly ITextureStore _textures;
     DrawContext? _drawContext;
     bool _programDataDirty = true;
@@ -22,12 +21,11 @@ public sealed class WatcherCore
     // Highlight changed values
     // Searching / filtering.
 
-    public WatcherCore(ProgramDataManager programDataManager, IMemoryCache memory, ITextureStore textures)
+    public WatcherCore(CommandContext context, ITextureStore textures)
     {
-        _programDataManager = programDataManager ?? throw new ArgumentNullException(nameof(programDataManager));
-        _memory = memory ?? throw new ArgumentNullException(nameof(memory));
+        _context = context ?? throw new ArgumentNullException(nameof(context));
         _textures = textures ?? throw new ArgumentNullException(nameof(textures));
-        programDataManager.DataLoading += () => _programDataDirty = true;
+        context.Symbols.DataLoading += () => _programDataDirty = true;
 
         // Config = Config.Load();
 
@@ -46,27 +44,33 @@ public sealed class WatcherCore
     // const string SymbolPath = @"C:\Depot\bb\ualbion_extra\SR-Main.exe.xml";
     public void Draw()
     {
-        if (_programDataDirty)
-        {
-            _drawContext = _programDataManager.Data == null 
-                ? null 
-                : new DrawContext(_programDataManager, _memory, _textures);
+        RefreshContext();
 
-            _programDataDirty = false;
-        }
-
-        if (_drawContext?.ProgramData.Data == null)
+        if (_drawContext == null)
             return;
 
         _drawContext.Now = DateTime.UtcNow.Ticks;
         _drawContext.Filter = Filter;
 
-        var rootRenderer = _drawContext.Renderers.Get(_drawContext.ProgramData.Data.Root);
+        var rootRenderer = _drawContext.Renderers.Get(_drawContext.Symbols.Data.Root);
         var history = _drawContext.History.GetOrCreateHistory(Constants.RootNamespaceName, rootRenderer);
 
         rootRenderer.Draw(history, 0, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, _drawContext);
         _drawContext.Refreshed = false;
         _drawContext.History.CycleHistory();
+    }
+
+    void RefreshContext()
+    {
+        var memory = _context.Session.Memory;
+        if (!_programDataDirty && _drawContext?.Memory == memory)
+            return;
+
+        _drawContext = _context.Symbols.Data == null 
+            ? null 
+            : new DrawContext(_context, _textures);
+
+        _programDataDirty = false;
     }
 
     public void Update()

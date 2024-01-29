@@ -4,27 +4,18 @@ using LizardProtocol;
 
 namespace Lizard;
 
-public class DumpData
-{
-    public int Version { get; set; }
-    public DumpRegisters Registers { get; set; }
-    public List<string>? Mapping { get; set; }
-    public string? DataPath { get; set; }
-    public string? CodePath { get; set; }
-}
-
 public class DumpFile
 {
-    public DumpData? State { get; }
+    public DumpFileState? State { get; }
     public byte[] Memory { get; }
     public Registers Registers { get; }
 
-    DumpFile(byte[] memory, DumpData data)
+    DumpFile(byte[] memory, DumpFileState dumpState)
     {
         Memory = memory ?? throw new ArgumentNullException(nameof(memory));
-        State = data ?? throw new ArgumentNullException(nameof(data));
+        State = dumpState ?? throw new ArgumentNullException(nameof(dumpState));
 
-        var r = data.Registers;
+        var r = dumpState.Registers;
         Registers = new Registers(
             true,
             r.flags,
@@ -49,15 +40,15 @@ public class DumpFile
         if (file.Read(memory) < len)
             throw new InvalidOperationException("Could not read expected number of memory bytes from dump file");
 
-        var metadata = JsonSerializer.Deserialize<DumpData>(file)
-            ?? throw new InvalidOperationException("Could not read metadata from dump file");
+        var metadata = JsonSerializer.Deserialize<DumpFileState>(file)
+                       ?? throw new InvalidOperationException("Could not read metadata from dump file");
 
         return new DumpFile(memory, metadata);
     }
 
-    public static void Save(string filename, DumpData data, byte[] memoryBytes)
+    public static void Save(string filename, DumpFileState dumpState, byte[] memoryBytes)
     {
-        var dataJson = JsonSerializer.Serialize(data);
+        var dataJson = JsonSerializer.Serialize(dumpState);
         var lengthBytes = BitConverter.GetBytes(memoryBytes.Length);
         var metadataBytes = Encoding.UTF8.GetBytes(dataJson);
 

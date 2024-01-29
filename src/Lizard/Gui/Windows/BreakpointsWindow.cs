@@ -7,28 +7,28 @@ namespace Lizard.Gui.Windows;
 public class BreakpointsWindow : SingletonWindow
 {
     static readonly string[] PossibleTypes = Enum.GetNames(typeof(BreakpointType));
-    readonly Debugger _debugger;
+
+    readonly CommandContext _context;
     readonly List<Breakpoint> _breakpoints = new();
-    string[] _idStrings;
-    string[] _checkboxIds;
-    string[] _addressStrings;
-    string[] _nameStrings;
-    string[] _typeStrings;
-    int _version = -1;
+    string[] _idStrings = Array.Empty<string>();
+    string[] _checkboxIds = Array.Empty<string>();
+    string[] _addressStrings = Array.Empty<string>();
+    string[] _nameStrings = Array.Empty<string>();
+    string[] _typeStrings = Array.Empty<string>();
     string _pendingAddress = "";
     int _pendingType = (int)BreakpointType.Normal;
+    int _version = -1;
 
-    public BreakpointsWindow(Debugger debugger) : base("Breakpoints")
-    {
-        _debugger = debugger ?? throw new ArgumentNullException(nameof(debugger));
-    }
+    public BreakpointsWindow(CommandContext context) : base("Breakpoints")
+        => _context = context ?? throw new ArgumentNullException(nameof(context));
 
     protected override void DrawContents()
     {
-        if (_version != _debugger.Version)
+        var session = _context.Session;
+        if (_version != session.Version)
         {
             _breakpoints.Clear();
-            _breakpoints.AddRange(_debugger.ListBreakpoints());
+            _breakpoints.AddRange(session.ListBreakpoints());
             _addressStrings = _breakpoints.Select(x => x.type switch
             {
                 BreakpointType.Normal    => $"{x.address.segment}:{x.address.offset}",
@@ -47,15 +47,15 @@ public class BreakpointsWindow : SingletonWindow
             _typeStrings = _breakpoints.Select(x => x.type.ToString()).ToArray();
             _nameStrings = _breakpoints.Select(x =>
             {
-                var sym = _debugger.TryFindSymbol((uint)x.address.offset);
+                var sym = _context.LookupSymbolForAddress((uint)x.address.offset);
                 if (sym == null)
                     return "";
 
-                var baseAddr = _debugger.ToMemory(sym.Address)?.MemoryOffset ?? 0;
+                var baseAddr = _context.Mapping.ToMemory(sym.Address)?.MemoryOffset ?? 0;
                 var offset = (uint)x.address.offset - baseAddr;
                 return offset == 0 ? $"{sym.Key}" : $"{sym.Key}+0x{offset:X}";
             }).ToArray();
-            _version = _debugger.Version;
+            _version = session.Version;
         }
 
         ImGui.BeginTable("Breakpoints", 5);
@@ -79,7 +79,7 @@ public class BreakpointsWindow : SingletonWindow
 
             ImGui.TableNextColumn();
             if (ImGui.Checkbox(_checkboxIds[i], ref enabled))
-                _debugger.EnableBreakpoint(bp.id, enabled);
+                session.EnableBreakpoint(bp.id, enabled);
 
             ImGui.TableNextColumn();
             ImGui.TextUnformatted(_typeStrings[i]);

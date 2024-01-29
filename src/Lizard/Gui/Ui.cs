@@ -9,9 +9,9 @@ namespace Lizard.Gui;
 
 class Ui
 {
-    readonly Debugger _debugger;
     readonly ProjectManager _projectManager;
     readonly UiManager _uiManager;
+    readonly CommandContext _context;
     readonly ToolbarIcons _icons;
     readonly BreakpointsWindow _breakpointsWindow;
     readonly CallStackWindow _callStackWindow;
@@ -26,25 +26,32 @@ class Ui
     // ErrorsWindow _errorsWindow;
     bool _done;
 
-    public Ui(ProjectManager projectManager, ProgramDataManager programDataManager, UiManager uiManager, Debugger debugger, LogHistory logs, WatcherCore watcherCore)
+    IDebugSession Session => _context.Session;
+
+    public Ui(
+        LogHistory logHistory,
+        ProjectManager projectManager,
+        UiManager uiManager,
+        CommandContext context,
+        WatcherCore watcherCore)
     {
         _projectManager = projectManager ?? throw new ArgumentNullException(nameof(projectManager));
         _uiManager   = uiManager ?? throw new ArgumentNullException(nameof(uiManager));
-        _debugger    = debugger ?? throw new ArgumentNullException(nameof(debugger));
+        _context = context ?? throw new ArgumentNullException(nameof(context));
         _icons = new ToolbarIcons(uiManager, true);
 
-        debugger.ExitRequested += () => _done = true;
+        _context.ExitRequested += () => _done = true;
 
-        _breakpointsWindow = new BreakpointsWindow(debugger);
+        _breakpointsWindow = new BreakpointsWindow(context);
         _callStackWindow   = new CallStackWindow();
-        _codeWindow        = new CodeWindow(debugger, programDataManager);
-        _commandWindow     = new CommandWindow(debugger, logs);
-        _connectWindow     = new ConnectWindow(debugger);
-        _disassemblyWindow = new DisassemblyWindow(debugger);
+        _codeWindow        = new CodeWindow(context);
+        _commandWindow     = new CommandWindow(context, logHistory);
+        _connectWindow     = new ConnectWindow(context);
+        _disassemblyWindow = new DisassemblyWindow(context);
         _localsWindow      = new LocalsWindow();
-        _registersWindow   = new RegistersWindow(debugger);
+        _registersWindow   = new RegistersWindow(context);
         _watchWindow       = new WatchWindow(watcherCore);
-        _programDataWindow = new ProgramDataWindow(programDataManager);
+        _programDataWindow = new ProgramDataWindow(context);
 
         uiManager.AddMenu(DrawFileMenu);
         uiManager.AddMenu(DrawWindowsMenu);
@@ -67,12 +74,12 @@ class Ui
         }, true);
 
         uiManager.AddHotkey(new KeyBinding(Key.Grave, ModifierKeys.None), () => _commandWindow.Focus(), false);
-        uiManager.AddHotkey(new KeyBinding(Key.F5, ModifierKeys.None), () => _debugger.Continue(), true);
-        uiManager.AddHotkey(new KeyBinding(Key.Pause, ModifierKeys.Control), () => _debugger.Break(), true);
-        uiManager.AddHotkey(new KeyBinding(Key.ScrollLock, ModifierKeys.Control), () => _debugger.Break(), true); // Control+Pause is coming through as scroll lock for some weird reason
-        uiManager.AddHotkey(new KeyBinding(Key.F10, ModifierKeys.None), () => _debugger.StepOver(), true);
-        uiManager.AddHotkey(new KeyBinding(Key.F11, ModifierKeys.None), () => _debugger.StepIn(), true);
-        uiManager.AddHotkey(new KeyBinding(Key.F11, ModifierKeys.Shift), () => _debugger.StepOut(), true);
+        uiManager.AddHotkey(new KeyBinding(Key.F5, ModifierKeys.None), () => Session.Continue(), true);
+        uiManager.AddHotkey(new KeyBinding(Key.Pause, ModifierKeys.Control), () => Session.Break(), true);
+        uiManager.AddHotkey(new KeyBinding(Key.ScrollLock, ModifierKeys.Control), () => Session.Break(), true); // Control+Pause is coming through as scroll lock for some weird reason
+        uiManager.AddHotkey(new KeyBinding(Key.F10, ModifierKeys.None), () => Session.StepOver(), true);
+        uiManager.AddHotkey(new KeyBinding(Key.F11, ModifierKeys.None), () => Session.StepIn(), true);
+        uiManager.AddHotkey(new KeyBinding(Key.F11, ModifierKeys.Shift), () => Session.StepOut(), true);
     }
 
     public void Run()
@@ -82,8 +89,8 @@ class Ui
             if (!_uiManager.RenderFrame())
                 _done = true;
 
-            _debugger.Refresh();
-            _debugger.FlushDeferredResults();
+            Session.Refresh();
+            Session.FlushDeferredResults();
         }
     }
 
@@ -121,7 +128,7 @@ class Ui
         if (!ImGui.BeginMenu("File")) 
             return;
 
-        if (!_debugger.IsConnected && ImGui.MenuItem("Connect"))
+        if (!Session.IsActive && ImGui.MenuItem("Connect"))
             _connectWindow.Open();
 
         if (ImGui.MenuItem("Open Project"))
@@ -145,8 +152,8 @@ class Ui
         if (ImGui.MenuItem("Save Project As"))
             SaveAs();
 
-        if (_debugger.IsConnected && ImGui.MenuItem("Disconnect"))
-            _debugger.Disconnect();
+        if (Session.IsActive && ImGui.MenuItem("Disconnect"))
+            _context.SessionProvider.Disconnect();
 
         if (ImGui.MenuItem("Load Program Data"))
             _programDataWindow.Open();
@@ -175,34 +182,34 @@ class Ui
 
     void DrawToolbar()
     {
-        if (!_debugger.IsConnected)
+        if (!Session.IsActive)
         {
-            if (Toolbar("connect##", _icons.Debug, "Connect _debugger"))
+            if (Toolbar("connect##", _icons.Debug, "Connect"))
                 _connectWindow.Open();
             return;
         }
 
         if (Toolbar("disconnect##", _icons.Disconnect, "Disconnect"))
-            _debugger.Disconnect();
+            _context.SessionProvider.Disconnect();
 
-        if (_debugger.IsPaused)
+        if (Session.IsPaused)
         {
             if (Toolbar("start##", _icons.Start, "Resume (F5)"))
-                _debugger.Continue();
+                Session.Continue();
 
             if (Toolbar("stepin##", _icons.StepInto, "Step In (F11)"))
-                _debugger.StepIn();
+                Session.StepIn();
 
             if (Toolbar("stepover##", _icons.StepOver, "Step Over (F10)"))
-                _debugger.StepOver();
+                Session.StepOver();
 
             if (Toolbar("stepout##", _icons.StepOut, "Step Out (Shift+F11)"))
-                _debugger.StepOut();
+                Session.StepOut();
         }
         else
         {
             if (Toolbar("pause##", _icons.Pause, "Pause (Shift+F5)"))
-                _debugger.Break();
+                Session.Break();
         }
     }
 

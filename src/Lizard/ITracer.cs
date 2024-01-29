@@ -2,7 +2,6 @@
 
 public interface ITracer
 {
-    void Clear();
     void Debug(string message);
     void Info(string message);
     void Warn(string message);

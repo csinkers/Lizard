@@ -16,15 +16,15 @@ class DisassemblyWindow : SingletonWindow
         public string AddrString { get; } = $"{Address.segment:X4}:{Address.offset:X8}";
     };
 
-    readonly Debugger _debugger;
+    readonly CommandContext _context;
     readonly TextEditor _textViewer;
     int _version = -1;
     bool _showBytes;
     (Address Start, Line[] Lines)? _lastResult;
 
-    public DisassemblyWindow(Debugger debugger) : base("Disassembly")
+    public DisassemblyWindow(CommandContext context) : base("Disassembly")
     {
-        _debugger = debugger ?? throw new ArgumentNullException(nameof(debugger));
+        _context = context ?? throw new ArgumentNullException(nameof(context));
         _textViewer = new TextEditor
         {
             Options = { IsReadOnly = true, IsColorizerEnabled = true },
@@ -34,16 +34,17 @@ class DisassemblyWindow : SingletonWindow
 
     void Refresh()
     {
-        if (!_debugger.IsPaused)
+        var session = _context.Session;
+        if (!session.IsPaused)
             return;
 
-        var version = _debugger.Version;
+        var version = session.Version;
         if (version <= _version)
             return;
 
-        var address = new Address(_debugger.Registers.cs, _debugger.Registers.eip);
+        var address = new Address(session.Registers.cs, session.Registers.eip);
 
-        _debugger.Defer(new Request<Line[]>(version,
+        session.Defer(new Request<Line[]>(version,
             host =>
             {
                 var rawLines = host.Disassemble(address, LinesToShow);

@@ -1,6 +1,6 @@
 ﻿namespace Lizard;
 
-public class LogHistory : ITracer
+public class LogHistory
 {
     const int MaxHistory = 10000;
     readonly object _syncRoot = new();
@@ -9,10 +9,10 @@ public class LogHistory : ITracer
     public event Action? Cleared;
 
     public static LogHistory Instance { get; } = new();
-    LogHistory() {}
+    LogHistory() { }
 
-    public void Add(string line) => Add(line, Severity.Debug);
-    public void Add(string line, Severity severity)
+    public void Add(string category, string line) => Add(category, line, Severity.Debug);
+    public void Add(string category, string line, Severity severity)
     {
         lock (_syncRoot)
         {
@@ -40,8 +40,8 @@ public class LogHistory : ITracer
         Cleared?.Invoke();
     }
 
-    public void Debug(string message) => Add(message, Severity.Debug);
-    public void Info(string message) => Add(message, Severity.Info);
-    public void Warn(string message) => Add(message, Severity.Warn);
-    public void Error(string message) => Add(message, Severity.Error);
+    public void Debug(string category, string message) => Add(category, message, Severity.Debug);
+    public void Info(string category, string message) => Add(category, message, Severity.Info);
+    public void Warn(string category, string message) => Add(category, message, Severity.Warn);
+    public void Error(string category, string message) => Add(category, message, Severity.Error);
 }

@@ -1,7 +1,9 @@
-﻿namespace Lizard;
+﻿using Lizard.Gui;
+
+namespace Lizard;
 
 public delegate string GetArg();
-public delegate void DebugCommand(GetArg getArg, Debugger d);
+public delegate void DebugCommand(GetArg getArg, CommandContext c);
 
 public class Command
 {

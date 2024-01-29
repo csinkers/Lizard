@@ -12,7 +12,7 @@ class RegistersWindow : SingletonWindow
     static readonly Vector4 Cyan = new(0.0f, 1.0f, 1.0f, 1.0f);
     static readonly Vector4 Yellow = new(1.0f, 1.0f, 0.0f, 1.0f);
 
-    readonly Debugger _debugger;
+    readonly CommandContext _context;
     Vector2 _regTxtSize;
     Vector2 _regChildSize;
     Vector2 _segTxtSize;
@@ -21,8 +21,8 @@ class RegistersWindow : SingletonWindow
     Vector2 _flagChildSize;
     bool _initialised;
 
-    public RegistersWindow(Debugger debugger) : base("Registers")
-        => _debugger = debugger ?? throw new ArgumentNullException(nameof(debugger));
+    public RegistersWindow(CommandContext context) : base("Registers") 
+        => _context = context ?? throw new ArgumentNullException(nameof(context));
 
     void FirstDraw()
     {
@@ -52,8 +52,9 @@ class RegistersWindow : SingletonWindow
         if (!_initialised)
             FirstDraw();
 
-        var oldRegs = _debugger.OldRegisters;
-        var regs = _debugger.Registers;
+        var session = _context.Session;
+        var oldRegs = session.OldRegisters;
+        var regs = session.Registers;
 
         ImGui.PushStyleColor(ImGuiCol.Border, Green);
         ImGui.BeginChild("exx_regs", _regChildSize, true, ImGuiWindowFlags.NoScrollbar);

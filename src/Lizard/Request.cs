@@ -2,7 +2,7 @@
 
 public class Request<T> : IRequest
 {
-    public delegate T RequestQueueAction(IDebugTarget target);
+    public delegate T RequestQueueAction(IDebugSession session);
     public delegate void FinaliserAction(T result);
 
     public int Version { get; }
@@ -17,6 +17,6 @@ public class Request<T> : IRequest
         _finaliser = finaliser ?? throw new ArgumentNullException(nameof(finaliser));
     }
 
-    public void Execute(IDebugTarget target) => _result = _action(target); // Runs on worker thread, can take a long time
+    public void Execute(IDebugSession session) => _result = _action(session); // Runs on worker thread, can take a long time
     public void Complete() { if (_result != null) _finaliser(_result); } // To be run on main thread, must complete quickly
 }

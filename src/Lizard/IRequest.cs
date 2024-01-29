@@ -3,6 +3,6 @@
 public interface IRequest
 {
     int Version { get; }
-    void Execute(IDebugTarget target);
+    void Execute(IDebugSession target);
     void Complete();
 }

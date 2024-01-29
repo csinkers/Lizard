@@ -2,16 +2,18 @@
 
 public class DrawContext
 {
-    public DrawContext(ProgramDataManager programData, IMemoryCache memory, ITextureStore textureStore)
+    readonly CommandContext _context;
+
+    public DrawContext(CommandContext context, ITextureStore textureStore)
     {
+        _context = context ?? throw new ArgumentNullException(nameof(context));
         Renderers = new RendererCache();
-        History = new HistoryCache(Renderers, programData.Mapping);
-        Memory = memory ?? throw new ArgumentNullException(nameof(memory));
-        ProgramData = programData ?? throw new ArgumentNullException(nameof(programData));
+        History = new HistoryCache(Renderers, context.Mapping);
         TextureStore = textureStore ?? throw new ArgumentNullException(nameof(textureStore));
+        Memory = context.Session.Memory;
     }
 
-    public ProgramDataManager ProgramData { get; }
+    public SymbolStore Symbols => _context.Symbols;
     public RendererCache Renderers { get; }
     public IMemoryCache Memory { get; }
     public HistoryCache History { get; }
@@ -49,7 +51,7 @@ public class DrawContext
 
     public string DescribeAddress(uint address)
     {
-        var symbol = ProgramData.LookupSymbol(address);
+        var symbol = _context.LookupSymbolForAddress(address);
         if (symbol == null)
             return "(null)";
 

@@ -6,17 +6,15 @@ namespace Lizard.Gui.Windows;
 
 public class CodeWindow : SingletonWindow
 {
-    readonly Debugger _debugger;
-    readonly ProgramDataManager _program;
+    readonly CommandContext _context;
     readonly TextEditor _textViewer;
     DecompiledFunction? _decompiled;
     GFunction? _function;
     int _version = -1;
 
-    public CodeWindow(Debugger debugger, ProgramDataManager program) : base("Code")
+    public CodeWindow(CommandContext context) : base("Code")
     {
-        _debugger = debugger ?? throw new ArgumentNullException(nameof(debugger));
-        _program = program ?? throw new ArgumentNullException(nameof(program));
+        _context = context ?? throw new ArgumentNullException(nameof(context));
         _textViewer = new TextEditor
         {
             Options = { IsReadOnly = true, IsColorizerEnabled = true },
@@ -26,17 +24,18 @@ public class CodeWindow : SingletonWindow
 
     void Refresh()
     {
-        if (!_debugger.IsPaused)
+        var session = _context.Session;
+        if (!session.IsPaused)
             return;
 
-        var version = _debugger.Version;
+        var version = session.Version;
         if (version <= _version)
             return;
 
         _version = version;
 
-        var eip = (uint)_debugger.Registers.eip;
-        var mappedEip = _program.Mapping.ToFile(eip);
+        var eip = (uint)session.Registers.eip;
+        var mappedEip = _context.Mapping.ToFile(eip);
         if (mappedEip == null)
         {
             _decompiled = null;
@@ -45,7 +44,7 @@ public class CodeWindow : SingletonWindow
             return;
         }
 
-        var symbol = _program.LookupSymbol(eip);
+        var symbol = _context.LookupSymbolForAddress(eip);
 
         if (symbol == null)
         {
@@ -57,7 +56,7 @@ public class CodeWindow : SingletonWindow
 
         if (_function?.Address != symbol.Address)
         {
-            _decompiled = _program.Code?.TryGetFunction(symbol.Address);
+            _decompiled = _context.Symbols.Code?.TryGetFunction(symbol.Address);
             if (_decompiled == null)
             {
                 _textViewer.AllText = "/* No code found for address */";

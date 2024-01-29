@@ -4,22 +4,46 @@ using LizardProtocol;
 
 namespace Lizard;
 
-public class DumpFileDebugTarget : IDebugTarget, IDisposable
+public class DumpFileSession : IDebugSession, IMemoryReader
 {
-    readonly DumpFile _dump;
     readonly CapstoneX86Disassembler _disassembler;
+    readonly DumpFile _dump;
 
-    public DumpFileDebugTarget(DumpFile dump)
+    public event Action? Disconnected;
+    public event StoppedDelegate? Stopped;
+    public bool CanRun => false;
+    public bool IsPaused => true;
+    public bool IsActive => true;
+    public Registers OldRegisters => _dump.Registers;
+    public Registers Registers => _dump.Registers;
+    public IMemoryCache Memory => new PassthroughMemoryCache(this);
+    public void Refresh() { } 
+    public void Defer(IRequest request) => request.Execute(this);
+    public void FlushDeferredResults() { } 
+    public int Version => 1;
+
+    public DumpFileSession(string path)
+    {
+        _dump = DumpFile.Load(path);
+        _disassembler = CapstoneDisassembler.CreateX86Disassembler(X86DisassembleMode.Bit32);
+        _disassembler.DisassembleSyntax = DisassembleSyntax.Intel;
+    }
+
+    public DumpFileSession(DumpFile dump)
     {
         _dump = dump ?? throw new ArgumentNullException(nameof(dump));
         _disassembler = CapstoneDisassembler.CreateX86Disassembler(X86DisassembleMode.Bit32);
         _disassembler.DisassembleSyntax = DisassembleSyntax.Intel;
     }
 
+    public void Read(uint offset, uint size, Span<byte> buffer) 
+        => _dump.Memory.AsSpan((int)offset, (int)size).CopyTo(buffer);
+
     public void Continue() => throw new NotSupportedException("Invalid operation when debugging a dump file");
     public Registers Break() => throw new NotSupportedException("Invalid operation when debugging a dump file");
     public Registers StepIn() => throw new NotSupportedException("Invalid operation when debugging a dump file");
     public Registers StepOver() => throw new NotSupportedException("Invalid operation when debugging a dump file");
+    public Registers StepOut() => throw new NotSupportedException("Invalid operation when debugging a dump file");
     public Registers StepMultiple(int i) => throw new NotSupportedException("Invalid operation when debugging a dump file");
     public void RunToAddress(Address address) => throw new NotSupportedException("Invalid operation when debugging a dump file");
     public void SetMemory(Address address, byte[] bytes) => throw new NotSupportedException("Invalid operation when debugging a dump file");
@@ -30,7 +54,6 @@ public class DumpFileDebugTarget : IDebugTarget, IDisposable
     public Breakpoint[] ListBreakpoints() => Array.Empty<Breakpoint>();
 
     public Registers GetState() => _dump.Registers;
-
     public byte[] GetMemory(Address addr, int bufferLength)
     {
         var result = new byte[bufferLength];
@@ -61,7 +84,6 @@ public class DumpFileDebugTarget : IDebugTarget, IDisposable
     {
         throw new NotImplementedException();
     }
-
 
     public Descriptor[] GetGdt() => throw new NotImplementedException();
     public Descriptor[] GetLdt() => throw new NotImplementedException();

@@ -7,7 +7,7 @@ namespace Lizard.Gui.Windows;
 public class CommandWindow : SingletonWindow
 {
     readonly ImCommandText _commandText = new(256, CommandParser.GetCompletions);
-    readonly Debugger _debugger;
+    readonly CommandContext _context;
     readonly LogHistory _logs;
     readonly TextEditor _textEditor = new();
     bool _autoScroll = true;
@@ -19,9 +19,9 @@ public class CommandWindow : SingletonWindow
     const PaletteIndex InfoColor = PaletteIndex.Custom + 2;
     const PaletteIndex DebugColor = PaletteIndex.Custom + 3;
 
-    public CommandWindow(Debugger debugger, LogHistory history) : base("Command")
+    public CommandWindow(CommandContext context, LogHistory history) : base("Command")
     {
-        _debugger = debugger ?? throw new ArgumentNullException(nameof(debugger));
+        _context = context ?? throw new ArgumentNullException(nameof(context));
         _logs = history ?? throw new ArgumentNullException(nameof(history));
         _textEditor.Options.IsReadOnly = true;
         _textEditor.SetColor(ErrorColor, 0xff0000ff);
@@ -47,7 +47,7 @@ public class CommandWindow : SingletonWindow
 
     public void Focus() => _pendingFocus = true;
 
-    protected override unsafe void DrawContents()
+    protected override void DrawContents()
     {
         ImGui.SetWindowPos(Vector2.Zero, ImGuiCond.FirstUseEver);
 
@@ -79,8 +79,8 @@ public class CommandWindow : SingletonWindow
 
             if (!string.IsNullOrWhiteSpace(command))
             {
-                _logs.Add("> " + command, Severity.Info);
-                CommandParser.RunCommand(command, _debugger);
+                _logs.Add("", "> " + command, Severity.Info);
+                CommandParser.RunCommand(command, _context);
             }
 
             _pendingFocus = true;

@@ -6,25 +6,22 @@ public class MemoryCache : IMemoryCache
     const int PageSize = 1 << PageSizeBits;
 
     readonly BufferPool _pool = new();
+    readonly IMemoryReader _reader;
+    readonly Func<uint, byte[]?> _tryGetPreviousPageDelegate;
+
     Dictionary<uint, byte[]> _current = new();
     Dictionary<uint, byte[]> _previous = new();
-    IMemoryReader? _reader;
     bool _dirty;
+
+    public MemoryCache(IMemoryReader reader)
+    {
+        _reader = reader ?? throw new ArgumentNullException(nameof(reader));
+        _tryGetPreviousPageDelegate = TryGetPreviousPage;
+    }
 
     static uint PageNum(uint offset) => offset >> PageSizeBits;
     static uint PageNumRoundUp(uint offset) => offset + 4095 >> PageSizeBits;
     static uint PageAddr(uint pageNum) => pageNum << PageSizeBits;
-
-    public IMemoryReader? Reader
-    {
-        get => _reader;
-        set
-        {
-            Clear();
-            _reader = value;
-        }
-    }
-
     public void Dirty() => _dirty = true;
 
     public void Clear()
@@ -57,13 +54,13 @@ public class MemoryCache : IMemoryCache
 
         var pageOffset = PageAddr(pageNum);
         buffer = _pool.Borrow(PageSize);
-        _reader?.Read(pageOffset, buffer);
+        _reader.Read(pageOffset, PageSize, buffer);
         _current[pageNum] = buffer;
         return buffer;
     }
 
     public ReadOnlySpan<byte> TryReadPrevious(uint offset, uint size, Span<byte> backingArray)
-        => ReadInner(offset, size, backingArray, TryGetPreviousPage);
+        => ReadInner(offset, size, backingArray, _tryGetPreviousPageDelegate);
 
     byte[]? TryGetPreviousPage(uint pageNum)
     {

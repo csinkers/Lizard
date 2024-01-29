@@ -1,10 +1,11 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Lizard.Config;
 
 public class ProjectConfig : PropertyProvider
 {
-    public string? Path { get; set; }
+    [JsonIgnore] public string? Path { get; set; }
     public Dictionary<string, WindowConfig> Windows { get; set; } = new();
 
     public static ProjectConfig Load(string path)
@@ -12,6 +13,8 @@ public class ProjectConfig : PropertyProvider
         using var stream = File.Open(path, FileMode.Open, FileAccess.Read);
         var result = JsonSerializer.Deserialize<ProjectConfig>(stream)
             ?? throw new FormatException($"Could not load project from \"{path}\"");
+
+        result.Path = path;
 
         foreach (var kvp in result.Windows)
         {

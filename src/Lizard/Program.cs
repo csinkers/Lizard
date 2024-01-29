@@ -13,33 +13,37 @@ internal static class Program
         try
         {
             var cmdLine = CommandLineArgs.Parse(args);
-            ProjectConfig project;
-            if (cmdLine.ProjectPath == null)
-                project = new ProjectConfig();
-            else
+
+            var projectManager = new ProjectManager(new ProjectConfig());
+
+            var mapping = new MemoryMapping();
+            projectManager.ProjectLoaded += mapping.LoadProject;
+            projectManager.ProjectSaving += mapping.SaveProject;
+
+            var symbols = new SymbolStore();
+            projectManager.ProjectLoaded += symbols.LoadProject;
+            projectManager.ProjectSaving += symbols.SaveProject;
+
+            bool connected = false;
+            using var sessionProvider = new DebugSessionProvider();
+            projectManager.ProjectLoaded += p =>
             {
-                project = ProjectConfig.Load(cmdLine.ProjectPath);
-                project.Path = cmdLine.ProjectPath;
-            }
-
-            var projectManager = new ProjectManager(project);
-            var programDataManager = new ProgramDataManager(projectManager);
-            var iceManager = new IceSessionManager(projectManager, cmdLine.AutoConnect);
-            var hostProvider = new IceDebugTargetProvider(iceManager, programDataManager);
-
-            var memoryCache = new MemoryCache();
-            using var debugger = new Debugger(hostProvider, LogHistory.Instance, memoryCache);
+                if (cmdLine.AutoConnect && !connected)
+                {
+                    connected = true;
+                    var hostname = p.GetProperty(ConnectWindow.HostProperty)!;
+                    var port = p.GetProperty(ConnectWindow.PortProperty);
+                    sessionProvider.StartIceSession(hostname, port);
+                }
+            };
 
             using var uiManager = new UiManager(projectManager);
-            var watcher = new WatcherCore(programDataManager, memoryCache, uiManager.TextureStore);
-            var ui = new Ui(projectManager, programDataManager, uiManager, debugger, LogHistory.Instance, watcher);
+            var context = new CommandContext(sessionProvider, mapping, symbols);
+            var watcher = new WatcherCore(context, uiManager.TextureStore);
+            var ui = new Ui(LogHistory.Instance, projectManager, uiManager, context, watcher);
 
-            if (cmdLine.AutoConnect)
-            {
-                var hostname = project.GetProperty(ConnectWindow.HostProperty)!;
-                var port = project.GetProperty(ConnectWindow.PortProperty);
-                iceManager.Connect(hostname, port);
-            }
+            if (!string.IsNullOrEmpty(cmdLine.ProjectPath))
+                projectManager.Load(cmdLine.ProjectPath);
 
             ui.Run();
             return 0;
@@ -51,3 +55,4 @@ internal static class Program
         }
     }
 }
+

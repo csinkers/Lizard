@@ -18,32 +18,32 @@ public class ProgramDataWindow : SingletonWindow
         public int Type;
     }
 
-    readonly ProgramDataManager _programDataManager;
+    readonly CommandContext _context;
     readonly ImText _path = new(260, "");
     readonly ImText _codePath = new(260, "");
-    readonly List<TempRegion> _mapping = new();
+    readonly List<TempRegion> _tempRegions = new();
     string _lastError = "";
 
     static string FormatHex(uint v) => v.ToString("X8");
 
-    public ProgramDataWindow(ProgramDataManager programDataManager) : base("Program Data")
+    public ProgramDataWindow(CommandContext context) : base("Program Data")
     {
-        _programDataManager = programDataManager ?? throw new ArgumentNullException(nameof(programDataManager));
-        _path.Text = _programDataManager.DataPath ?? "";
-        _codePath.Text = _programDataManager.CodePath ?? "";
-        LoadFromMapping(_programDataManager.Mapping);
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _path.Text = _context.Symbols.DataPath ?? "";
+        _codePath.Text = _context.Symbols.CodePath ?? "";
+        LoadFromMapping(_context.Mapping);
 
-        _programDataManager.DataLoaded += _ =>
+        _context.Symbols.DataLoaded += _ =>
         {
-            _path.Text = _programDataManager.DataPath ?? "";
-            _codePath.Text = _programDataManager.CodePath ?? "";
-            LoadFromMapping(_programDataManager.Mapping);
+            _path.Text = _context.Symbols.DataPath ?? "";
+            _codePath.Text = _context.Symbols.CodePath ?? "";
+            LoadFromMapping(_context.Mapping);
         };
     }
 
     void LoadFromMapping(MemoryMapping mapping)
     {
-        _mapping.Clear();
+        _tempRegions.Clear();
         foreach (var region in mapping.Regions)
         {
             var temp = new TempRegion();
@@ -51,7 +51,7 @@ public class ProgramDataWindow : SingletonWindow
             Encoding.UTF8.GetBytes(FormatHex(region.MemoryStart), temp.MemAddress);
             Encoding.UTF8.GetBytes(FormatHex(region.Length), temp.Length);
             temp.Type = (int)region.Type;
-            _mapping.Add(temp);
+            _tempRegions.Add(temp);
         }
     }
 
@@ -83,7 +83,7 @@ public class ProgramDataWindow : SingletonWindow
 
         if (ImGui.Button("Load Program Data"))
         {
-            try { _programDataManager.Load(_path.Text, _codePath.Text); }
+            try { _context.Symbols.Load(_path.Text, _codePath.Text); }
             catch (Exception ex) { _lastError = ex.Message; }
         }
 
@@ -99,48 +99,48 @@ public class ProgramDataWindow : SingletonWindow
         ImGui.NextColumn();
         ImGui.Text("Type");
 
-        for (var i = 0; i < _mapping.Count; i++)
+        for (var i = 0; i < _tempRegions.Count; i++)
         {
             ImGui.PushID(i);
 
             ImGui.NextColumn();
-            var region = _mapping[i];
+            var tempRegion = _tempRegions[i];
             if (ImGui.Button("-"))
                 indexToRemove = i;
 
-            ImGui.SameLine();   ImGui.InputText("##file", region.FileAddress, (uint)region.FileAddress.Length, ImGuiInputTextFlags.CharsHexadecimal);
-            ImGui.NextColumn(); ImGui.InputText("##mem", region.MemAddress, (uint)region.MemAddress.Length, ImGuiInputTextFlags.CharsHexadecimal);
-            ImGui.NextColumn(); ImGui.InputText("##len", region.Length, (uint)region.Length.Length, ImGuiInputTextFlags.CharsHexadecimal);
+            ImGui.SameLine();   ImGui.InputText("##file", tempRegion.FileAddress, (uint)tempRegion.FileAddress.Length, ImGuiInputTextFlags.CharsHexadecimal);
+            ImGui.NextColumn(); ImGui.InputText("##mem", tempRegion.MemAddress, (uint)tempRegion.MemAddress.Length, ImGuiInputTextFlags.CharsHexadecimal);
+            ImGui.NextColumn(); ImGui.InputText("##len", tempRegion.Length, (uint)tempRegion.Length.Length, ImGuiInputTextFlags.CharsHexadecimal);
             ImGui.NextColumn();
-            int type = region.Type;
+            int type = tempRegion.Type;
             if (ImGui.Combo("##type", ref type, MemoryTypes, MemoryTypes.Length))
-                region.Type = type;
+                tempRegion.Type = type;
 
             ImGui.PopID();
         }
 
         ImGui.Columns(0);
         if (ImGui.Button("+"))
-            _mapping.Add(new TempRegion());
+            _tempRegions.Add(new TempRegion());
 
         if (indexToRemove != -1)
-            _mapping.RemoveAt(indexToRemove);
+            _tempRegions.RemoveAt(indexToRemove);
 
         if (ImGui.Button("Apply Mapping"))
         {
             try
             {
-                var mapping = new MemoryMapping();
-                foreach (var region in _mapping)
+                var regions = new List<MemoryRegion>();
+                foreach (var tempRegion in _tempRegions)
                 {
-                    var fileOffset = ParseHex(region.FileAddress, "file offset");
-                    var memOffset = ParseHex(region.MemAddress, "memory offset");
-                    var length = ParseHex(region.Length, "length");
-                    var type = (MemoryType)region.Type;
-                    mapping.Add(memOffset, fileOffset, length, type);
+                    var fileOffset = ParseHex(tempRegion.FileAddress, "file offset");
+                    var memOffset = ParseHex(tempRegion.MemAddress, "memory offset");
+                    var length = ParseHex(tempRegion.Length, "length");
+                    var type = (MemoryType)tempRegion.Type;
+                    regions.Add( new MemoryRegion(memOffset, fileOffset, length, type));
                 }
 
-                _programDataManager.Mapping = mapping;
+                _context.Mapping.Update(regions);
                 _lastError = "";
             }
             catch (FormatException ex) { _lastError = ex.Message; }

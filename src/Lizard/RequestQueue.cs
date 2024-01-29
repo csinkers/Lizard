@@ -14,29 +14,15 @@ public class RequestQueue
             _pending.Add(action);
     }
 
-    public void ProcessPendingRequests(IDebugTargetProvider targetProvider, int version, CancellationToken token)
+    public void ProcessPendingRequests(IDebugSession session, int version, CancellationToken token)
     {
-        for(;;)
+        for (; ; )
         {
             var request = _pending.Take(token);
             if (request.Version < version)
                 continue;
 
-            if (!targetProvider.TryLock()) // Make sure the session won't be recreated when we're about to call it
-            {
-                _pending.Add(request, token); // Re-enqueue
-                continue;
-            }
-
-            try
-            {
-                var host = targetProvider.Host;
-                if (host == null)
-                    continue;
-
-                request.Execute(host);
-            }
-            finally { targetProvider.Unlock(); }
+            request.Execute(session);
 
             lock (_syncRoot)
                 _completed.Enqueue(request);
@@ -45,7 +31,7 @@ public class RequestQueue
 
     public void ApplyResults()
     {
-        for(;;)
+        for (; ; )
         {
             IRequest? request;
             lock (_syncRoot)

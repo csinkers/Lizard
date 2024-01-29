@@ -1,18 +1,35 @@
-﻿namespace Lizard;
+﻿using System.Globalization;
+using Lizard.Config;
+using Lizard.Config.Properties;
+
+namespace Lizard;
 
 public class MemoryMapping
 {
+    static readonly StringListProperty MappingProperty = new(nameof(MemoryMapping), "Regions");
     readonly List<MemoryRegion> _memoryOrder = new();
     readonly List<MemoryRegion> _fileOrder = new();
 
-    public void Add(uint memoryStart, uint fileStart, uint length, MemoryType type)
-    {
-        var region1 = new MemoryRegion(memoryStart, fileStart, length, type);
-        ThrowIfOverlapping(region1, _memoryOrder, x => x.MemoryStart);
-        ThrowIfOverlapping(region1, _fileOrder, x => x.FileStart);
+    public event Action? MappingChanged;
 
-        _memoryOrder.Add(region1);
-        _fileOrder.Add(region1);
+    public void Update(IEnumerable<MemoryRegion> regions)
+    {
+        _memoryOrder.Clear();
+        _fileOrder.Clear();
+
+        foreach(var region in regions)
+            Add(region);
+
+        MappingChanged?.Invoke();
+    }
+
+    void Add(MemoryRegion region)
+    {
+        ThrowIfOverlapping(region, _memoryOrder, x => x.MemoryStart);
+        ThrowIfOverlapping(region, _fileOrder, x => x.FileStart);
+
+        _memoryOrder.Add(region);
+        _fileOrder.Add(region);
         _memoryOrder.Sort((x, y) => Comparer<uint>.Default.Compare(x.MemoryStart, y.MemoryStart));
         _fileOrder.Sort((x, y) => Comparer<uint>.Default.Compare(x.FileStart, y.FileStart));
     }
@@ -68,5 +85,42 @@ public class MemoryMapping
         }
 
         return null;
+    }
+
+    public void LoadProject(ProjectConfig project)
+    {
+        List<string> mappingList = project.GetProperty(MappingProperty);
+        Deserialize(mappingList);
+    }
+
+    public void SaveProject(ProjectConfig project) => project.SetProperty(MappingProperty, Serialize());
+
+    public List<string> Serialize() 
+        => Regions
+            .Select(region => $"{region.FileStart:x} {region.MemoryStart:x} {region.Length:x} {region.Type}")
+            .ToList();
+
+    void Deserialize(List<string> list)
+    {
+        static uint ParseHex(string s) => uint.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+
+        _fileOrder.Clear();
+        _memoryOrder.Clear();
+
+        foreach (var s in list)
+        {
+            var parts = s.Split(' ');
+            if (parts.Length != 4)
+                continue;
+
+            var fileStart = ParseHex(parts[0]);
+            var memoryStart = ParseHex(parts[1]);
+            var length = ParseHex(parts[2]);
+            var type = Enum.Parse<MemoryType>(parts[3]);
+            var region = new MemoryRegion(memoryStart, fileStart, length, type);
+            Add(region);
+        }
+
+        MappingChanged?.Invoke();
     }
 }

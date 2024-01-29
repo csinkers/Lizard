@@ -10,13 +10,13 @@ internal class ConnectWindow : SingletonWindow
     public static readonly StringProperty HostProperty = new(nameof(ConnectWindow), "Hostname", "localhost");
     public static readonly IntProperty PortProperty = new(nameof(ConnectWindow), "Port", 7243);
 
-    readonly Debugger _debugger;
+    readonly CommandContext _context;
     readonly ImText _hostname = new(256, "localhost");
     string _error = "";
     int _port;
 
-    public ConnectWindow(Debugger debugger) : base("Connect")
-        => _debugger = debugger ?? throw new ArgumentNullException(nameof(debugger));
+    public ConnectWindow(CommandContext context) : base("Connect") 
+        => _context = context ?? throw new ArgumentNullException(nameof(context));
 
     protected override void Load(WindowConfig config)
     {
@@ -44,7 +44,7 @@ internal class ConnectWindow : SingletonWindow
         {
             try
             {
-                _debugger.Connect(_hostname.Text, _port);
+                _context.SessionProvider.StartIceSession(_hostname.Text, _port);
                 _error = "";
                 Close();
             }
