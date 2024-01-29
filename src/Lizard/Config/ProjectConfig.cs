@@ -11,10 +11,14 @@ public class ProjectConfig : PropertyProvider
     public static ProjectConfig Load(string path)
     {
         using var stream = File.Open(path, FileMode.Open, FileAccess.Read);
-        var result = JsonSerializer.Deserialize<ProjectConfig>(stream)
-            ?? throw new FormatException($"Could not load project from \"{path}\"");
-
+        var result = Load(stream);
         result.Path = path;
+        return result;
+    }
+    public static ProjectConfig Load(Stream stream)
+    {
+        var result = JsonSerializer.Deserialize<ProjectConfig>(stream)
+            ?? throw new FormatException("Could not load project");
 
         foreach (var kvp in result.Windows)
         {

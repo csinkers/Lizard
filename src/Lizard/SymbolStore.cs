@@ -6,8 +6,8 @@ namespace Lizard;
 
 public class SymbolStore
 {
-    static readonly StringProperty ProgramDataPathProperty = new(nameof(SymbolStore), "ProgramDataPath");
-    static readonly StringProperty CodePathProperty = new(nameof(SymbolStore), "CCodePath");
+    public static readonly StringProperty ProgramDataPathProperty = new(nameof(SymbolStore), "ProgramDataPath");
+    public static readonly StringProperty CodePathProperty = new(nameof(SymbolStore), "CCodePath");
 
     public ProgramData? Data { get; private set; }
     public DecompilationResults? Code { get; private set; }
@@ -30,6 +30,20 @@ public class SymbolStore
 
         Code?.Dispose();
         Code = LoadCode(codePath);
+
+        DataLoaded?.Invoke(Data);
+    }
+
+    public void Load(Stream dataStream, Stream codeStream, string dataName, string codeName)
+    {
+        DataLoading?.Invoke();
+
+        DataPath = dataName;
+        CodePath = codeName;
+        Data = ProgramData.Load(dataStream);
+
+        Code?.Dispose();
+        Code = DecompilationResults.Load(codeStream);
 
         DataLoaded?.Invoke(Data);
     }

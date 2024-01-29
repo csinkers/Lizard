@@ -14,26 +14,21 @@ public class DumpFileSession : IDebugSession, IMemoryReader
     public bool CanRun => false;
     public bool IsPaused => true;
     public bool IsActive => true;
-    public Registers OldRegisters => _dump.Registers;
-    public Registers Registers => _dump.Registers;
+    public Registers OldRegisters { get; }
+    public Registers Registers { get; }
     public IMemoryCache Memory => new PassthroughMemoryCache(this);
     public void Refresh() { } 
     public void Defer(IRequest request) => request.Execute(this);
     public void FlushDeferredResults() { } 
     public int Version => 1;
 
-    public DumpFileSession(string path)
-    {
-        _dump = DumpFile.Load(path);
-        _disassembler = CapstoneDisassembler.CreateX86Disassembler(X86DisassembleMode.Bit32);
-        _disassembler.DisassembleSyntax = DisassembleSyntax.Intel;
-    }
-
     public DumpFileSession(DumpFile dump)
     {
         _dump = dump ?? throw new ArgumentNullException(nameof(dump));
         _disassembler = CapstoneDisassembler.CreateX86Disassembler(X86DisassembleMode.Bit32);
         _disassembler.DisassembleSyntax = DisassembleSyntax.Intel;
+        Registers = ConvertRegisters(_dump.Registers);
+        OldRegisters = Registers;
     }
 
     public void Read(uint offset, uint size, Span<byte> buffer) 
@@ -52,8 +47,8 @@ public class DumpFileSession : IDebugSession, IMemoryReader
     public void DelBreakpoint(int id) => throw new NotSupportedException("Invalid operation when debugging a dump file");
     public void SetRegister(Register reg, int value) => throw new NotSupportedException("Invalid operation when debugging a dump file");
     public Breakpoint[] ListBreakpoints() => Array.Empty<Breakpoint>();
+    public Registers GetState() => Registers;
 
-    public Registers GetState() => _dump.Registers;
     public byte[] GetMemory(Address addr, int bufferLength)
     {
         var result = new byte[bufferLength];
@@ -88,4 +83,12 @@ public class DumpFileSession : IDebugSession, IMemoryReader
     public Descriptor[] GetGdt() => throw new NotImplementedException();
     public Descriptor[] GetLdt() => throw new NotImplementedException();
     public void Dispose() => _disassembler.Dispose();
+
+    static Registers ConvertRegisters(DumpRegisters r) => new(true,
+            r.flags,
+            r.eax, r.ebx, r.ecx, r.edx,
+            r.esi, r.edi,
+            r.ebp, r.esp, r.eip,
+            (short)r.es, (short)r.cs, (short)r.ss,
+            (short)r.ds, (short)r.fs, (short)r.gs);
 }

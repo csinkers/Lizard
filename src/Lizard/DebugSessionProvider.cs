@@ -1,4 +1,5 @@
-﻿using LizardProtocol;
+﻿using Lizard.Gui;
+using LizardProtocol;
 
 namespace Lizard;
 
@@ -18,6 +19,14 @@ public class DebugSessionProvider : IDisposable
     {
         Disconnect();
         Session = new IceDebugSession(hostname, port);
+    }
+
+    public void StartDumpSession(string path, CommandContext c)
+    {
+        Disconnect();
+        var dumpFile = DumpFile.Load(path);
+        Session = new DumpFileSession(dumpFile);
+        c.ProjectManager.Load(dumpFile.State);
     }
 
     public void Disconnect()

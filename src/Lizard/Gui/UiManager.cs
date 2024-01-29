@@ -47,7 +47,7 @@ class UiManager : IDisposable
     public UiManager(ProjectManager projectManager)
     {
         _projectManager = projectManager ?? throw new ArgumentNullException(nameof(projectManager));
-        _projectManager.ProjectLoaded += _ => _projectDirty = true;
+        _projectManager.ProjectLoaded += () => _projectDirty = true;
         _projectManager.ProjectSaving += SaveProject;
 
         var project = _projectManager.Project;

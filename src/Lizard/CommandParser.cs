@@ -399,17 +399,7 @@ static class CommandParser
             new(new[] { ".dump" }, "<path> : Saves a dump file containing the entire memory space as well as the current processor context", (getArg, c) =>
             {
                 var filename = getArg();
-                if (!Directory.Exists(Path.GetDirectoryName(filename)))
-                    throw new DirectoryNotFoundException("The directory could not be found");
-
-                if (!c.Session.IsPaused) { Log.Error("Can only write a dump when execution is paused"); return; }
-
-                var r = c.Session.Registers;
-                int maxAddress = c.Session.GetMaxNonEmptyAddress(r.cs);
-                var bytes = c.Session.GetMemory(new Address(r.cs, 0), maxAddress);
-                var metadata = c.GetDumpState();
-
-                DumpFile.Save(filename, metadata, bytes);
+                DumpFile.Save(filename, c);
             }),
 
             new(new[] { "ListBreakpoints", "bps", "bl" }, "Retrieves the current breakpoint list", (_,  c) =>
@@ -461,7 +451,18 @@ static class CommandParser
                 (getArg, c) => PrintDescriptors(c.Session.GetGdt(), false)),
 
             new(new[] { "GetLDT", "ldt" }, "Retrieves the Local Descriptor Table",
-                (getArg, c) => PrintDescriptors(c.Session.GetLdt(), true))
+                (getArg, c) => PrintDescriptors(c.Session.GetLdt(), true)),
+
+            new(new[] { "x" }, "Retrieves the nearest symbol on or before the given address",
+                (getArg, c) =>
+                {
+                    var address = ParseUtil.ParseAddress(getArg(), c, true);
+                    var symbol = c.LookupSymbolForAddress((uint)address.offset);
+                    if (symbol == null)
+                        Log.Warn("No symbol found");
+                    else
+                        Log.Debug($"{symbol.Address:X8} {symbol.Name}");
+                })
         }.SelectMany(x => x.Names.Select(name => (name, x)))
         .ToDictionary(x => x.name, x => x.x, StringComparer.OrdinalIgnoreCase);
 

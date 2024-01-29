@@ -17,30 +17,36 @@ internal static class Program
             var projectManager = new ProjectManager(new ProjectConfig());
 
             var mapping = new MemoryMapping();
-            projectManager.ProjectLoaded += mapping.LoadProject;
+            projectManager.ProjectLoading += mapping.LoadProject;
             projectManager.ProjectSaving += mapping.SaveProject;
 
             var symbols = new SymbolStore();
-            projectManager.ProjectLoaded += symbols.LoadProject;
+            projectManager.ProjectLoading += symbols.LoadProject;
             projectManager.ProjectSaving += symbols.SaveProject;
 
-            bool connected = false;
             using var sessionProvider = new DebugSessionProvider();
-            projectManager.ProjectLoaded += p =>
+            using var uiManager = new UiManager(projectManager);
+            var context = new CommandContext(sessionProvider, mapping, symbols, projectManager);
+            var watcher = new WatcherCore(context, uiManager.TextureStore);
+            var ui = new Ui(LogHistory.Instance, projectManager, uiManager, context, watcher);
+
+            if (!string.IsNullOrEmpty(cmdLine.DumpPath))
             {
-                if (cmdLine.AutoConnect && !connected)
+                sessionProvider.StartDumpSession(cmdLine.DumpPath, context);
+            }
+            else if (cmdLine.AutoConnect)
+            {
+                void Connect()
                 {
-                    connected = true;
+                    var p = projectManager.Project;
                     var hostname = p.GetProperty(ConnectWindow.HostProperty)!;
                     var port = p.GetProperty(ConnectWindow.PortProperty);
                     sessionProvider.StartIceSession(hostname, port);
+                    projectManager.ProjectLoaded -= Connect;
                 }
-            };
 
-            using var uiManager = new UiManager(projectManager);
-            var context = new CommandContext(sessionProvider, mapping, symbols);
-            var watcher = new WatcherCore(context, uiManager.TextureStore);
-            var ui = new Ui(LogHistory.Instance, projectManager, uiManager, context, watcher);
+                projectManager.ProjectLoaded += Connect;
+            }
 
             if (!string.IsNullOrEmpty(cmdLine.ProjectPath))
                 projectManager.Load(cmdLine.ProjectPath);
