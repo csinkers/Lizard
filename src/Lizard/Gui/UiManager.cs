@@ -47,14 +47,12 @@ class UiManager : IDisposable
     public UiManager(ProjectManager projectManager)
     {
         _projectManager = projectManager ?? throw new ArgumentNullException(nameof(projectManager));
-        _projectManager.ProjectLoaded += () => _projectDirty = true;
+        _projectManager.ProjectLoaded += () =>
+        {
+            _projectDirty = true;
+        };
         _projectManager.ProjectSaving += SaveProject;
 
-        var project = _projectManager.Project;
-        var x = project.GetProperty(PositionX);
-        var y = project.GetProperty(PositionY);
-        var width = project.GetProperty(Width);
-        var height = project.GetProperty(Height);
 
 #if RENDERDOC
         RenderDoc.Load(out var renderDoc);
@@ -62,7 +60,7 @@ class UiManager : IDisposable
 #endif
 
         VeldridStartup.CreateWindowAndGraphicsDevice(
-            new WindowCreateInfo(x, y, width, height, WindowState.Normal, "Lizard"),
+            new WindowCreateInfo(0, 0, 320, 240, WindowState.Normal, "Lizard"),
             new GraphicsDeviceOptions(true) { SyncToVerticalBlank = true },
             GraphicsBackend.Direct3D11,
             out _window,
@@ -88,6 +86,11 @@ class UiManager : IDisposable
 
     void PostLoad(ProjectConfig project)
     {
+        _window.X = project.GetProperty(PositionX);
+        _window.Y = project.GetProperty(PositionY);
+        _window.Width = project.GetProperty(Width);
+        _window.Height = project.GetProperty(Height);
+
         foreach (var kvp in _windows)
             kvp.Value.ClearState();
 

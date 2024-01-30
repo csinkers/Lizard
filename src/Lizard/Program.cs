@@ -8,6 +8,11 @@ namespace Lizard;
 
 internal static class Program
 {
+    static readonly string DefaultProjectPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LizardDebugger",
+            "default.lizard");
+
     public static int Main(string[] args)
     {
         try
@@ -50,8 +55,16 @@ internal static class Program
 
             if (!string.IsNullOrEmpty(cmdLine.ProjectPath))
                 projectManager.Load(cmdLine.ProjectPath);
+            else if (File.Exists(DefaultProjectPath))
+                projectManager.Load(DefaultProjectPath);
 
             ui.Run();
+
+            var defaultProjDir = Path.GetDirectoryName(DefaultProjectPath)!;
+            if (!Directory.Exists(defaultProjDir))
+                Directory.CreateDirectory(defaultProjDir);
+
+            projectManager.Save(DefaultProjectPath);
             return 0;
         }
         catch (Exception e)
@@ -60,5 +73,6 @@ internal static class Program
             return 1;
         }
     }
+
 }
 
