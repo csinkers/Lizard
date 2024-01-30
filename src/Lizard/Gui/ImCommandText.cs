@@ -57,7 +57,7 @@ public class ImCommandText
         }
     }
 
-    public unsafe bool Draw(string id)
+    public unsafe bool Draw(string id) // Returns true if a command was entered
     {
         var inputId = ImGui.GetID(id);
         var isSearchResultWindowOpen = inputId == _activeInputId;

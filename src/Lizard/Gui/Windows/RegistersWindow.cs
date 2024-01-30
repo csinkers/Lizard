@@ -57,7 +57,7 @@ class RegistersWindow : SingletonWindow
         var regs = session.Registers;
 
         ImGui.PushStyleColor(ImGuiCol.Border, Green);
-        ImGui.BeginChild("exx_regs", _regChildSize, true, ImGuiWindowFlags.NoScrollbar);
+        ImGui.BeginChild("exx_regs", _regChildSize, ImGuiChildFlags.Border, ImGuiWindowFlags.NoScrollbar);
         DrawReg8("EAX", regs.eax, oldRegs.eax);
         DrawReg8("EBX", regs.ebx, oldRegs.ebx);
         DrawReg8("ECX", regs.ecx, oldRegs.ecx);
@@ -68,7 +68,7 @@ class RegistersWindow : SingletonWindow
         ImGui.SameLine();
 
         ImGui.PushStyleColor(ImGuiCol.Border, Cyan);
-        ImGui.BeginChild("exi_exp_regs", _regChildSize, true, ImGuiWindowFlags.NoScrollbar);
+        ImGui.BeginChild("exi_exp_regs", _regChildSize, ImGuiChildFlags.Border, ImGuiWindowFlags.NoScrollbar);
         DrawReg8("ESI", regs.esi, oldRegs.esi);
         DrawReg8("EDI", regs.edi, oldRegs.edi);
         DrawReg8("EBP", regs.ebp, oldRegs.ebp);
@@ -79,7 +79,7 @@ class RegistersWindow : SingletonWindow
         ImGui.Spacing();
 
         ImGui.PushStyleColor(ImGuiCol.Border, Yellow);
-        ImGui.BeginChild("segments", _segChildSize, true, ImGuiWindowFlags.NoScrollbar);
+        ImGui.BeginChild("segments", _segChildSize, ImGuiChildFlags.Border, ImGuiWindowFlags.NoScrollbar);
         DrawReg4("DS", regs.ds, oldRegs.ds); ImGui.SameLine(); DrawReg4("FS", regs.fs, oldRegs.fs);
         DrawReg4("ES", regs.es, oldRegs.es); ImGui.SameLine(); DrawReg4("GS", regs.gs, oldRegs.gs);
         DrawReg4("CS", regs.cs, oldRegs.cs); ImGui.SameLine(); DrawReg4("SS", regs.ss, oldRegs.ss);
@@ -89,7 +89,7 @@ class RegistersWindow : SingletonWindow
         ImGui.SameLine();
 
         ImGui.PushStyleColor(ImGuiCol.Border, Red);
-        ImGui.BeginChild("flags", _flagChildSize, true, ImGuiWindowFlags.NoScrollbar);
+        ImGui.BeginChild("flags", _flagChildSize, ImGuiChildFlags.Border, ImGuiWindowFlags.NoScrollbar);
         DrawFlag("CF", regs.flags, oldRegs.flags, CpuFlags.CF); ImGui.SameLine();
         DrawFlag("ZF", regs.flags, oldRegs.flags, CpuFlags.ZF); ImGui.SameLine();
         DrawFlag("SF", regs.flags, oldRegs.flags, CpuFlags.SF);

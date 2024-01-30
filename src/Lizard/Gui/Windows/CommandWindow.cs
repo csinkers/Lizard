@@ -12,7 +12,6 @@ public class CommandWindow : SingletonWindow
     readonly TextEditor _textEditor = new();
     bool _autoScroll = true;
     bool _scrollToBottom = true;
-    bool _pendingFocus;
 
     public const PaletteIndex ErrorColor = PaletteIndex.Custom;
     public const PaletteIndex WarningColor = PaletteIndex.Custom + 1;
@@ -43,18 +42,16 @@ public class CommandWindow : SingletonWindow
         };
     }
 
-    public void Focus() => _pendingFocus = true;
-
     protected override void DrawContents()
     {
-        ImGui.SetWindowPos(Vector2.Zero, ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSize(new Vector2(800, 600), ImGuiCond.FirstUseEver);
 
         // Reserve enough left-over height for 1 separator + 1 input text
         float footerHeightToReserve = ImGui.GetStyle().ItemSpacing.Y + ImGui.GetFrameHeightWithSpacing();
         ImGui.BeginChild(
             "ScrollingRegion",
             new Vector2(0, -footerHeightToReserve),
-            false,
+            ImGuiChildFlags.None,
             ImGuiWindowFlags.HorizontalScrollbar);
 
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(4, 1)); // Tighten spacing
@@ -80,36 +77,11 @@ public class CommandWindow : SingletonWindow
                 _logs.Add("", "> " + command, Severity.Info);
                 CommandParser.RunCommand(command, _context);
             }
-
-            _pendingFocus = true;
+            ImGui.SetKeyboardFocusHere(-1);
         }
 
-        /*
-        if (_inputBuffer.Draw("", ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.CallbackCompletion | ImGuiInputTextFlags.CallbackHistory, CommandCallback))
-        {
-            var command = _inputBuffer.Text;
-            _inputBuffer.Text = "";
-
-            if (!string.IsNullOrWhiteSpace(command))
-            {
-                _logs.Add("> " + command, Severity.Info);
-                CommandParser.RunCommand(command, _debugger);
-
-                if (_commandHistory.Count >= CommandHistoryLimit)
-                    _commandHistory.Dequeue();
-                _commandHistory.Enqueue(command);
-            }
-
-            _pendingFocus = true;
-        }
-        */
-
-        ImGui.SetItemDefaultFocus();
-        if (_pendingFocus)
-        {
-            ImGui.SetKeyboardFocusHere(-1); // Auto focus previous widget
-            _pendingFocus = false;
-        }
+        if (JustOpened)
+            ImGui.SetKeyboardFocusHere(-1);
 
         ImGui.SameLine();
         ImGui.Checkbox("Scroll", ref _autoScroll);

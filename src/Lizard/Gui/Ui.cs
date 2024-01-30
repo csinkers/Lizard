@@ -73,7 +73,7 @@ class Ui
                 Save(_projectManager.Project.Path);
         }, true);
 
-        uiManager.AddHotkey(new KeyBinding(Key.Grave, ModifierKeys.None), () => _commandWindow.Focus(), false);
+        uiManager.AddHotkey(new KeyBinding(Key.Grave, ModifierKeys.None), () => _commandWindow.Open(), true);
         uiManager.AddHotkey(new KeyBinding(Key.F5, ModifierKeys.None), () => Session.Continue(), true);
         uiManager.AddHotkey(new KeyBinding(Key.Pause, ModifierKeys.Control), () => Session.Break(), true);
         uiManager.AddHotkey(new KeyBinding(Key.ScrollLock, ModifierKeys.Control), () => Session.Break(), true); // Control+Pause is coming through as scroll lock for some weird reason
@@ -166,18 +166,37 @@ class Ui
 
     void DrawWindowsMenu()
     {
+        if (IsAltKeyPressed(ImGuiKey._1)) _commandWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._2)) _watchWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._3)) _localsWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._4)) _registersWindow.Open();
+        // if ( IsAltKeyPressed(ImGuiKey._5)) _memoryWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._6)) _callStackWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._7)) _disassemblyWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._8)) _breakpointsWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._9)) _codeWindow.Open();
+
         if (!ImGui.BeginMenu("Windows"))
             return;
 
-        if (ImGui.MenuItem("Breakpoints")) _breakpointsWindow.Open();
-        if (ImGui.MenuItem("Call Stack")) _callStackWindow.Open();
-        if (ImGui.MenuItem("Code")) _codeWindow.Open();
-        if (ImGui.MenuItem("Command")) _commandWindow.Open();
-        if (ImGui.MenuItem("Disassembly")) _disassemblyWindow.Open();
-        if (ImGui.MenuItem("Locals")) _localsWindow.Open();
-        if (ImGui.MenuItem("Registers")) _registersWindow.Open();
-        if (ImGui.MenuItem("Watch")) _watchWindow.Open();
+        if (ImGui.MenuItem("Command (Alt+1)"))     _commandWindow.Open();
+        if (ImGui.MenuItem("Watch (Alt+2)"))       _watchWindow.Open();
+        if (ImGui.MenuItem("Locals (Alt+3)"))      _localsWindow.Open();
+        if (ImGui.MenuItem("Registers (Alt+4)"))   _registersWindow.Open();
+        // if (ImGui.MenuItem("Memory (Alt+5)")) _memoryWindow.Open();
+        if (ImGui.MenuItem("Call Stack (Alt+6)"))  _callStackWindow.Open();
+        if (ImGui.MenuItem("Disassembly (Alt+7)")) _disassemblyWindow.Open();
+        if (ImGui.MenuItem("Breakpoints (Alt+8)")) _breakpointsWindow.Open();
+        if (ImGui.MenuItem("Code (Alt+9)"))        _codeWindow.Open();
+
         ImGui.EndMenu();
+    }
+
+    static bool IsAltKeyPressed(ImGuiKey key)
+    {
+        var io = ImGui.GetIO();
+        return io is { KeyCtrl: false, KeyAlt: true } 
+            && ImGui.IsKeyPressed(key);
     }
 
     void DrawToolbar()

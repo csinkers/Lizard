@@ -15,18 +15,24 @@ public abstract class SingletonWindow : IImGuiWindow
         _open = open;
     }
 
+    protected bool JustOpened { get; private set; }
     public string Prefix => _name;
-    public void Open() => _open = true;
+    public void Open()
+    {
+        _open = true;
+        JustOpened = true;
+    }
+
     public void Close() => _open = false;
     public void Draw()
     {
         if (!_open)
             return;
 
-        ImGui.SetNextWindowSize(new Vector2(128, 128), ImGuiCond.FirstUseEver);
         ImGui.Begin(_name, ref _open);
         DrawContents();
         ImGui.End();
+        JustOpened = false;
     }
 
     public void ClearState() { }

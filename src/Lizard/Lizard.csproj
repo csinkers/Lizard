@@ -94,12 +94,12 @@
 
   <ItemGroup>
     <PackageReference Include="Gee.External.Capstone" Version="2.3.0" />
-    <PackageReference Include="ImGui.NET" Version="1.89.7.1" />
+    <PackageReference Include="ImGui.NET" Version="1.90.1.1" />
     <PackageReference Include="Veldrid" Version="4.9.0" />
     <PackageReference Include="Veldrid.ImageSharp" Version="4.9.0" />
     <PackageReference Include="Veldrid.RenderDoc" Version="1.0.1-ga121087cad" />
     <PackageReference Include="Veldrid.StartupUtilities" Version="4.9.0" />
-    <PackageReference Include="zeroc.ice.net" Version="3.7.9" />
+    <PackageReference Include="zeroc.ice.net" Version="3.7.10" />
     <PackageReference Include="zeroc.icebuilder.msbuild" Version="5.0.9" />
   </ItemGroup>
 

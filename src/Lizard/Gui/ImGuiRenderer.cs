@@ -56,7 +56,6 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         var io = ImGui.GetIO();
         unsafe { io.NativePtr->IniFilename = null; } // Turn off ini file
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
-        io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
         io.Fonts.AddFontDefault();
         io.Fonts.Flags |= ImFontAtlasFlags.NoBakedLines;
         io.KeyRepeatDelay = 0.7f;
@@ -433,7 +432,7 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
 
         for (int i = 0; i < drawData.CmdListsCount; i++)
         {
-            ImDrawListPtr cmdList = drawData.CmdListsRange[i];
+            ImDrawListPtr cmdList = drawData.CmdLists[i];
 
             cl.UpdateBuffer(
                 _vertexBuffer,
@@ -478,7 +477,7 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         int idxOffset = 0;
         for (int n = 0; n < drawData.CmdListsCount; n++)
         {
-            ImDrawListPtr cmdList = drawData.CmdListsRange[n];
+            ImDrawListPtr cmdList = drawData.CmdLists[n];
             for (int i = 0; i < cmdList.CmdBuffer.Size; i++)
             {
                 ImDrawCmdPtr pcmd = cmdList.CmdBuffer[i];

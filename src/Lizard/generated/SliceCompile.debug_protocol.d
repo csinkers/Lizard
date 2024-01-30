@@ -2,8 +2,8 @@
 <dependencies>
   <source name="debug_protocol.ice">
     <options>
-      <IceHome>C:\Users\csink\.nuget\packages\zeroc.ice.net\3.7.9\build\..</IceHome>
-      <IceToolsPath>C:\Users\csink\.nuget\packages\zeroc.ice.net\3.7.9\build\..\tools</IceToolsPath>
+      <IceHome>C:\Users\csink\.nuget\packages\zeroc.ice.net\3.7.10\build\..</IceHome>
+      <IceToolsPath>C:\Users\csink\.nuget\packages\zeroc.ice.net\3.7.10\build\..\tools</IceToolsPath>
       <OutputDir>C:\Depot\bb\Lizard\src\Lizard\generated</OutputDir>
     </options>
   </source>
