@@ -18,9 +18,9 @@ class DisassemblyWindow : SingletonWindow
 
     readonly CommandContext _context;
     readonly TextEditor _textViewer;
-    int _version = -1;
-    bool _showBytes;
     (Address Start, Line[] Lines)? _lastResult;
+    bool _showBytes;
+    uint _address;
 
     public DisassemblyWindow(CommandContext context) : base("Disassembly")
     {
@@ -38,13 +38,14 @@ class DisassemblyWindow : SingletonWindow
         if (!session.IsPaused)
             return;
 
-        var version = session.Version;
-        if (version <= _version)
+        var ip = _context.SelectedAddress ?? (uint)session.Registers.eip;
+        if (_address == ip)
             return;
 
-        var address = new Address(session.Registers.cs, session.Registers.eip);
+        _address = ip;
+        var address = new Address(session.Registers.cs, (int)ip);
 
-        session.Defer(new Request<Line[]>(version,
+        session.Defer(new Request<Line[]>(session.Version,
             host =>
             {
                 var rawLines = host.Disassemble(address, LinesToShow);
@@ -82,15 +83,13 @@ class DisassemblyWindow : SingletonWindow
                     break;
                 }
             }));
-
-        _version = version;
     }
 
     protected override void DrawContents()
     {
         Refresh();
         if (ImGui.Checkbox("Show bytes", ref _showBytes))
-            _version = -1;
+            _address = 0;
 
         _textViewer.Render("##dasm");
     }

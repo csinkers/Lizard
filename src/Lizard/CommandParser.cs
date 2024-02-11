@@ -1,7 +1,6 @@
 ﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
-using GhidraProgramData;
 using GhidraProgramData.Types;
 using ImGuiColorTextEditNet;
 using Lizard.Gui;
@@ -127,7 +126,7 @@ static class CommandParser
         for (int i = 0; i < uints.Length; i++)
         {
             var line = new Line();
-            PrintAddress((uint)(address.offset + i), line, c);
+            PrintAddress((uint)(address.offset + i * 4), line, c);
             line.Append(" ");
             DescribeAddress(uints[i], line, c);
             Log.Debug(line);
@@ -287,23 +286,23 @@ static class CommandParser
                     Log.Debug($"{names}{pad}: {cmd.Description}");
                 }
             }),
-            new(new []  { "clear", "cls", ".cls" }, "Clear the log history", 
+            new(new []  { "clear", "cls", ".cls" }, "Clear the log history",
                 (_,  c) => LogHistory.Instance.Clear()),
 
-            new(new []  { "exit", "quit" }, "Exits the debugger", 
+            new(new []  { "exit", "quit" }, "Exits the debugger",
                 (_, c) => c.Exit()),
 
-            new(new[] { "Continue", "g" }, "Resume execution", 
+            new(new[] { "Continue", "g" }, "Resume execution",
                 (_,  c) => c.Session.Continue()),
 
             // TODO
-            new(new[] { "Break", "b" }, "Pause execution", 
+            new(new[] { "Break", "b" }, "Pause execution",
                 (_,  c) => PrintRegisters(c.Session.Break(), c)),
 
-            new(new[] { "StepOver", "p" }, "Steps to the next instruction, ignoring function calls / interrupts etc", 
+            new(new[] { "StepOver", "p" }, "Steps to the next instruction, ignoring function calls / interrupts etc",
                 (_, c) => PrintRegisters(c.Session.StepOver(), c)),
 
-            new(new[] { "StepIn", "n" }, "Steps to the next instruction, including into function calls etc", 
+            new(new[] { "StepIn", "n" }, "Steps to the next instruction, including into function calls etc",
                 (_,  c) => PrintRegisters(c.Session.StepIn(), c)),
 
             new(new[] { "StepMultiple", "gn" }, "Runs the CPU for the given number of cycles", (getArg, c) =>
@@ -311,7 +310,7 @@ static class CommandParser
                 var n = ParseUtil.ParseVal(getArg());
                 PrintRegisters(c.Session.StepMultiple(n), c);
             }),
-            new(new[] { "StepOut", "go" }, "Run until the current function returns", 
+            new(new[] { "StepOut", "go" }, "Run until the current function returns",
                 (_, c) => PrintRegisters(c.Session.StepOut(), c)),
 
             new(new[] { "RunToCall", "gc" }, "Run until the next 'call' instruction is encountered", (_,  _) =>
@@ -626,39 +625,15 @@ static class CommandParser
         }
     }
 
-    class StackFrame
-    {
-        public int InstructionPointer;
-        public int BasePointer;
-        public Symbol? Symbol;
-        public int[] Parameters;
-        public int[] Locals;
-    }
-
-    static MemoryRegion? GetStackRegion(CommandContext c) =>
-        c.Mapping.Regions
-            .OrderBy(x => x.MemoryStart)
-            .FirstOrDefault(x => x.Type == MemoryType.Stack);
-
     static void PrintStackTrace(CommandContext c)
     {
-        var r = c.Session.Registers;
-
-        var stackRegion = GetStackRegion(c);
-        if (stackRegion == null)
+        var stack = c.GetStackTrace();
+        for (int i = 0; i < stack.Count; i++)
         {
-            Log.Warn("No stack region found");
-            return;
+            var frame = stack[i];
+            foreach (var f in frame.Functions)
+                Log.Debug($"[{i}] BP:{frame.BasePointer:x8} {f.Symbol.Name}+{f.Offset:x}");
         }
-
-        var stack = new List<StackFrame>();
-
-        int stackBase = (int)stackRegion.MemoryStart;
-        int stackLimit = (int)stackRegion.MemoryEnd;
-
-
-        int ip = r.eip;
-        int bp = r.ebp;
     }
 
     static void GenerateGhidraDumpFixups(string path, CommandContext c)
@@ -692,8 +667,8 @@ def make_label(address, name):
     createLabel(toAddr(address), name, False)
 
 ");
-/*
- */
+        /*
+         */
         string Esc(string s) => s.Replace("\"", "\\\"");
 
         var r = c.Session.Registers;
@@ -701,7 +676,10 @@ def make_label(address, name):
         sw.WriteLine($"make_label(0x{r.eip:x}, \"instruction_pointer\")");
         sw.WriteLine($"make_label(0x{r.esp:x}, \"stack_pointer\")");
 
-        var stackRegion = GetStackRegion(c);
+        var stackRegion = c.Mapping.Regions
+                .OrderBy(x => x.MemoryStart)
+                .FirstOrDefault(x => x.Type == MemoryType.Stack);
+
         if (stackRegion != null)
         {
             sw.WriteLine($"make_label(0x{stackRegion.MemoryStart:x}, \"stack_limit\")");

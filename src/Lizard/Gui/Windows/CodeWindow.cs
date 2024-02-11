@@ -10,7 +10,7 @@ public class CodeWindow : SingletonWindow
     readonly TextEditor _textViewer;
     DecompiledFunction? _decompiled;
     GFunction? _function;
-    int _version = -1;
+    uint _address;
 
     public CodeWindow(CommandContext context) : base("Code")
     {
@@ -28,14 +28,13 @@ public class CodeWindow : SingletonWindow
         if (!session.IsPaused)
             return;
 
-        var version = session.Version;
-        if (version <= _version)
+        var ip = _context.SelectedAddress ?? (uint)session.Registers.eip;
+        if (_address == ip)
             return;
 
-        _version = version;
+        _address = ip;
 
-        var eip = (uint)session.Registers.eip;
-        if (!_context.Mapping.ToFile(eip, out var mappedEip, out _))
+        if (!_context.Mapping.ToFile(ip, out var mappedEip, out _))
         {
             _decompiled = null;
             _function = null;
@@ -43,7 +42,7 @@ public class CodeWindow : SingletonWindow
             return;
         }
 
-        var symbol = _context.LookupSymbolForAddress(eip);
+        var symbol = _context.LookupSymbolForAddress(ip);
 
         if (symbol == null)
         {

@@ -22,6 +22,7 @@ public class MemoryCache : IMemoryCache
     static uint PageNum(uint offset) => offset >> PageSizeBits;
     static uint PageNumRoundUp(uint offset) => offset + 4095 >> PageSizeBits;
     static uint PageAddr(uint pageNum) => pageNum << PageSizeBits;
+
     public void Dirty() => _dirty = true;
 
     public void Clear()
@@ -38,13 +39,23 @@ public class MemoryCache : IMemoryCache
         if (_dirty)
         {
             (_previous, _current) = (_current, _previous);
-            foreach (var kvp in _current) _pool.Return(kvp.Value);
+
+            foreach (var kvp in _current)
+                _pool.Return(kvp.Value);
+
             _current.Clear();
             _dirty = false;
             _pool.Flush();
         }
 
         return ReadInner(offset, size, backingArray, GetPage);
+    }
+
+    public void ReadIntoSpan(uint offset, uint size, Span<byte> span)
+    {
+        var result = Read(offset, size, span);
+        if (result != span)
+            result.CopyTo(span);
     }
 
     byte[] GetPage(uint pageNum)

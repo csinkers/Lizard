@@ -19,5 +19,8 @@ public class PassthroughMemoryCache : IMemoryCache
         return backingArray;
     }
 
+    public void ReadIntoSpan(uint offset, uint size, Span<byte> span) 
+        => _reader.Read(offset, size, span);
+
     public void Dirty() { }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using Lizard.Config;
 using Lizard.Gui.Windows;
 using Lizard.Gui.Windows.Watch;
 using SharpFileDialog;
@@ -43,7 +44,7 @@ class Ui
         _context.ExitRequested += () => _done = true;
 
         _breakpointsWindow = new BreakpointsWindow(context);
-        _callStackWindow   = new CallStackWindow();
+        _callStackWindow   = new CallStackWindow(context);
         _codeWindow        = new CodeWindow(context);
         _commandWindow     = new CommandWindow(context, logHistory);
         _connectWindow     = new ConnectWindow(context);

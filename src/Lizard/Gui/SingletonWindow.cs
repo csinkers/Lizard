@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using ImGuiNET;
+﻿using ImGuiNET;
 using Lizard.Config;
 
 namespace Lizard.Gui;
@@ -30,7 +29,15 @@ public abstract class SingletonWindow : IImGuiWindow
             return;
 
         ImGui.Begin(_name, ref _open);
-        DrawContents();
+        try
+        {
+            DrawContents();
+        }
+        catch (Exception ex)
+        {
+            ImGui.Text(ex.ToString());
+        }
+
         ImGui.End();
         JustOpened = false;
     }

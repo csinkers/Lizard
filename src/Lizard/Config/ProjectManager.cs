@@ -1,6 +1,4 @@
-﻿using Lizard.Config;
-
-namespace Lizard;
+﻿namespace Lizard.Config;
 
 public class ProjectManager : IProjectManager
 {

@@ -41,12 +41,13 @@ internal static class Program
             }
             else if (cmdLine.AutoConnect)
             {
+                var sp1 = sessionProvider;
                 void Connect()
                 {
                     var p = projectManager.Project;
                     var hostname = p.GetProperty(ConnectWindow.HostProperty)!;
                     var port = p.GetProperty(ConnectWindow.PortProperty);
-                    sessionProvider.StartIceSession(hostname, port);
+                    sp1.StartIceSession(hostname, port);
                     projectManager.ProjectLoaded -= Connect;
                 }
 
@@ -73,6 +74,5 @@ internal static class Program
             return 1;
         }
     }
-
 }
 
