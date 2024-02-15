@@ -3,9 +3,9 @@ using LizardProtocol;
 
 namespace Lizard;
 
-public class DisconnectedSession : IDebugSession
+public sealed class DisconnectedSession : IDebugSession
 {
-    static readonly Registers _emptyRegisters = new(true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    static readonly Registers EmptyRegisters = new(true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
     public event Action? Disconnected;
     public event StoppedDelegate? Stopped;
@@ -13,8 +13,8 @@ public class DisconnectedSession : IDebugSession
     public bool IsPaused => true;
     public bool IsActive => false;
     public int Version => 1;
-    public Registers OldRegisters => _emptyRegisters;
-    public Registers Registers => _emptyRegisters;
+    public Registers OldRegisters => EmptyRegisters;
+    public Registers Registers => EmptyRegisters;
     public IMemoryCache Memory { get; } = new EmptyMemoryCache();
 
     public void Refresh() { }
@@ -49,7 +49,7 @@ public class DisconnectedSession : IDebugSession
 
     public Breakpoint[] ListBreakpoints() => Array.Empty<Breakpoint>();
 
-    public Registers GetState() => _emptyRegisters;
+    public Registers GetState() => EmptyRegisters;
 
     public byte[] GetMemory(Address addr, int bufferLength) => Array.Empty<byte>();
 

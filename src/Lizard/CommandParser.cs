@@ -156,7 +156,11 @@ static class CommandParser
             MemoryType.Code => CommandWindow.CodeColor,
             MemoryType.Data => CommandWindow.DataColor,
             MemoryType.Stack => CommandWindow.StackColor,
-            _ => throw new ArgumentOutOfRangeException()
+            _
+                => throw new ArgumentOutOfRangeException(
+                    nameof(region),
+                    $"{nameof(region)} was of unexpected type \"{region.Type}\""
+                )
         };
 
         line.Append(color, text);

@@ -3,14 +3,14 @@ using LizardProtocol;
 
 namespace Lizard;
 
-public class DebugSessionProvider : IDisposable
+public sealed class DebugSessionProvider : IDisposable
 {
-    static readonly DisconnectedSession _disconnectedSession = new();
+    static readonly DisconnectedSession DisconnectedSession = new();
     public event Action? Connected;
     public event Action? Disconnected;
     public event StoppedDelegate? Stopped;
 
-    public IDebugSession Session { get; private set; } = _disconnectedSession;
+    public IDebugSession Session { get; private set; } = DisconnectedSession;
 
     void OnConnected() => Connected?.Invoke();
 
@@ -34,13 +34,13 @@ public class DebugSessionProvider : IDisposable
 
     public void Disconnect()
     {
-        if (Session == _disconnectedSession)
+        if (Session == DisconnectedSession)
             return;
 
         Session.Disconnected -= OnDisconnected;
         Session.Stopped -= OnStopped;
         Session.Dispose();
-        Session = _disconnectedSession;
+        Session = DisconnectedSession;
     }
 
     public void Dispose() => Disconnect();

@@ -4,7 +4,7 @@ using LizardProtocol;
 
 namespace Lizard;
 
-public class IceDebugSession : IDebugSession, IMemoryReader
+public sealed class IceDebugSession : IDebugSession, IMemoryReader
 {
     static readonly ITracer Log = new LogTopic("IceSession");
     readonly RequestQueue _queue = new();

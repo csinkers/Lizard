@@ -11,3 +11,12 @@ jobs:
       - run: |
           dotnet tool restore
           dotnet csharpier --check .
+  run_analysis:
+      runs-on: ubuntu-latest
+      name: Run code analysis
+      steps:
+      - uses: actions/checkout@v2
+      - run: |
+          dotnet tool restore
+          dotnet roslynator analyze Lizard.CI.sln
+

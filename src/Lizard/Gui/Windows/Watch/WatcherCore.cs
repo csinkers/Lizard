@@ -53,6 +53,9 @@ public sealed class WatcherCore
         _drawContext.Now = DateTime.UtcNow.Ticks;
         _drawContext.Filter = Filter;
 
+        if (_drawContext.Symbols.Data == null)
+            return;
+
         var rootRenderer = _drawContext.Renderers.Get(_drawContext.Symbols.Data.Root);
         var history = _drawContext.History.GetOrCreateHistory(Constants.RootNamespaceName, rootRenderer);
 
