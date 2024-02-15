@@ -59,3 +59,5 @@ repos:
         description: CSharpier is an opinionated C# formatter inspired by Prettier.
 ```
 
+Run `pre-commit install`
+Test against all files: `pre-commit run --all-files`
