@@ -7,13 +7,14 @@ static class ShaderLoader
 {
     public static byte[] LoadEmbeddedShaderCode(Assembly assembly, ResourceFactory factory, string name)
     {
+        // csharpier-ignore
         string resourceName = factory.BackendType switch
         {
             GraphicsBackend.Direct3D11 => name + ".hlsl.bytes",
-            GraphicsBackend.OpenGL => name + ".glsl",
-            GraphicsBackend.OpenGLES => name + ".glsles",
-            GraphicsBackend.Vulkan => name + ".spv",
-            GraphicsBackend.Metal => name + ".metallib",
+            GraphicsBackend.OpenGL     => name + ".glsl",
+            GraphicsBackend.OpenGLES   => name + ".glsles",
+            GraphicsBackend.Vulkan     => name + ".spv",
+            GraphicsBackend.Metal      => name + ".metallib",
             _ => throw new NotImplementedException()
         };
         return GetEmbeddedResourceBytes(assembly, resourceName);

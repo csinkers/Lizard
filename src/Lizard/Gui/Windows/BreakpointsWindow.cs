@@ -29,18 +29,20 @@ public class BreakpointsWindow : SingletonWindow
         {
             _breakpoints.Clear();
             _breakpoints.AddRange(session.ListBreakpoints());
+            // csharpier-ignore
+
             _addressStrings = _breakpoints
                 .Select(x =>
                     x.type switch
                     {
-                        BreakpointType.Normal => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Ephemeral => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Read => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Write => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Interrupt => $"INT {x.address.offset:X2}",
+                        BreakpointType.Normal          => $"{x.address.segment}:{x.address.offset}",
+                        BreakpointType.Ephemeral       => $"{x.address.segment}:{x.address.offset}",
+                        BreakpointType.Read            => $"{x.address.segment}:{x.address.offset}",
+                        BreakpointType.Write           => $"{x.address.segment}:{x.address.offset}",
+                        BreakpointType.Interrupt       => $"INT {x.address.offset:X2}",
                         BreakpointType.InterruptWithAH => $"INT {x.address.offset:X2}, AH={x.ah:X2}",
                         BreakpointType.InterruptWithAX => $"INT {x.address.offset:X2}, AH={x.ah:X2}, AL={x.al:X2}",
-                        BreakpointType.Unknown => "Unk",
+                        BreakpointType.Unknown         => "Unk",
                         _ => throw new ArgumentOutOfRangeException()
                     }
                 )
