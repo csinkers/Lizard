@@ -18,7 +18,8 @@ class DisassemblyWindow : SingletonWindow
 
     readonly CommandContext _context;
     readonly TextEditor _textViewer;
-    (Address Start, Line[] Lines)? _lastResult;
+
+    // (Address Start, Line[] Lines)? _lastResult;
     bool _showBytes;
     uint _address;
 
@@ -70,7 +71,7 @@ class DisassemblyWindow : SingletonWindow
                 },
                 result =>
                 {
-                    _lastResult = (address, result);
+                    // _lastResult = (address, result);
                     int maxLength = result.Max(x => x.Bytes.Length);
 
                     _textViewer.TextLines = result

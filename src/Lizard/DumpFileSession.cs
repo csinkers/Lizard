@@ -4,7 +4,7 @@ using LizardProtocol;
 
 namespace Lizard;
 
-public class DumpFileSession : IDebugSession, IMemoryReader
+public sealed class DumpFileSession : IDebugSession, IMemoryReader
 {
     readonly CapstoneX86Disassembler _disassembler;
     readonly DumpFile _dump;
