@@ -17,19 +17,24 @@ This project has dependencies on:
 
 ### Machine install:
 Install csharpier VS 2022 plugin
+
 Run `pip install pre-commit`
 
 ### Project Install:
-dotnet tool install csharpier
+`dotnet tool install csharpier`
+
 Create .csharpierrc:
+```
 {
     "printWidth": 120,
     "useTabs": false,
     "tabWidth": 4,
     "endOfLine": "auto"
 }
+```
 
 Create .pre-commit-config.yaml:
+```
 repos:
   - repo: local
     hooks:
@@ -52,4 +57,5 @@ repos:
         types:
           - c#
         description: CSharpier is an opinionated C# formatter inspired by Prettier.
+```
 
