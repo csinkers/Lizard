@@ -21,30 +21,52 @@ class RegistersWindow : SingletonWindow
     Vector2 _flagChildSize;
     bool _initialised;
 
-    public RegistersWindow(CommandContext context) : base("Registers") 
-        => _context = context ?? throw new ArgumentNullException(nameof(context));
+    public RegistersWindow(CommandContext context)
+        : base("Registers") => _context = context ?? throw new ArgumentNullException(nameof(context));
 
     void FirstDraw()
     {
         _initialised = true;
         var style = ImGui.GetStyle();
 
-        const int regLine = 4, regCol = 1;
+        const int regLine = 4,
+            regCol = 1;
         _regTxtSize = ImGui.CalcTextSize("EXX=FFFFFFFF", false, 0.0f);
-        _regChildSize = new(_regTxtSize.X * regCol + style.FramePadding.X * 2.0f + style.ItemSpacing.X * 2.0f,
-            _regTxtSize.Y * regLine + style.FramePadding.Y * 2.0f + style.ItemSpacing.Y * 2.0f + style.ItemInnerSpacing.Y * regLine);
+        _regChildSize = new(
+            _regTxtSize.X * regCol + style.FramePadding.X * 2.0f + style.ItemSpacing.X * 2.0f,
+            _regTxtSize.Y * regLine
+                + style.FramePadding.Y * 2.0f
+                + style.ItemSpacing.Y * 2.0f
+                + style.ItemInnerSpacing.Y * regLine
+        );
 
-        const int segLine = 3, segCol = 2;
+        const int segLine = 3,
+            segCol = 2;
         _segTxtSize = ImGui.CalcTextSize("DS=FFFF", false, 0.0f);
         _segChildSize = new(
-            _segTxtSize.X * segCol + style.FramePadding.X * 2.0f + style.ItemSpacing.X * 2.0f + style.ItemInnerSpacing.X * segCol,
-            _segTxtSize.Y * segLine + style.FramePadding.Y * 2.0f + style.ItemSpacing.Y * 2.0f + style.ItemInnerSpacing.Y * segLine);
+            _segTxtSize.X * segCol
+                + style.FramePadding.X * 2.0f
+                + style.ItemSpacing.X * 2.0f
+                + style.ItemInnerSpacing.X * segCol,
+            _segTxtSize.Y * segLine
+                + style.FramePadding.Y * 2.0f
+                + style.ItemSpacing.Y * 2.0f
+                + style.ItemInnerSpacing.Y * segLine
+        );
 
-        const int flagLine = 3, flagCol = 3;
+        const int flagLine = 3,
+            flagCol = 3;
         _flagTxtSize = ImGui.CalcTextSize("CF=0", false, 0.0f);
         _flagChildSize = new(
-            _flagTxtSize.X * flagCol + style.FramePadding.X * 2.0f + style.ItemSpacing.X * 2.0f + style.ItemInnerSpacing.X * flagCol,
-            _flagTxtSize.Y * flagLine + style.FramePadding.Y * 2.0f + style.ItemSpacing.Y * 2.0f + style.ItemInnerSpacing.Y * flagLine);
+            _flagTxtSize.X * flagCol
+                + style.FramePadding.X * 2.0f
+                + style.ItemSpacing.X * 2.0f
+                + style.ItemInnerSpacing.X * flagCol,
+            _flagTxtSize.Y * flagLine
+                + style.FramePadding.Y * 2.0f
+                + style.ItemSpacing.Y * 2.0f
+                + style.ItemInnerSpacing.Y * flagLine
+        );
     }
 
     protected override void DrawContents()
@@ -80,9 +102,15 @@ class RegistersWindow : SingletonWindow
 
         ImGui.PushStyleColor(ImGuiCol.Border, Yellow);
         ImGui.BeginChild("segments", _segChildSize, ImGuiChildFlags.Border, ImGuiWindowFlags.NoScrollbar);
-        DrawReg4("DS", regs.ds, oldRegs.ds); ImGui.SameLine(); DrawReg4("FS", regs.fs, oldRegs.fs);
-        DrawReg4("ES", regs.es, oldRegs.es); ImGui.SameLine(); DrawReg4("GS", regs.gs, oldRegs.gs);
-        DrawReg4("CS", regs.cs, oldRegs.cs); ImGui.SameLine(); DrawReg4("SS", regs.ss, oldRegs.ss);
+        DrawReg4("DS", regs.ds, oldRegs.ds);
+        ImGui.SameLine();
+        DrawReg4("FS", regs.fs, oldRegs.fs);
+        DrawReg4("ES", regs.es, oldRegs.es);
+        ImGui.SameLine();
+        DrawReg4("GS", regs.gs, oldRegs.gs);
+        DrawReg4("CS", regs.cs, oldRegs.cs);
+        ImGui.SameLine();
+        DrawReg4("SS", regs.ss, oldRegs.ss);
         ImGui.EndChild();
         ImGui.PopStyleColor();
 
@@ -90,16 +118,22 @@ class RegistersWindow : SingletonWindow
 
         ImGui.PushStyleColor(ImGuiCol.Border, Red);
         ImGui.BeginChild("flags", _flagChildSize, ImGuiChildFlags.Border, ImGuiWindowFlags.NoScrollbar);
-        DrawFlag("CF", regs.flags, oldRegs.flags, CpuFlags.CF); ImGui.SameLine();
-        DrawFlag("ZF", regs.flags, oldRegs.flags, CpuFlags.ZF); ImGui.SameLine();
+        DrawFlag("CF", regs.flags, oldRegs.flags, CpuFlags.CF);
+        ImGui.SameLine();
+        DrawFlag("ZF", regs.flags, oldRegs.flags, CpuFlags.ZF);
+        ImGui.SameLine();
         DrawFlag("SF", regs.flags, oldRegs.flags, CpuFlags.SF);
 
-        DrawFlag("Oj", regs.flags, oldRegs.flags, CpuFlags.OF); ImGui.SameLine();
-        DrawFlag("AF", regs.flags, oldRegs.flags, CpuFlags.AF); ImGui.SameLine();
+        DrawFlag("Oj", regs.flags, oldRegs.flags, CpuFlags.OF);
+        ImGui.SameLine();
+        DrawFlag("AF", regs.flags, oldRegs.flags, CpuFlags.AF);
+        ImGui.SameLine();
         DrawFlag("PF", regs.flags, oldRegs.flags, CpuFlags.PF);
 
-        DrawFlag("Dj", regs.flags, oldRegs.flags, CpuFlags.DF); ImGui.SameLine();
-        DrawFlag("IF", regs.flags, oldRegs.flags, CpuFlags.IF); ImGui.SameLine();
+        DrawFlag("Dj", regs.flags, oldRegs.flags, CpuFlags.DF);
+        ImGui.SameLine();
+        DrawFlag("IF", regs.flags, oldRegs.flags, CpuFlags.IF);
+        ImGui.SameLine();
         DrawFlag("TF", regs.flags, oldRegs.flags, CpuFlags.TF);
 
         ImGui.EndChild();

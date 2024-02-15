@@ -6,7 +6,9 @@ namespace Lizard.Gui;
 class ImText
 {
     readonly byte[] _buffer;
+
     public ImText(int maxLength) => _buffer = new byte[maxLength];
+
     public ImText(int maxLength, string initialText)
     {
         _buffer = new byte[maxLength];
@@ -33,10 +35,13 @@ class ImText
     }
 
     public bool Draw(string label) => ImGui.InputText(label, _buffer, (uint)_buffer.Length);
-    public bool Draw(string label, ImGuiInputTextFlags inputTextFlags) 
-        => ImGui.InputText(label, _buffer, (uint)_buffer.Length, inputTextFlags);
-    public bool Draw(string label, ImGuiInputTextFlags inputTextFlags, ImGuiInputTextCallback callback)
-        => ImGui.InputText(label, _buffer, (uint)_buffer.Length, inputTextFlags, callback);
-    public bool Draw(string label, ImGuiInputTextFlags inputTextFlags, ImGuiInputTextCallback callback, IntPtr data)
-        => ImGui.InputText(label, _buffer, (uint)_buffer.Length, inputTextFlags, callback, data);
+
+    public bool Draw(string label, ImGuiInputTextFlags inputTextFlags) =>
+        ImGui.InputText(label, _buffer, (uint)_buffer.Length, inputTextFlags);
+
+    public bool Draw(string label, ImGuiInputTextFlags inputTextFlags, ImGuiInputTextCallback callback) =>
+        ImGui.InputText(label, _buffer, (uint)_buffer.Length, inputTextFlags, callback);
+
+    public bool Draw(string label, ImGuiInputTextFlags inputTextFlags, ImGuiInputTextCallback callback, IntPtr data) =>
+        ImGui.InputText(label, _buffer, (uint)_buffer.Length, inputTextFlags, callback, data);
 }

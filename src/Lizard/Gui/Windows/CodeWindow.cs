@@ -12,7 +12,8 @@ public class CodeWindow : SingletonWindow
     GFunction? _function;
     uint _address;
 
-    public CodeWindow(CommandContext context) : base("Code")
+    public CodeWindow(CommandContext context)
+        : base("Code")
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _textViewer = new TextEditor

@@ -20,15 +20,21 @@ public class MemoryCache : IMemoryCache
     }
 
     static uint PageNum(uint offset) => offset >> PageSizeBits;
+
     static uint PageNumRoundUp(uint offset) => offset + 4095 >> PageSizeBits;
+
     static uint PageAddr(uint pageNum) => pageNum << PageSizeBits;
 
     public void Dirty() => _dirty = true;
 
     public void Clear()
     {
-        foreach (var kvp in _current) _pool.Return(kvp.Value);
-        foreach (var kvp in _previous) _pool.Return(kvp.Value);
+        foreach (var kvp in _current)
+            _pool.Return(kvp.Value);
+
+        foreach (var kvp in _previous)
+            _pool.Return(kvp.Value);
+
         _current.Clear();
         _previous.Clear();
         _dirty = false;
@@ -70,8 +76,8 @@ public class MemoryCache : IMemoryCache
         return buffer;
     }
 
-    public ReadOnlySpan<byte> TryReadPrevious(uint offset, uint size, Span<byte> backingArray)
-        => ReadInner(offset, size, backingArray, _tryGetPreviousPageDelegate);
+    public ReadOnlySpan<byte> TryReadPrevious(uint offset, uint size, Span<byte> backingArray) =>
+        ReadInner(offset, size, backingArray, _tryGetPreviousPageDelegate);
 
     byte[]? TryGetPreviousPage(uint pageNum)
     {
@@ -116,13 +122,9 @@ public class MemoryCache : IMemoryCache
             var nextPageOffset = pageOffset + PageSize;
 
             // If it ends after this page then copy to the end of the page
-            int startOffset = offset >= pageOffset && offset < nextPageOffset 
-                ? (int)(offset - pageOffset) 
-                : 0;
+            int startOffset = offset >= pageOffset && offset < nextPageOffset ? (int)(offset - pageOffset) : 0;
 
-            int len = endOffset >= nextPageOffset
-                ? PageSize - startOffset
-                : (int)(endOffset - pageOffset);
+            int len = endOffset >= nextPageOffset ? PageSize - startOffset : (int)(endOffset - pageOffset);
 
             var fromSpan = buffer.AsSpan(startOffset, len);
             fromSpan.CopyTo(backingArray[bytesCopied..]);

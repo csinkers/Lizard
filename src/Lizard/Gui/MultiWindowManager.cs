@@ -3,12 +3,14 @@ using Lizard.Config;
 
 namespace Lizard.Gui;
 
-public abstract class MultiWindowManager<T> : IImGuiWindow where T : MultiWindowInstance
+public abstract class MultiWindowManager<T> : IImGuiWindow
+    where T : MultiWindowInstance
 {
     public string Prefix { get; }
     readonly List<T> _windows = new();
 
     protected MultiWindowManager(string prefix) => Prefix = prefix;
+
     protected abstract T ConstructChild(WindowId id);
 
     public void OpenNew()
@@ -48,10 +50,13 @@ public abstract class MultiWindowManager<T> : IImGuiWindow where T : MultiWindow
     }
 
     public void ClearState() => _windows.Clear();
+
     public void Load(WindowId id, WindowConfig config)
     {
         if (!string.Equals(id.Prefix, Prefix, StringComparison.Ordinal))
-            throw new InvalidOperationException($"A window with prefix \"{id.Prefix}\" was passed to {GetType().Name} which expects a prefix of \"{Prefix}\"");
+            throw new InvalidOperationException(
+                $"A window with prefix \"{id.Prefix}\" was passed to {GetType().Name} which expects a prefix of \"{Prefix}\""
+            );
 
         var window = _windows.FirstOrDefault(x => x.Id == id) ?? ConstructChild(id);
         window.Load(config);

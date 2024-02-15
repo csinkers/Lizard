@@ -12,5 +12,6 @@ public class IntProperty : IProperty<int>
 
     public string Name { get; }
     public int DefaultValue { get; }
+
     public object? FromJson(JsonElement elem) => elem.GetInt32();
 }

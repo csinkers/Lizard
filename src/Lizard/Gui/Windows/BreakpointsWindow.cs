@@ -19,8 +19,8 @@ public class BreakpointsWindow : SingletonWindow
     int _pendingType = (int)BreakpointType.Normal;
     int _version = -1;
 
-    public BreakpointsWindow(CommandContext context) : base("Breakpoints")
-        => _context = context ?? throw new ArgumentNullException(nameof(context));
+    public BreakpointsWindow(CommandContext context)
+        : base("Breakpoints") => _context = context ?? throw new ArgumentNullException(nameof(context));
 
     protected override void DrawContents()
     {
@@ -29,32 +29,38 @@ public class BreakpointsWindow : SingletonWindow
         {
             _breakpoints.Clear();
             _breakpoints.AddRange(session.ListBreakpoints());
-            _addressStrings = _breakpoints.Select(x => x.type switch
-            {
-                BreakpointType.Normal    => $"{x.address.segment}:{x.address.offset}",
-                BreakpointType.Ephemeral => $"{x.address.segment}:{x.address.offset}",
-                BreakpointType.Read      => $"{x.address.segment}:{x.address.offset}",
-                BreakpointType.Write     => $"{x.address.segment}:{x.address.offset}",
-                BreakpointType.Interrupt => $"INT {x.address.offset:X2}",
-                BreakpointType.InterruptWithAH => $"INT {x.address.offset:X2}, AH={x.ah:X2}",
-                BreakpointType.InterruptWithAX => $"INT {x.address.offset:X2}, AH={x.ah:X2}, AL={x.al:X2}",
-                BreakpointType.Unknown => "Unk",
-                _ => throw new ArgumentOutOfRangeException()
-            }).ToArray();
+            _addressStrings = _breakpoints
+                .Select(x =>
+                    x.type switch
+                    {
+                        BreakpointType.Normal => $"{x.address.segment}:{x.address.offset}",
+                        BreakpointType.Ephemeral => $"{x.address.segment}:{x.address.offset}",
+                        BreakpointType.Read => $"{x.address.segment}:{x.address.offset}",
+                        BreakpointType.Write => $"{x.address.segment}:{x.address.offset}",
+                        BreakpointType.Interrupt => $"INT {x.address.offset:X2}",
+                        BreakpointType.InterruptWithAH => $"INT {x.address.offset:X2}, AH={x.ah:X2}",
+                        BreakpointType.InterruptWithAX => $"INT {x.address.offset:X2}, AH={x.ah:X2}, AL={x.al:X2}",
+                        BreakpointType.Unknown => "Unk",
+                        _ => throw new ArgumentOutOfRangeException()
+                    }
+                )
+                .ToArray();
 
             _idStrings = _breakpoints.Select(x => x.id.ToString(CultureInfo.InvariantCulture)).ToArray();
             _checkboxIds = _breakpoints.Select(x => "##" + x.id.ToString(CultureInfo.InvariantCulture)).ToArray();
             _typeStrings = _breakpoints.Select(x => x.type.ToString()).ToArray();
-            _nameStrings = _breakpoints.Select(x =>
-            {
-                var sym = _context.LookupSymbolForAddress((uint)x.address.offset);
-                if (sym == null)
-                    return "";
+            _nameStrings = _breakpoints
+                .Select(x =>
+                {
+                    var sym = _context.LookupSymbolForAddress((uint)x.address.offset);
+                    if (sym == null)
+                        return "";
 
-                _context.Mapping.ToMemory(sym.Address, out var baseAddr, out _);
-                var offset = (uint)x.address.offset - baseAddr;
-                return offset == 0 ? $"{sym.Key}" : $"{sym.Key}+0x{offset:X}";
-            }).ToArray();
+                    _context.Mapping.ToMemory(sym.Address, out var baseAddr, out _);
+                    var offset = (uint)x.address.offset - baseAddr;
+                    return offset == 0 ? $"{sym.Key}" : $"{sym.Key}+0x{offset:X}";
+                })
+                .ToArray();
             _version = session.Version;
         }
 

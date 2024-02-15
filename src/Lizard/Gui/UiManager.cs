@@ -34,15 +34,32 @@ class UiManager : IDisposable
     public void AddWindow(IImGuiWindow window)
     {
         if (!_windows.TryAdd(window.Prefix, window))
-            throw new InvalidOperationException($"Tried to add a window ({window.GetType().Name}) with prefix \"\", but that prefix is already in use by {_windows[window.Prefix].GetType().Name}");
+            throw new InvalidOperationException(
+                $"Tried to add a window ({window.GetType().Name}) with prefix \"\", but that prefix is already in use by {_windows[window.Prefix].GetType().Name}"
+            );
     }
 
-    public void RemoveWindow(IImGuiWindow window) { _windows.Remove(window.Prefix); }
-    public void AddMenu(WindowFunc window) { _menus.Add(window); }
-    public void RemoveMenu(WindowFunc window) { _menus.Remove(window); }
+    public void RemoveWindow(IImGuiWindow window)
+    {
+        _windows.Remove(window.Prefix);
+    }
+
+    public void AddMenu(WindowFunc window)
+    {
+        _menus.Add(window);
+    }
+
+    public void RemoveMenu(WindowFunc window)
+    {
+        _menus.Remove(window);
+    }
+
     public void AddHotkey(KeyBinding binding, Action action, bool isGlobal) => _hotkeys.Add(binding, action, isGlobal);
+
     public void RemoveHotkey(KeyBinding binding, Action action) => _hotkeys.Remove(binding);
-    public IntPtr GetOrCreateImGuiBinding(Texture texture) => _imguiRenderer.GetOrCreateImGuiBinding(_gd.ResourceFactory, texture);
+
+    public IntPtr GetOrCreateImGuiBinding(Texture texture) =>
+        _imguiRenderer.GetOrCreateImGuiBinding(_gd.ResourceFactory, texture);
 
     public UiManager(ProjectManager projectManager)
     {
@@ -52,7 +69,6 @@ class UiManager : IDisposable
             _projectDirty = true;
         };
         _projectManager.ProjectSaving += SaveProject;
-
 
 #if RENDERDOC
         RenderDoc.Load(out var renderDoc);
@@ -64,13 +80,15 @@ class UiManager : IDisposable
             new GraphicsDeviceOptions(true) { SyncToVerticalBlank = true },
             GraphicsBackend.Direct3D11,
             out _window,
-            out _gd);
+            out _gd
+        );
 
         _imguiRenderer = new ImGuiRenderer(
             _gd,
             _gd.MainSwapchain.Framebuffer.OutputDescription,
             (int)_gd.MainSwapchain.Framebuffer.Width,
-            (int)_gd.MainSwapchain.Framebuffer.Height);
+            (int)_gd.MainSwapchain.Framebuffer.Height
+        );
 
         TextureStore = new TextureStore(_gd, _imguiRenderer);
 

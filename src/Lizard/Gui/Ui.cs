@@ -24,6 +24,7 @@ class Ui
     readonly RegistersWindow _registersWindow;
     readonly WatchWindow _watchWindow;
     readonly ProgramDataWindow _programDataWindow;
+
     // ErrorsWindow _errorsWindow;
     bool _done;
 
@@ -34,24 +35,25 @@ class Ui
         ProjectManager projectManager,
         UiManager uiManager,
         CommandContext context,
-        WatcherCore watcherCore)
+        WatcherCore watcherCore
+    )
     {
         _projectManager = projectManager ?? throw new ArgumentNullException(nameof(projectManager));
-        _uiManager   = uiManager ?? throw new ArgumentNullException(nameof(uiManager));
+        _uiManager = uiManager ?? throw new ArgumentNullException(nameof(uiManager));
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _icons = new ToolbarIcons(uiManager, true);
 
         _context.ExitRequested += () => _done = true;
 
         _breakpointsWindow = new BreakpointsWindow(context);
-        _callStackWindow   = new CallStackWindow(context);
-        _codeWindow        = new CodeWindow(context);
-        _commandWindow     = new CommandWindow(context, logHistory);
-        _connectWindow     = new ConnectWindow(context);
+        _callStackWindow = new CallStackWindow(context);
+        _codeWindow = new CodeWindow(context);
+        _commandWindow = new CommandWindow(context, logHistory);
+        _connectWindow = new ConnectWindow(context);
         _disassemblyWindow = new DisassemblyWindow(context);
-        _localsWindow      = new LocalsWindow();
-        _registersWindow   = new RegistersWindow(context);
-        _watchWindow       = new WatchWindow(watcherCore);
+        _localsWindow = new LocalsWindow();
+        _registersWindow = new RegistersWindow(context);
+        _watchWindow = new WatchWindow(watcherCore);
         _programDataWindow = new ProgramDataWindow(context);
 
         uiManager.AddMenu(DrawFileMenu);
@@ -68,11 +70,15 @@ class Ui
         uiManager.AddWindow(_watchWindow);
         uiManager.AddWindow(_programDataWindow);
 
-        uiManager.AddHotkey(new KeyBinding(Key.S, ModifierKeys.Control), () =>
-        {
-            if (!string.IsNullOrEmpty(_projectManager.Project.Path))
-                Save(_projectManager.Project.Path);
-        }, true);
+        uiManager.AddHotkey(
+            new KeyBinding(Key.S, ModifierKeys.Control),
+            () =>
+            {
+                if (!string.IsNullOrEmpty(_projectManager.Project.Path))
+                    Save(_projectManager.Project.Path);
+            },
+            true
+        );
 
         uiManager.AddHotkey(new KeyBinding(Key.Grave, ModifierKeys.None), () => _commandWindow.Open(), true);
         uiManager.AddHotkey(new KeyBinding(Key.F5, ModifierKeys.None), () => Session.Continue(), true);
@@ -98,17 +104,20 @@ class Ui
     void SaveAs()
     {
         using var saveFile = new SaveFileDialog();
-        saveFile.Save(x =>
-        {
-            if (!x.Success)
-                return;
+        saveFile.Save(
+            x =>
+            {
+                if (!x.Success)
+                    return;
 
-            var path = x.FileName;
-            if (string.IsNullOrEmpty(Path.GetExtension(path)))
-                path += ".lizard";
+                var path = x.FileName;
+                if (string.IsNullOrEmpty(Path.GetExtension(path)))
+                    path += ".lizard";
 
-            Save(path);
-        }, "Lizard Project (*.lizard)|*.lizard");
+                Save(path);
+            },
+            "Lizard Project (*.lizard)|*.lizard"
+        );
     }
 
     void Save(string path)
@@ -126,20 +135,23 @@ class Ui
 
     void DrawFileMenu()
     {
-        if (!ImGui.BeginMenu("File")) 
+        if (!ImGui.BeginMenu("File"))
             return;
 
         if (!Session.IsActive && ImGui.MenuItem("Connect"))
             _connectWindow.Open();
 
         if (ImGui.MenuItem("Open Project"))
-        { 
+        {
             using var openFile = new OpenFileDialog();
-            openFile.Open(x =>
-            {
-                if (x.Success)
-                    _projectManager.Load(x.FileName);
-            }, "Lizard Project (*.lizard)|*.lizard");
+            openFile.Open(
+                x =>
+                {
+                    if (x.Success)
+                        _projectManager.Load(x.FileName);
+                },
+                "Lizard Project (*.lizard)|*.lizard"
+            );
         }
 
         if (ImGui.MenuItem("Save Project"))
@@ -167,28 +179,44 @@ class Ui
 
     void DrawWindowsMenu()
     {
-        if (IsAltKeyPressed(ImGuiKey._1)) _commandWindow.Open();
-        if (IsAltKeyPressed(ImGuiKey._2)) _watchWindow.Open();
-        if (IsAltKeyPressed(ImGuiKey._3)) _localsWindow.Open();
-        if (IsAltKeyPressed(ImGuiKey._4)) _registersWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._1))
+            _commandWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._2))
+            _watchWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._3))
+            _localsWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._4))
+            _registersWindow.Open();
         // if ( IsAltKeyPressed(ImGuiKey._5)) _memoryWindow.Open();
-        if (IsAltKeyPressed(ImGuiKey._6)) _callStackWindow.Open();
-        if (IsAltKeyPressed(ImGuiKey._7)) _disassemblyWindow.Open();
-        if (IsAltKeyPressed(ImGuiKey._8)) _breakpointsWindow.Open();
-        if (IsAltKeyPressed(ImGuiKey._9)) _codeWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._6))
+            _callStackWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._7))
+            _disassemblyWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._8))
+            _breakpointsWindow.Open();
+        if (IsAltKeyPressed(ImGuiKey._9))
+            _codeWindow.Open();
 
         if (!ImGui.BeginMenu("Windows"))
             return;
 
-        if (ImGui.MenuItem("Command (Alt+1)"))     _commandWindow.Open();
-        if (ImGui.MenuItem("Watch (Alt+2)"))       _watchWindow.Open();
-        if (ImGui.MenuItem("Locals (Alt+3)"))      _localsWindow.Open();
-        if (ImGui.MenuItem("Registers (Alt+4)"))   _registersWindow.Open();
+        if (ImGui.MenuItem("Command (Alt+1)"))
+            _commandWindow.Open();
+        if (ImGui.MenuItem("Watch (Alt+2)"))
+            _watchWindow.Open();
+        if (ImGui.MenuItem("Locals (Alt+3)"))
+            _localsWindow.Open();
+        if (ImGui.MenuItem("Registers (Alt+4)"))
+            _registersWindow.Open();
         // if (ImGui.MenuItem("Memory (Alt+5)")) _memoryWindow.Open();
-        if (ImGui.MenuItem("Call Stack (Alt+6)"))  _callStackWindow.Open();
-        if (ImGui.MenuItem("Disassembly (Alt+7)")) _disassemblyWindow.Open();
-        if (ImGui.MenuItem("Breakpoints (Alt+8)")) _breakpointsWindow.Open();
-        if (ImGui.MenuItem("Code (Alt+9)"))        _codeWindow.Open();
+        if (ImGui.MenuItem("Call Stack (Alt+6)"))
+            _callStackWindow.Open();
+        if (ImGui.MenuItem("Disassembly (Alt+7)"))
+            _disassemblyWindow.Open();
+        if (ImGui.MenuItem("Breakpoints (Alt+8)"))
+            _breakpointsWindow.Open();
+        if (ImGui.MenuItem("Code (Alt+9)"))
+            _codeWindow.Open();
 
         ImGui.EndMenu();
     }
@@ -196,8 +224,7 @@ class Ui
     static bool IsAltKeyPressed(ImGuiKey key)
     {
         var io = ImGui.GetIO();
-        return io is { KeyCtrl: false, KeyAlt: true } 
-            && ImGui.IsKeyPressed(key);
+        return io is { KeyCtrl: false, KeyAlt: true } && ImGui.IsKeyPressed(key);
     }
 
     void DrawToolbar()

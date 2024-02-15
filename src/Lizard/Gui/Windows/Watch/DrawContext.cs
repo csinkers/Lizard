@@ -58,8 +58,6 @@ public class DrawContext
         var delta = (int)(address - symbol.Address);
         var sign = delta < 0 ? '-' : '+';
         var absDelta = Math.Abs(delta);
-        return delta > 0
-            ? $"{symbol.Name}{sign}0x{absDelta:X} ({address:X})"
-            : symbol.Name;
+        return delta > 0 ? $"{symbol.Name}{sign}0x{absDelta:X} ({address:X})" : symbol.Name;
     }
 }

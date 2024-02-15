@@ -17,7 +17,7 @@ public class MemoryMapping
         _memoryOrder.Clear();
         _fileOrder.Clear();
 
-        foreach(var region in regions)
+        foreach (var region in regions)
             Add(region);
 
         MappingChanged?.Invoke();
@@ -48,9 +48,18 @@ public class MemoryMapping
             var end1 = start1 + region1.Length;
             var end2 = start2 + region2.Length;
 
-            if (start1 == start2) throw new InvalidOperationException($"Overlapping memory range detected - {start2:x}-{end2:x} overlaps with new region {start1:x}-{end1:x}");
-            if (start1 < start2 && end1 > start2) throw new InvalidOperationException($"Overlapping memory range detected - {start2:x}-{end2:x} overlaps with new region {start1:x}-{end1:x}");
-            if (start1 > start2 && end2 > start1) throw new InvalidOperationException($"Overlapping memory range detected - {start2:x}-{end2:x} overlaps with new region {start1:x}-{end1:x}");
+            if (start1 == start2)
+                throw new InvalidOperationException(
+                    $"Overlapping memory range detected - {start2:x}-{end2:x} overlaps with new region {start1:x}-{end1:x}"
+                );
+            if (start1 < start2 && end1 > start2)
+                throw new InvalidOperationException(
+                    $"Overlapping memory range detected - {start2:x}-{end2:x} overlaps with new region {start1:x}-{end1:x}"
+                );
+            if (start1 > start2 && end2 > start1)
+                throw new InvalidOperationException(
+                    $"Overlapping memory range detected - {start2:x}-{end2:x} overlaps with new region {start1:x}-{end1:x}"
+                );
         }
     }
 
@@ -106,8 +115,8 @@ public class MemoryMapping
 
     public void SaveProject(ProjectConfig project) => project.SetProperty(MappingProperty, Serialize());
 
-    public List<string> Serialize() 
-        => Regions
+    public List<string> Serialize() =>
+        Regions
             .Select(region => $"{region.FileStart:x} {region.MemoryStart:x} {region.Length:x} {region.Type}")
             .ToList();
 

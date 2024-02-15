@@ -16,6 +16,9 @@ public class History
     public long LastModifiedTicks { get; set; }
     public uint LastAddress { get; set; }
     public List<IDirective>? Directives { get; set; } // null = no directives or not yet initialised.
+
     public override string ToString() => $"H:{Path}:{Util.Timestamp(LastModifiedTicks):g3}";
-    public static History DefaultConstructor(string path, IGhidraType type) => new(path, type) { LastModifiedTicks = DateTime.UtcNow.Ticks };
+
+    public static History DefaultConstructor(string path, IGhidraType type) =>
+        new(path, type) { LastModifiedTicks = DateTime.UtcNow.Ticks };
 }

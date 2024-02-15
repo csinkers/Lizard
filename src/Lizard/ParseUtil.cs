@@ -25,13 +25,14 @@ internal static class ParseUtil
             if (!TryParseSegment(part, r, out segment))
                 throw new FormatException($"Invalid segment \"{part}\"");
 
-            offset = ParseOffset(s[(index+1)..], c, out _);
+            offset = ParseOffset(s[(index + 1)..], c, out _);
         }
 
         var signedOffset = unchecked((int)offset);
         return new Address(segment, signedOffset);
     }
 
+    // csharpier-ignore
     public static bool TryParseSegment(string s, Registers r, out short segment)
     {
         if (ushort.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var temp))
@@ -42,16 +43,14 @@ internal static class ParseUtil
 
         switch (s.ToUpperInvariant())
         {
-            case "CS": segment = r.cs; break;
-            case "DS": segment = r.ds; break;
-            case "SS": segment = r.ss; break;
-            case "ES": segment = r.es; break;
-            case "FS": segment = r.fs; break;
-            case "GS": segment = r.gs; break;
-            default: segment = 0; return false;
+            case "CS": segment = r.cs; return true;
+            case "DS": segment = r.ds; return true;
+            case "SS": segment = r.ss; return true;
+            case "ES": segment = r.es; return true;
+            case "FS": segment = r.fs; return true;
+            case "GS": segment = r.gs; return true;
+            default:   segment = 0;    return false;
         }
-
-        return true;
     }
 
     public static int ParseVal(string s)
@@ -75,15 +74,33 @@ internal static class ParseUtil
         var upper = s.ToUpperInvariant();
         switch (upper)
         {
-            case "EAX": segmentHint = r.ds; return (uint)r.eax;
-            case "EBX": segmentHint = r.ds; return (uint)r.ebx;
-            case "ECX": segmentHint = r.ds; return (uint)r.ecx;
-            case "EDX": segmentHint = r.ds; return (uint)r.edx;
-            case "ESI": segmentHint = r.ds; return (uint)r.esi;
-            case "EDI": segmentHint = r.ds; return (uint)r.edi;
-            case "EBP": segmentHint = r.ss; return (uint)r.ebp;
-            case "ESP": segmentHint = r.ss; return (uint)r.esp;
-            case "EIP": segmentHint = r.cs; return (uint)r.eip;
+            case "EAX":
+                segmentHint = r.ds;
+                return (uint)r.eax;
+            case "EBX":
+                segmentHint = r.ds;
+                return (uint)r.ebx;
+            case "ECX":
+                segmentHint = r.ds;
+                return (uint)r.ecx;
+            case "EDX":
+                segmentHint = r.ds;
+                return (uint)r.edx;
+            case "ESI":
+                segmentHint = r.ds;
+                return (uint)r.esi;
+            case "EDI":
+                segmentHint = r.ds;
+                return (uint)r.edi;
+            case "EBP":
+                segmentHint = r.ss;
+                return (uint)r.ebp;
+            case "ESP":
+                segmentHint = r.ss;
+                return (uint)r.esp;
+            case "EIP":
+                segmentHint = r.cs;
+                return (uint)r.eip;
         }
 
         var sym = c.Symbols.LookupSymbol(s);
@@ -96,43 +113,45 @@ internal static class ParseUtil
         return offset;
     }
 
+    // csharpier-ignore
     public static Register ParseReg(string s) =>
         s.ToUpperInvariant() switch
         {
             "Flags" => Register.Flags,
-            "EAX" => Register.EAX,
-            "EBX" => Register.EBX,
-            "ECX" => Register.ECX,
-            "EDX" => Register.EDX,
-            "ESI" => Register.ESI,
-            "EDI" => Register.EDI,
-            "EBP" => Register.EBP,
-            "ESP" => Register.ESP,
-            "EIP" => Register.EIP,
-            "ES" => Register.ES,
-            "CS" => Register.CS,
-            "SS" => Register.SS,
-            "DS" => Register.DS,
-            "FS" => Register.FS,
-            "GS" => Register.GS,
+            "EAX"   => Register.EAX,
+            "EBX"   => Register.EBX,
+            "ECX"   => Register.ECX,
+            "EDX"   => Register.EDX,
+            "ESI"   => Register.ESI,
+            "EDI"   => Register.EDI,
+            "EBP"   => Register.EBP,
+            "ESP"   => Register.ESP,
+            "EIP"   => Register.EIP,
+            "ES"    => Register.ES,
+            "CS"    => Register.CS,
+            "SS"    => Register.SS,
+            "DS"    => Register.DS,
+            "FS"    => Register.FS,
+            "GS"    => Register.GS,
             _ => throw new FormatException($"Unexpected register \"{s}\"")
         };
 
+    // csharpier-ignore
     public static BreakpointType ParseBpType(string s) =>
         s.ToUpperInvariant() switch
         {
-            "NORMAL" => BreakpointType.Normal,
-            "N" => BreakpointType.Normal,
-            "X" => BreakpointType.Normal,
-            "READ" => BreakpointType.Read,
-            "R" => BreakpointType.Read,
-            "WRITE" => BreakpointType.Write,
-            "W" => BreakpointType.Write,
-            "INTERRUPT" => BreakpointType.Interrupt,
-            "INT" => BreakpointType.Interrupt,
+            "N"               => BreakpointType.Normal,
+            "X"               => BreakpointType.Normal,
+            "R"               => BreakpointType.Read,
+            "W"               => BreakpointType.Write,
+            "NORMAL"          => BreakpointType.Normal,
+            "READ"            => BreakpointType.Read,
+            "WRITE"           => BreakpointType.Write,
+            "INTERRUPT"       => BreakpointType.Interrupt,
+            "INT"             => BreakpointType.Interrupt,
             "INTERRUPTWITHAH" => BreakpointType.InterruptWithAH,
-            "INTAH" => BreakpointType.InterruptWithAH,
-            "INTAL" => BreakpointType.InterruptWithAX,
+            "INTAH"           => BreakpointType.InterruptWithAH,
+            "INTAL"           => BreakpointType.InterruptWithAX,
             _ => throw new FormatException($"Unexpected breakpoint type \"{s}\"")
         };
 }

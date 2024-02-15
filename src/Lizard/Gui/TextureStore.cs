@@ -31,7 +31,8 @@ public class TextureStore : ITextureStore
                 mipLevels,
                 1,
                 PixelFormat.R8_G8_B8_A8_UNorm,
-                TextureUsage.Sampled);
+                TextureUsage.Sampled
+            );
 
             var texture = _device.ResourceFactory.CreateTexture(ref description);
             int handle = _nextHandle++;
@@ -58,8 +59,8 @@ public class TextureStore : ITextureStore
         }
     }
 
-    (int handle, object texture) ITextureStore.Get(int? handle, uint width, uint height)
-        => Get(handle, width, height);
+    (int handle, object texture) ITextureStore.Get(int? handle, uint width, uint height) => Get(handle, width, height);
+
     public (int handle, Texture texture) Get(int? handle, uint width, uint height)
     {
         var texture = handle.HasValue ? TryGet(handle.Value) : null;
@@ -94,17 +95,38 @@ public class TextureStore : ITextureStore
         }
     }
 
-    void ITextureStore.Update(object texture, uint width, uint height, int stride, ReadOnlySpan<byte> pixelData, ReadOnlySpan<uint> paletteBuf)
-        => Update((Texture)texture, width, height, stride, pixelData, paletteBuf);
+    void ITextureStore.Update(
+        object texture,
+        uint width,
+        uint height,
+        int stride,
+        ReadOnlySpan<byte> pixelData,
+        ReadOnlySpan<uint> paletteBuf
+    ) => Update((Texture)texture, width, height, stride, pixelData, paletteBuf);
 
-    public void Update(Texture texture, uint width, uint height, int stride, ReadOnlySpan<byte> pixelData, ReadOnlySpan<uint> paletteBuf)
+    public void Update(
+        Texture texture,
+        uint width,
+        uint height,
+        int stride,
+        ReadOnlySpan<byte> pixelData,
+        ReadOnlySpan<uint> paletteBuf
+    )
     {
         uint mipLevels = MipLevelCount(width, height);
         for (int i = 0; i < mipLevels; i++)
             UpdateMipLevel(i, texture, width, height, stride, pixelData, paletteBuf);
     }
 
-    void UpdateMipLevel(int mipLevel, Texture texture, uint width, uint height, int stride, ReadOnlySpan<byte> pixelData, ReadOnlySpan<uint> paletteBuf)
+    void UpdateMipLevel(
+        int mipLevel,
+        Texture texture,
+        uint width,
+        uint height,
+        int stride,
+        ReadOnlySpan<byte> pixelData,
+        ReadOnlySpan<uint> paletteBuf
+    )
     {
         if (pixelData.Length < width * height)
             return;

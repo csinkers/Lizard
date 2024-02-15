@@ -3,6 +3,7 @@
 public class CommandLineArgs
 {
     public static CommandLineArgs Parse(string[] args) => new(args);
+
     public string? ProjectPath { get; }
     public string? DumpPath { get; set; }
     public bool AutoConnect { get; }

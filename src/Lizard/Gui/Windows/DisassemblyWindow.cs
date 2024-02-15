@@ -22,7 +22,8 @@ class DisassemblyWindow : SingletonWindow
     bool _showBytes;
     uint _address;
 
-    public DisassemblyWindow(CommandContext context) : base("Disassembly")
+    public DisassemblyWindow(CommandContext context)
+        : base("Disassembly")
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _textViewer = new TextEditor
@@ -45,44 +46,51 @@ class DisassemblyWindow : SingletonWindow
         _address = ip;
         var address = new Address(session.Registers.cs, (int)ip);
 
-        session.Defer(new Request<Line[]>(session.Version,
-            host =>
-            {
-                var rawLines = host.Disassemble(address, LinesToShow);
-                var sb = new StringBuilder(MaxByteStringLength);
-                var formattedLines = new Line[rawLines.Length];
-
-                for (var i = 0; i < rawLines.Length; i++)
+        session.Defer(
+            new Request<Line[]>(
+                session.Version,
+                host =>
                 {
-                    var rawLine = rawLines[i];
-                    sb.Clear();
-                    for (int j = 0; j < rawLine.bytes.Length; j++)
-                        sb.AppendFormat(j > 0 ? " {0:X2}" : "{0:X2}", rawLine.bytes[j]);
-                    sb.Append(' ');
+                    var rawLines = host.Disassemble(address, LinesToShow);
+                    var sb = new StringBuilder(MaxByteStringLength);
+                    var formattedLines = new Line[rawLines.Length];
 
-                    formattedLines[i] = new Line(rawLine.address, sb.ToString(), rawLine.line);
-                }
+                    for (var i = 0; i < rawLines.Length; i++)
+                    {
+                        var rawLine = rawLines[i];
+                        sb.Clear();
+                        for (int j = 0; j < rawLine.bytes.Length; j++)
+                            sb.AppendFormat(j > 0 ? " {0:X2}" : "{0:X2}", rawLine.bytes[j]);
+                        sb.Append(' ');
 
-                return formattedLines;
-            },
-            result =>
-            {
-                _lastResult = (address, result);
-                int maxLength = result.Max(x => x.Bytes.Length);
+                        formattedLines[i] = new Line(rawLine.address, sb.ToString(), rawLine.line);
+                    }
 
-                _textViewer.TextLines = result.Select(x => 
-                    _showBytes 
-                        ? $"{x.AddrString} {x.Bytes.PadRight(maxLength)} {x.Asm}" 
-                        : $"{x.AddrString} {x.Asm}")
-                    .ToList();
-
-                for (int i = 0; i < result.Length; i++)
+                    return formattedLines;
+                },
+                result =>
                 {
-                    if (result[i].Address != address) continue;
-                    _textViewer.Selection.HighlightedLine = i;
-                    break;
+                    _lastResult = (address, result);
+                    int maxLength = result.Max(x => x.Bytes.Length);
+
+                    _textViewer.TextLines = result
+                        .Select(x =>
+                            _showBytes
+                                ? $"{x.AddrString} {x.Bytes.PadRight(maxLength)} {x.Asm}"
+                                : $"{x.AddrString} {x.Asm}"
+                        )
+                        .ToList();
+
+                    for (int i = 0; i < result.Length; i++)
+                    {
+                        if (result[i].Address != address)
+                            continue;
+                        _textViewer.Selection.HighlightedLine = i;
+                        break;
+                    }
                 }
-            }));
+            )
+        );
     }
 
     protected override void DrawContents()
@@ -99,11 +107,14 @@ class DisassemblyWindow : SingletonWindow
         static readonly object DummyState = new();
         public bool AutoIndentation => false;
         public int MaxLinesPerFrame => 1024;
+
         public string? GetTooltip(string id) => null;
+
         public object Colorize(Span<Glyph> line, object? state)
         {
             for (int i = 0; i < line.Length; i++)
                 line[i] = new Glyph(line[i].Char, PaletteIndex.Identifier);
+
             return DummyState;
         }
     }

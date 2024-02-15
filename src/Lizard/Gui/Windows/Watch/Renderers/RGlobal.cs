@@ -9,8 +9,11 @@ public class RGlobal : IGhidraRenderer
     readonly GGlobal _type;
 
     public RGlobal(GGlobal type) => _type = type ?? throw new ArgumentNullException(nameof(type));
+
     public override string ToString() => $"R[{_type}]";
+
     public uint GetSize(History? history) => _type.Size;
+
     public History HistoryConstructor(string path, IHistoryCreationContext context)
     {
         var renderer = context.Renderers.Get(_type.Type);
@@ -21,11 +24,15 @@ public class RGlobal : IGhidraRenderer
         return history;
     }
 
-    public bool Draw(History history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer, DrawContext context)
+    public bool Draw(
+        History history,
+        uint address,
+        ReadOnlySpan<byte> buffer,
+        ReadOnlySpan<byte> previousBuffer,
+        DrawContext context
+    )
     {
-        return _type.Size > 512
-            ? DrawLarge(history, context)
-            : DrawSmall(history, context);
+        return _type.Size > 512 ? DrawLarge(history, context) : DrawSmall(history, context);
     }
 
     bool DrawSmall(History history, DrawContext context)

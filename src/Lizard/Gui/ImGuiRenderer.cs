@@ -8,6 +8,7 @@ namespace Lizard.Gui;
 public sealed class ImGuiRenderer : IDisposable // This is largely based on Veldrid.ImGuiRenderer from Veldrid.ImGui
 {
     record struct ResourceSetInfo(IntPtr ImGuiBinding, ResourceSet ResourceSet);
+
     readonly IntPtr _fontAtlasId = (IntPtr)1;
     readonly Vector2 _scaleFactor = Vector2.One;
 
@@ -54,7 +55,10 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         ImGui.SetCurrentContext(context);
 
         var io = ImGui.GetIO();
-        unsafe { io.NativePtr->IniFilename = null; } // Turn off ini file
+        unsafe
+        {
+            io.NativePtr->IniFilename = null;
+        } // Turn off ini file
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         io.Fonts.AddFontDefault();
         io.Fonts.Flags |= ImFontAtlasFlags.NoBakedLines;
@@ -62,39 +66,71 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         io.KeyRepeatRate = 0.08f;
 
         ResourceFactory factory = gd.ResourceFactory;
-        _vertexBuffer = factory.CreateBuffer(new BufferDescription(10000, BufferUsage.VertexBuffer | BufferUsage.Dynamic));
+        _vertexBuffer = factory.CreateBuffer(
+            new BufferDescription(10000, BufferUsage.VertexBuffer | BufferUsage.Dynamic)
+        );
         _vertexBuffer.Name = "ImGui.NET Vertex Buffer";
         _indexBuffer = factory.CreateBuffer(new BufferDescription(2000, BufferUsage.IndexBuffer | BufferUsage.Dynamic));
         _indexBuffer.Name = "ImGui.NET Index Buffer";
 
-        _projMatrixBuffer = factory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer | BufferUsage.Dynamic));
+        _projMatrixBuffer = factory.CreateBuffer(
+            new BufferDescription(64, BufferUsage.UniformBuffer | BufferUsage.Dynamic)
+        );
         _projMatrixBuffer.Name = "ImGui.NET Projection Buffer";
 
         var assembly = typeof(ImGuiRenderer).GetTypeInfo().Assembly;
         byte[] vertexShaderBytes = ShaderLoader.LoadEmbeddedShaderCode(assembly, gd.ResourceFactory, "imgui-vertex");
         byte[] fragmentShaderBytes = ShaderLoader.LoadEmbeddedShaderCode(assembly, gd.ResourceFactory, "imgui-frag");
-        _vertexShader = factory.CreateShader(new ShaderDescription(ShaderStages.Vertex, vertexShaderBytes, gd.BackendType == GraphicsBackend.Vulkan ? "main" : "VS"));
+        _vertexShader = factory.CreateShader(
+            new ShaderDescription(
+                ShaderStages.Vertex,
+                vertexShaderBytes,
+                gd.BackendType == GraphicsBackend.Vulkan ? "main" : "VS"
+            )
+        );
         _vertexShader.Name = "ImGui.NET Vertex Shader";
-        _fragmentShader = factory.CreateShader(new ShaderDescription(ShaderStages.Fragment, fragmentShaderBytes, gd.BackendType == GraphicsBackend.Vulkan ? "main" : "FS"));
+        _fragmentShader = factory.CreateShader(
+            new ShaderDescription(
+                ShaderStages.Fragment,
+                fragmentShaderBytes,
+                gd.BackendType == GraphicsBackend.Vulkan ? "main" : "FS"
+            )
+        );
         _fragmentShader.Name = "ImGui.NET Fragment Shader";
 
-        VertexLayoutDescription[] vertexLayouts = {
+        VertexLayoutDescription[] vertexLayouts =
+        {
             new(
                 new VertexElementDescription("in_position", VertexElementSemantic.Position, VertexElementFormat.Float2),
-                new VertexElementDescription("in_texCoord", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
-                new VertexElementDescription("in_color", VertexElementSemantic.Color, VertexElementFormat.Byte4_Norm))
+                new VertexElementDescription(
+                    "in_texCoord",
+                    VertexElementSemantic.TextureCoordinate,
+                    VertexElementFormat.Float2
+                ),
+                new VertexElementDescription("in_color", VertexElementSemantic.Color, VertexElementFormat.Byte4_Norm)
+            )
         };
 
-        _layout = factory.CreateResourceLayout(new ResourceLayoutDescription(
-            new ResourceLayoutElementDescription("ProjectionMatrixBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex),
-            new ResourceLayoutElementDescription("MainSampler", ResourceKind.Sampler, ShaderStages.Fragment)));
+        _layout = factory.CreateResourceLayout(
+            new ResourceLayoutDescription(
+                new ResourceLayoutElementDescription(
+                    "ProjectionMatrixBuffer",
+                    ResourceKind.UniformBuffer,
+                    ShaderStages.Vertex
+                ),
+                new ResourceLayoutElementDescription("MainSampler", ResourceKind.Sampler, ShaderStages.Fragment)
+            )
+        );
         _layout.Name = "ImGui.NET Resource Layout";
 
-        _textureLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
-            new ResourceLayoutElementDescription("MainTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment)));
+        _textureLayout = factory.CreateResourceLayout(
+            new ResourceLayoutDescription(
+                new ResourceLayoutElementDescription("MainTexture", ResourceKind.TextureReadOnly, ShaderStages.Fragment)
+            )
+        );
         _textureLayout.Name = "ImGui.NET Texture Layout";
 
-        GraphicsPipelineDescription pd = new GraphicsPipelineDescription(
+        var pd = new GraphicsPipelineDescription(
             BlendStateDescription.SingleAlphaBlend,
             new DepthStencilStateDescription(false, false, ComparisonKind.Always),
             new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid, FrontFace.Clockwise, true, true),
@@ -102,16 +138,18 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
             new ShaderSetDescription(
                 vertexLayouts,
                 new[] { _vertexShader, _fragmentShader },
-                new[] { new SpecializationConstant(0, gd.IsClipSpaceYInverted), }),
+                new[] { new SpecializationConstant(0, gd.IsClipSpaceYInverted), }
+            ),
             new[] { _layout, _textureLayout },
             outputDescription,
-            ResourceBindingModel.Default);
+            ResourceBindingModel.Default
+        );
         _pipeline = factory.CreateGraphicsPipeline(ref pd);
         _pipeline.Name = "ImGui.NET Pipeline";
 
-        _mainResourceSet = factory.CreateResourceSet(new ResourceSetDescription(_layout,
-            _projMatrixBuffer,
-            gd.PointSampler));
+        _mainResourceSet = factory.CreateResourceSet(
+            new ResourceSetDescription(_layout, _projMatrixBuffer, gd.PointSampler)
+        );
         _mainResourceSet.Name = "ImGui.NET Main Resource Set";
         RecreateFontDeviceTexture(gd);
 
@@ -135,9 +173,11 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
     {
         if (!_setsByView.TryGetValue(textureView, out ResourceSetInfo rsi))
         {
-            ResourceSet resourceSet = factory.CreateResourceSet(new ResourceSetDescription(_textureLayout, textureView));
+            ResourceSet resourceSet = factory.CreateResourceSet(
+                new ResourceSetDescription(_textureLayout, textureView)
+            );
             resourceSet.Name = $"ImGui.NET {textureView.Name} Resource Set";
-            rsi = new ResourceSetInfo(GetNextImGuiBindingID(), resourceSet);
+            rsi = new ResourceSetInfo(GetNextImGuiBindingId(), resourceSet);
 
             _setsByView.Add(textureView, rsi);
             _viewsById.Add(rsi.ImGuiBinding, rsi);
@@ -158,10 +198,10 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         }
     }
 
-    IntPtr GetNextImGuiBindingID()
+    IntPtr GetNextImGuiBindingId()
     {
-        int newID = _lastAssignedId++;
-        return (IntPtr)newID;
+        int newId = _lastAssignedId++;
+        return (IntPtr)newId;
     }
 
     /// <summary>
@@ -235,13 +275,16 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         io.Fonts.SetTexID(_fontAtlasId);
 
         _fontTexture?.Dispose();
-        _fontTexture = gd.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
-            (uint)width,
-            (uint)height,
-            1,
-            1,
-            PixelFormat.R8_G8_B8_A8_UNorm,
-            TextureUsage.Sampled));
+        _fontTexture = gd.ResourceFactory.CreateTexture(
+            TextureDescription.Texture2D(
+                (uint)width,
+                (uint)height,
+                1,
+                1,
+                PixelFormat.R8_G8_B8_A8_UNorm,
+                TextureUsage.Sampled
+            )
+        );
         _fontTexture.Name = "ImGui.NET Font Texture";
         gd.UpdateTexture(
             _fontTexture,
@@ -254,10 +297,13 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
             (uint)height,
             1,
             0,
-            0);
+            0
+        );
 
         _fontTextureResourceSet?.Dispose();
-        _fontTextureResourceSet = gd.ResourceFactory.CreateResourceSet(new ResourceSetDescription(_textureLayout, _fontTexture));
+        _fontTextureResourceSet = gd.ResourceFactory.CreateResourceSet(
+            new ResourceSetDescription(_textureLayout, _fontTexture)
+        );
         _fontTextureResourceSet.Name = "ImGui.NET Font Texture Resource Set";
 
         io.Fonts.ClearTexData();
@@ -315,9 +361,7 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
     void SetPerFrameImGuiData(float deltaSeconds)
     {
         var io = ImGui.GetIO();
-        io.DisplaySize = new Vector2(
-            _windowWidth / _scaleFactor.X,
-            _windowHeight / _scaleFactor.Y);
+        io.DisplaySize = new Vector2(_windowWidth / _scaleFactor.X, _windowHeight / _scaleFactor.Y);
 
         io.DisplayFramebufferScale = _scaleFactor;
         io.DeltaTime = deltaSeconds; // DeltaTime is in seconds.
@@ -333,57 +377,158 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
 
         switch (key)
         {
-            case >= Key.F1 and <= Key.F12: result = KeyToImGuiKeyShortcut(key, Key.F1, ImGuiKey.F1); return true;
-            case >= Key.Keypad0 and <= Key.Keypad9: result = KeyToImGuiKeyShortcut(key, Key.Keypad0, ImGuiKey.Keypad0); return true;
-            case >= Key.A and <= Key.Z: result = KeyToImGuiKeyShortcut(key, Key.A, ImGuiKey.A); return true;
-            case >= Key.Number0 and <= Key.Number9: result = KeyToImGuiKeyShortcut(key, Key.Number0, ImGuiKey._0); return true;
-            case Key.ShiftLeft: case Key.ShiftRight: result = ImGuiKey.ModShift; return true;
-            case Key.ControlLeft: case Key.ControlRight: result = ImGuiKey.ModCtrl; return true;
-            case Key.AltLeft: case Key.AltRight: result = ImGuiKey.ModAlt; return true;
-            case Key.WinLeft: case Key.WinRight: result = ImGuiKey.ModSuper; return true;
-            case Key.Menu: result = ImGuiKey.Menu; return true;
-            case Key.Up: result = ImGuiKey.UpArrow; return true;
-            case Key.Down: result = ImGuiKey.DownArrow; return true;
-            case Key.Left: result = ImGuiKey.LeftArrow; return true;
-            case Key.Right: result = ImGuiKey.RightArrow; return true;
-            case Key.Enter: result = ImGuiKey.Enter; return true;
-            case Key.Escape: result = ImGuiKey.Escape; return true;
-            case Key.Space: result = ImGuiKey.Space; return true;
-            case Key.Tab: result = ImGuiKey.Tab; return true;
-            case Key.BackSpace: result = ImGuiKey.Backspace; return true;
-            case Key.Insert: result = ImGuiKey.Insert; return true;
-            case Key.Delete: result = ImGuiKey.Delete; return true;
-            case Key.PageUp: result = ImGuiKey.PageUp; return true;
-            case Key.PageDown: result = ImGuiKey.PageDown; return true;
-            case Key.Home: result = ImGuiKey.Home; return true;
-            case Key.End: result = ImGuiKey.End; return true;
+            case >= Key.F1
+            and <= Key.F12:
+                result = KeyToImGuiKeyShortcut(key, Key.F1, ImGuiKey.F1);
+                return true;
+            case >= Key.Keypad0
+            and <= Key.Keypad9:
+                result = KeyToImGuiKeyShortcut(key, Key.Keypad0, ImGuiKey.Keypad0);
+                return true;
+            case >= Key.A
+            and <= Key.Z:
+                result = KeyToImGuiKeyShortcut(key, Key.A, ImGuiKey.A);
+                return true;
+            case >= Key.Number0
+            and <= Key.Number9:
+                result = KeyToImGuiKeyShortcut(key, Key.Number0, ImGuiKey._0);
+                return true;
+            case Key.ShiftLeft:
+            case Key.ShiftRight:
+                result = ImGuiKey.ModShift;
+                return true;
+            case Key.ControlLeft:
+            case Key.ControlRight:
+                result = ImGuiKey.ModCtrl;
+                return true;
+            case Key.AltLeft:
+            case Key.AltRight:
+                result = ImGuiKey.ModAlt;
+                return true;
+            case Key.WinLeft:
+            case Key.WinRight:
+                result = ImGuiKey.ModSuper;
+                return true;
+            case Key.Menu:
+                result = ImGuiKey.Menu;
+                return true;
+            case Key.Up:
+                result = ImGuiKey.UpArrow;
+                return true;
+            case Key.Down:
+                result = ImGuiKey.DownArrow;
+                return true;
+            case Key.Left:
+                result = ImGuiKey.LeftArrow;
+                return true;
+            case Key.Right:
+                result = ImGuiKey.RightArrow;
+                return true;
+            case Key.Enter:
+                result = ImGuiKey.Enter;
+                return true;
+            case Key.Escape:
+                result = ImGuiKey.Escape;
+                return true;
+            case Key.Space:
+                result = ImGuiKey.Space;
+                return true;
+            case Key.Tab:
+                result = ImGuiKey.Tab;
+                return true;
+            case Key.BackSpace:
+                result = ImGuiKey.Backspace;
+                return true;
+            case Key.Insert:
+                result = ImGuiKey.Insert;
+                return true;
+            case Key.Delete:
+                result = ImGuiKey.Delete;
+                return true;
+            case Key.PageUp:
+                result = ImGuiKey.PageUp;
+                return true;
+            case Key.PageDown:
+                result = ImGuiKey.PageDown;
+                return true;
+            case Key.Home:
+                result = ImGuiKey.Home;
+                return true;
+            case Key.End:
+                result = ImGuiKey.End;
+                return true;
 
             case Key.CapsLock:
                 result = ImGuiKey.Backspace; //ImGuiKey.CapsLock; // Colemak
                 return true;
 
-            case Key.ScrollLock: result = ImGuiKey.ScrollLock; return true;
-            case Key.PrintScreen: result = ImGuiKey.PrintScreen; return true;
-            case Key.Pause: result = ImGuiKey.Pause; return true;
-            case Key.NumLock: result = ImGuiKey.NumLock; return true;
-            case Key.KeypadDivide: result = ImGuiKey.KeypadDivide; return true;
-            case Key.KeypadMultiply: result = ImGuiKey.KeypadMultiply; return true;
-            case Key.KeypadSubtract: result = ImGuiKey.KeypadSubtract; return true;
-            case Key.KeypadAdd: result = ImGuiKey.KeypadAdd; return true;
-            case Key.KeypadDecimal: result = ImGuiKey.KeypadDecimal; return true;
-            case Key.KeypadEnter: result = ImGuiKey.KeypadEnter; return true;
-            case Key.Tilde: result = ImGuiKey.GraveAccent; return true;
-            case Key.Minus: result = ImGuiKey.Minus; return true;
-            case Key.Plus: result = ImGuiKey.Equal; return true;
-            case Key.BracketLeft: result = ImGuiKey.LeftBracket; return true;
-            case Key.BracketRight: result = ImGuiKey.RightBracket; return true;
-            case Key.Semicolon: result = ImGuiKey.Semicolon; return true;
-            case Key.Quote: result = ImGuiKey.Apostrophe; return true;
-            case Key.Comma: result = ImGuiKey.Comma; return true;
-            case Key.Period: result = ImGuiKey.Period; return true;
-            case Key.Slash: result = ImGuiKey.Slash; return true;
-            case Key.BackSlash: case Key.NonUSBackSlash: result = ImGuiKey.Backslash; return true;
-            default: result = ImGuiKey.GamepadBack; return false;
+            case Key.ScrollLock:
+                result = ImGuiKey.ScrollLock;
+                return true;
+            case Key.PrintScreen:
+                result = ImGuiKey.PrintScreen;
+                return true;
+            case Key.Pause:
+                result = ImGuiKey.Pause;
+                return true;
+            case Key.NumLock:
+                result = ImGuiKey.NumLock;
+                return true;
+            case Key.KeypadDivide:
+                result = ImGuiKey.KeypadDivide;
+                return true;
+            case Key.KeypadMultiply:
+                result = ImGuiKey.KeypadMultiply;
+                return true;
+            case Key.KeypadSubtract:
+                result = ImGuiKey.KeypadSubtract;
+                return true;
+            case Key.KeypadAdd:
+                result = ImGuiKey.KeypadAdd;
+                return true;
+            case Key.KeypadDecimal:
+                result = ImGuiKey.KeypadDecimal;
+                return true;
+            case Key.KeypadEnter:
+                result = ImGuiKey.KeypadEnter;
+                return true;
+            case Key.Tilde:
+                result = ImGuiKey.GraveAccent;
+                return true;
+            case Key.Minus:
+                result = ImGuiKey.Minus;
+                return true;
+            case Key.Plus:
+                result = ImGuiKey.Equal;
+                return true;
+            case Key.BracketLeft:
+                result = ImGuiKey.LeftBracket;
+                return true;
+            case Key.BracketRight:
+                result = ImGuiKey.RightBracket;
+                return true;
+            case Key.Semicolon:
+                result = ImGuiKey.Semicolon;
+                return true;
+            case Key.Quote:
+                result = ImGuiKey.Apostrophe;
+                return true;
+            case Key.Comma:
+                result = ImGuiKey.Comma;
+                return true;
+            case Key.Period:
+                result = ImGuiKey.Period;
+                return true;
+            case Key.Slash:
+                result = ImGuiKey.Slash;
+                return true;
+            case Key.BackSlash:
+            case Key.NonUSBackSlash:
+                result = ImGuiKey.Backslash;
+                return true;
+            default:
+                result = ImGuiKey.GamepadBack;
+                return false;
         }
     }
 
@@ -418,7 +563,9 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         if (totalVbSize > _vertexBuffer.SizeInBytes)
         {
             _vertexBuffer.Dispose();
-            _vertexBuffer = gd.ResourceFactory.CreateBuffer(new BufferDescription((uint)(totalVbSize * 1.5f), BufferUsage.VertexBuffer | BufferUsage.Dynamic));
+            _vertexBuffer = gd.ResourceFactory.CreateBuffer(
+                new BufferDescription((uint)(totalVbSize * 1.5f), BufferUsage.VertexBuffer | BufferUsage.Dynamic)
+            );
             _vertexBuffer.Name = "ImGui.NET Vertex Buffer";
         }
 
@@ -426,7 +573,9 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
         if (totalIbSize > _indexBuffer.SizeInBytes)
         {
             _indexBuffer.Dispose();
-            _indexBuffer = gd.ResourceFactory.CreateBuffer(new BufferDescription((uint)(totalIbSize * 1.5f), BufferUsage.IndexBuffer | BufferUsage.Dynamic));
+            _indexBuffer = gd.ResourceFactory.CreateBuffer(
+                new BufferDescription((uint)(totalIbSize * 1.5f), BufferUsage.IndexBuffer | BufferUsage.Dynamic)
+            );
             _indexBuffer.Name = "ImGui.NET Index Buffer";
         }
 
@@ -438,13 +587,15 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
                 _vertexBuffer,
                 vertexOffsetInVertices * (uint)sizeof(ImDrawVert),
                 cmdList.VtxBuffer.Data,
-                (uint)(cmdList.VtxBuffer.Size * sizeof(ImDrawVert)));
+                (uint)(cmdList.VtxBuffer.Size * sizeof(ImDrawVert))
+            );
 
             cl.UpdateBuffer(
                 _indexBuffer,
                 indexOffsetInElements * sizeof(ushort),
                 cmdList.IdxBuffer.Data,
-                (uint)(cmdList.IdxBuffer.Size * sizeof(ushort)));
+                (uint)(cmdList.IdxBuffer.Size * sizeof(ushort))
+            );
 
             vertexOffsetInVertices += (uint)cmdList.VtxBuffer.Size;
             indexOffsetInElements += (uint)cmdList.IdxBuffer.Size;
@@ -460,7 +611,8 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
                 io.DisplaySize.Y,
                 0.0f,
                 -1.0f,
-                1.0f);
+                1.0f
+            );
 
             _gd.UpdateBuffer(_projMatrixBuffer, 0, ref mvp);
         }
@@ -486,10 +638,10 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
 
                 if (pcmd.TextureId != IntPtr.Zero)
                 {
-                    cl.SetGraphicsResourceSet(1,
-                        pcmd.TextureId == _fontAtlasId
-                            ? _fontTextureResourceSet
-                            : GetImageResourceSet(pcmd.TextureId));
+                    cl.SetGraphicsResourceSet(
+                        1,
+                        pcmd.TextureId == _fontAtlasId ? _fontTextureResourceSet : GetImageResourceSet(pcmd.TextureId)
+                    );
                 }
 
                 cl.SetScissorRect(
@@ -497,9 +649,16 @@ public sealed class ImGuiRenderer : IDisposable // This is largely based on Veld
                     (uint)pcmd.ClipRect.X,
                     (uint)pcmd.ClipRect.Y,
                     (uint)(pcmd.ClipRect.Z - pcmd.ClipRect.X),
-                    (uint)(pcmd.ClipRect.W - pcmd.ClipRect.Y));
+                    (uint)(pcmd.ClipRect.W - pcmd.ClipRect.Y)
+                );
 
-                cl.DrawIndexed(pcmd.ElemCount, 1, pcmd.IdxOffset + (uint)idxOffset, (int)(pcmd.VtxOffset + vtxOffset), 0);
+                cl.DrawIndexed(
+                    pcmd.ElemCount,
+                    1,
+                    pcmd.IdxOffset + (uint)idxOffset,
+                    (int)(pcmd.VtxOffset + vtxOffset),
+                    0
+                );
             }
 
             idxOffset += cmdList.IdxBuffer.Size;

@@ -16,14 +16,12 @@ public class BufferPool
         return stack;
     }
 
-    public byte[] Borrow(int size) =>
-        GetStack(size).TryPop(out var buffer)
-            ? buffer
-            : new byte[size];
+    public byte[] Borrow(int size) => GetStack(size).TryPop(out var buffer) ? buffer : new byte[size];
 
     public void Return(byte[] buffer)
     {
-        if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+        if (buffer == null)
+            throw new ArgumentNullException(nameof(buffer));
         GetStack(buffer.Length).Push(buffer);
     }
 

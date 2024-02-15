@@ -10,6 +10,7 @@ public sealed class WatcherCore
     bool _programDataDirty = true;
 
     public string Filter { get; set; } = "";
+
     // public Config Config { get; }
     public DateTime LastUpdateTimeUtc { get; private set; } = DateTime.MinValue;
 
@@ -66,9 +67,7 @@ public sealed class WatcherCore
         if (!_programDataDirty && _drawContext?.Memory == memory)
             return;
 
-        _drawContext = _context.Symbols.Data == null 
-            ? null 
-            : new DrawContext(_context, _textures);
+        _drawContext = _context.Symbols.Data == null ? null : new DrawContext(_context, _textures);
 
         _programDataDirty = false;
     }

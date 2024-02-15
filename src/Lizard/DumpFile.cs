@@ -22,8 +22,9 @@ public class DumpFile
     {
         Memory = memory ?? throw new ArgumentNullException(nameof(memory));
         State = state ?? throw new ArgumentNullException(nameof(state));
-        Registers = state.GetProperty(RegistersProperty, null)
-                    ?? throw new InvalidOperationException("Dump file did not contain register info");
+        Registers =
+            state.GetProperty(RegistersProperty, null)
+            ?? throw new InvalidOperationException("Dump file did not contain register info");
     }
 
     public static DumpFile Load(string path)
@@ -98,7 +99,11 @@ public class DumpFile
         if (!Directory.Exists(Path.GetDirectoryName(filename)))
             throw new DirectoryNotFoundException("The directory could not be found");
 
-        if (!c.Session.IsPaused) { Log.Error("Can only write a dump when execution is paused"); return; }
+        if (!c.Session.IsPaused)
+        {
+            Log.Error("Can only write a dump when execution is paused");
+            return;
+        }
 
         var r = c.Session.Registers;
         int maxAddress = c.Session.GetMaxNonEmptyAddress(r.cs);
@@ -106,14 +111,28 @@ public class DumpFile
         var state = new ProjectConfig();
         c.ProjectManager.Save(state);
 
-        state.SetProperty(RegistersProperty, new DumpRegisters
-        {
-            cs = r.cs, ds = r.ds, es = r.es, fs = r.fs, gs = r.gs, ss = r.ss,
-            eax = r.eax, ebx = r.ebx, ecx = r.ecx, edx = r.edx,
-            esi = r.esi, edi = r.edi,
-            ebp = r.ebp, esp = r.esp, eip = r.eip,
-            flags = r.flags,
-        });
+        state.SetProperty(
+            RegistersProperty,
+            new DumpRegisters
+            {
+                cs = r.cs,
+                ds = r.ds,
+                es = r.es,
+                fs = r.fs,
+                gs = r.gs,
+                ss = r.ss,
+                eax = r.eax,
+                ebx = r.ebx,
+                ecx = r.ecx,
+                edx = r.edx,
+                esi = r.esi,
+                edi = r.edi,
+                ebp = r.ebp,
+                esp = r.esp,
+                eip = r.eip,
+                flags = r.flags,
+            }
+        );
 
         using var stream = File.Open(filename, FileMode.Create, FileAccess.Write);
         using var zip = new ZipArchive(stream, ZipArchiveMode.Create);

@@ -6,7 +6,7 @@ namespace Lizard.Gui;
 
 /// <summary>
 /// An ImGui text box with popup suggestions
-/// Based on https://github.com/tooll3/t3/blob/e714456316591077ef979b5d5e2011c24550fcfe/Editor/Gui/Styling/InputWithTypeAheadSearch.cs#L10 
+/// Based on https://github.com/tooll3/t3/blob/e714456316591077ef979b5d5e2011c24550fcfe/Editor/Gui/Styling/InputWithTypeAheadSearch.cs#L10
 /// MIT License - Copyright 2010 Thomas Mann, Daniel Szymanski, Andreas Rose, Framefield GmbH
 /// </summary>
 public class ImCommandText
@@ -90,7 +90,13 @@ public class ImCommandText
             }
         }
 
-        var changed = ImGui.InputText(id, _buffer, (uint)_buffer.Length, ImGuiInputTextFlags.CallbackHistory | ImGuiInputTextFlags.CallbackCompletion, CommandCallback);
+        var changed = ImGui.InputText(
+            id,
+            _buffer,
+            (uint)_buffer.Length,
+            ImGuiInputTextFlags.CallbackHistory | ImGuiInputTextFlags.CallbackCompletion,
+            CommandCallback
+        );
         if (changed)
             _cachedText = Text;
 
@@ -104,7 +110,7 @@ public class ImCommandText
         }
 
         // We defer exit to get clicks on opened popup list
-        var lostFocus =  ImGui.IsItemDeactivated() || ImGui.IsKeyDown(ImGuiKey.Escape);
+        var lostFocus = ImGui.IsItemDeactivated() || ImGui.IsKeyDown(ImGuiKey.Escape);
 
         if ((ImGui.IsItemActive() || isSearchResultWindowOpen) && _cachedText.Length > 2)
         {
@@ -119,13 +125,18 @@ public class ImCommandText
                 ImGui.SetNextWindowSize(new Vector2(ImGui.GetItemRectSize().X, 200));
                 ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(7, 7));
 
-                if (ImGui.Begin("##typeAheadSearchPopup", ref isSearchResultWindowOpen,
+                if (
+                    ImGui.Begin(
+                        "##typeAheadSearchPopup",
+                        ref isSearchResultWindowOpen,
                         ImGuiWindowFlags.NoTitleBar
-                      | ImGuiWindowFlags.NoMove
-                      | ImGuiWindowFlags.NoResize
-                      | ImGuiWindowFlags.Tooltip
-                      | ImGuiWindowFlags.NoFocusOnAppearing
-                      | ImGuiWindowFlags.ChildWindow))
+                            | ImGuiWindowFlags.NoMove
+                            | ImGuiWindowFlags.NoResize
+                            | ImGuiWindowFlags.Tooltip
+                            | ImGuiWindowFlags.NoFocusOnAppearing
+                            | ImGuiWindowFlags.ChildWindow
+                    )
+                )
                 {
                     int index = 0;
                     ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.6f, 0.6f, 0.6f, 1.0f));
@@ -162,7 +173,8 @@ public class ImCommandText
     void DisableImGuiKeyboardNavigation()
     {
         // Keep navigation setting to restore after window gets closed
-        _keepNavEnableKeyboard = (ImGui.GetIO().ConfigFlags & ImGuiConfigFlags.NavEnableKeyboard) != ImGuiConfigFlags.None;
+        _keepNavEnableKeyboard =
+            (ImGui.GetIO().ConfigFlags & ImGuiConfigFlags.NavEnableKeyboard) != ImGuiConfigFlags.None;
         ImGui.GetIO().ConfigFlags &= ~ImGuiConfigFlags.NavEnableKeyboard;
     }
 
@@ -204,4 +216,3 @@ public class ImCommandText
         return 0;
     }
 }
-

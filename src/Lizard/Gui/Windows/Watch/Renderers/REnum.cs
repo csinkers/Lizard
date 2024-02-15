@@ -8,10 +8,21 @@ public class REnum : IGhidraRenderer
     readonly GEnum _type;
 
     public REnum(GEnum type) => _type = type ?? throw new ArgumentNullException(nameof(type));
+
     public override string ToString() => $"R[{_type}]";
+
     public uint GetSize(History? history) => _type.Size;
-    public History HistoryConstructor(string path, IHistoryCreationContext context) => History.DefaultConstructor(path, _type);
-    public bool Draw(History history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer, DrawContext context)
+
+    public History HistoryConstructor(string path, IHistoryCreationContext context) =>
+        History.DefaultConstructor(path, _type);
+
+    public bool Draw(
+        History history,
+        uint address,
+        ReadOnlySpan<byte> buffer,
+        ReadOnlySpan<byte> previousBuffer,
+        DrawContext context
+    )
     {
         history.LastAddress = address;
         if (buffer.Length < _type.Size)
@@ -32,9 +43,10 @@ public class REnum : IGhidraRenderer
         };
 
         var color = Util.ColorForAge(context.Now - history.LastModifiedTicks);
-        ImGui.TextColored(color, _type.Elements.TryGetValue(value, out var name)
-            ? $"{name} ({value})"
-            : value.ToString());
+        ImGui.TextColored(
+            color,
+            _type.Elements.TryGetValue(value, out var name) ? $"{name} ({value})" : value.ToString()
+        );
 
         return history.LastModifiedTicks == context.Now;
     }

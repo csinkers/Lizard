@@ -27,11 +27,11 @@ public class HistoryCache : IHistoryCreationContext
         return history;
     }
 
-    public uint ToMemoryAddress(uint fileAddress) 
-        => _mapping.ToMemory(fileAddress, out var memOffset, out _) ? memOffset : 0;
+    public uint ToMemoryAddress(uint fileAddress) =>
+        _mapping.ToMemory(fileAddress, out var memOffset, out _) ? memOffset : 0;
 
-    public uint ToFileAddress(uint memoryAddress) 
-        => _mapping.ToFile(memoryAddress, out var fileOffset, out _) ? fileOffset : 0;
+    public uint ToFileAddress(uint memoryAddress) =>
+        _mapping.ToFile(memoryAddress, out var fileOffset, out _) ? fileOffset : 0;
 
     string? IHistoryCreationContext.ResolvePath(string path, string context)
     {
@@ -71,8 +71,8 @@ public class HistoryCache : IHistoryCreationContext
         return history;
     }
 
-    public History GetOrCreateHistory(string path, IGhidraRenderer renderer)
-        => TryGetHistory(path) ?? CreateHistory(path, renderer);
+    public History GetOrCreateHistory(string path, IGhidraRenderer renderer) =>
+        TryGetHistory(path) ?? CreateHistory(path, renderer);
 
     public void CycleHistory()
     {

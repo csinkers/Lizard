@@ -12,9 +12,11 @@ public class LogHistory
     public event Action? Cleared;
 
     public static LogHistory Instance { get; } = new();
+
     LogHistory() { }
 
     public void Add(string category, string line) => Add(category, line, Severity.Debug);
+
     public void Add(string category, string line, Severity severity)
     {
         var l = new Line();
@@ -47,7 +49,8 @@ public class LogHistory
 
     public void Access<T>(T context, Action<T, IReadOnlyCollection<LogEntry>> operation)
     {
-        if (operation == null) throw new ArgumentNullException(nameof(operation));
+        if (operation == null)
+            throw new ArgumentNullException(nameof(operation));
         lock (_syncRoot)
             operation(context, _history);
     }
@@ -60,12 +63,18 @@ public class LogHistory
     }
 
     public void Debug(string category, string message) => Add(category, message, Severity.Debug);
+
     public void Info(string category, string message) => Add(category, message, Severity.Info);
+
     public void Warn(string category, string message) => Add(category, message, Severity.Warn);
+
     public void Error(string category, string message) => Add(category, message, Severity.Error);
 
     public void Debug(string category, Line line) => Add(category, line, Severity.Debug);
+
     public void Info(string category, Line line) => Add(category, line, Severity.Info);
+
     public void Warn(string category, Line line) => Add(category, line, Severity.Warn);
+
     public void Error(string category, Line line) => Add(category, line, Severity.Error);
 }

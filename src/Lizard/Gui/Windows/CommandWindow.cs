@@ -21,7 +21,8 @@ public class CommandWindow : SingletonWindow
     public const PaletteIndex DataColor = PaletteIndex.Custom + 5;
     public const PaletteIndex StackColor = PaletteIndex.Custom + 6;
 
-    public CommandWindow(CommandContext context, LogHistory history) : base("Command")
+    public CommandWindow(CommandContext context, LogHistory history)
+        : base("Command")
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _logs = history ?? throw new ArgumentNullException(nameof(history));
@@ -52,7 +53,8 @@ public class CommandWindow : SingletonWindow
             "ScrollingRegion",
             new Vector2(0, -footerHeightToReserve),
             ImGuiChildFlags.None,
-            ImGuiWindowFlags.HorizontalScrollbar);
+            ImGuiWindowFlags.HorizontalScrollbar
+        );
 
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(4, 1)); // Tighten spacing
 

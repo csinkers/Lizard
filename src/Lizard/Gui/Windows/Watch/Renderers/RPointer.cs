@@ -11,19 +11,37 @@ public class RPointer : IGhidraRenderer
 
     class PointerHistory : History
     {
-        public PointerHistory(string path, IGhidraType type) : base(path, type) { }
+        public PointerHistory(string path, IGhidraType type)
+            : base(path, type) { }
+
         public string? ReferentPath { get; set; }
+
         public override string ToString() => $"PtrH:{Path}:{Util.Timestamp(LastModifiedTicks):g3}";
     }
 
     public RPointer(GPointer type) => _type = type ?? throw new ArgumentNullException(nameof(type));
-    public override string ToString() => $"R[{_type}]";
-    public uint GetSize(History? history) => Constants.PointerSize;
-    public History HistoryConstructor(string path, IHistoryCreationContext context) => new PointerHistory(path, _type);
-    public bool Draw(History history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer, DrawContext context)
-        => Draw((PointerHistory)history, address, buffer, previousBuffer, context);
 
-    bool Draw(PointerHistory history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer, DrawContext context)
+    public override string ToString() => $"R[{_type}]";
+
+    public uint GetSize(History? history) => Constants.PointerSize;
+
+    public History HistoryConstructor(string path, IHistoryCreationContext context) => new PointerHistory(path, _type);
+
+    public bool Draw(
+        History history,
+        uint address,
+        ReadOnlySpan<byte> buffer,
+        ReadOnlySpan<byte> previousBuffer,
+        DrawContext context
+    ) => Draw((PointerHistory)history, address, buffer, previousBuffer, context);
+
+    bool Draw(
+        PointerHistory history,
+        uint address,
+        ReadOnlySpan<byte> buffer,
+        ReadOnlySpan<byte> previousBuffer,
+        DrawContext context
+    )
     {
         history.LastAddress = address;
         if (buffer.Length < Constants.PointerSize)
@@ -66,7 +84,7 @@ public class RPointer : IGhidraRenderer
 
             try
             {
-                Span<byte> curSpan  = isBig ? curArray : stackalloc byte[(int)size];
+                Span<byte> curSpan = isBig ? curArray : stackalloc byte[(int)size];
                 Span<byte> prevSpan = isBig ? prevArray : stackalloc byte[(int)size];
 
                 var slice = context.Memory.Read(targetAddress, size, curSpan);

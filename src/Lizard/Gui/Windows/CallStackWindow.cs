@@ -10,8 +10,8 @@ public class CallStackWindow : SingletonWindow
     readonly CommandContext _context;
     int _lastVersion;
 
-    public CallStackWindow(CommandContext context) : base("Call Stack")
-        => _context = context ?? throw new ArgumentNullException(nameof(context));
+    public CallStackWindow(CommandContext context)
+        : base("Call Stack") => _context = context ?? throw new ArgumentNullException(nameof(context));
 
     protected override void DrawContents()
     {

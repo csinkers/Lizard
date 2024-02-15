@@ -10,7 +10,8 @@ public class RNamespace : IGhidraRenderer
 
     class NamespaceHistory : History
     {
-        public NamespaceHistory(string path, IGhidraType type, string[] memberPaths, string[] memberLabels) : base(path, type)
+        public NamespaceHistory(string path, IGhidraType type, string[] memberPaths, string[] memberLabels)
+            : base(path, type)
         {
             MemberPaths = memberPaths ?? throw new ArgumentNullException(nameof(memberPaths));
             MemberLabels = memberLabels ?? throw new ArgumentNullException(nameof(memberLabels));
@@ -21,8 +22,11 @@ public class RNamespace : IGhidraRenderer
     }
 
     public RNamespace(GNamespace type) => _type = type ?? throw new ArgumentNullException(nameof(type));
+
     public override string ToString() => $"R[{_type}]";
+
     public uint GetSize(History? history) => 0;
+
     public History HistoryConstructor(string path, IHistoryCreationContext context)
     {
         var memberPaths = _type.Members.Select((_, i) => $"{path}/{i}").ToArray();
@@ -30,7 +34,13 @@ public class RNamespace : IGhidraRenderer
         return new NamespaceHistory(path, _type, memberPaths, memberLabels);
     }
 
-    public bool Draw(History history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer, DrawContext context)
+    public bool Draw(
+        History history,
+        uint address,
+        ReadOnlySpan<byte> buffer,
+        ReadOnlySpan<byte> previousBuffer,
+        DrawContext context
+    )
     {
         var h = (NamespaceHistory)history;
         for (var index = 0; index < _type.Members.Count; index++)

@@ -10,10 +10,21 @@ public class RFuncPointer : IGhidraRenderer
     readonly GFuncPointer _type;
 
     public RFuncPointer(GFuncPointer type) => _type = type ?? throw new ArgumentNullException(nameof(type));
+
     public override string ToString() => $"R[{_type}]";
+
     public uint GetSize(History? history) => Constants.PointerSize;
-    public History HistoryConstructor(string path, IHistoryCreationContext context) => History.DefaultConstructor(path, _type);
-    public bool Draw(History history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer, DrawContext context)
+
+    public History HistoryConstructor(string path, IHistoryCreationContext context) =>
+        History.DefaultConstructor(path, _type);
+
+    public bool Draw(
+        History history,
+        uint address,
+        ReadOnlySpan<byte> buffer,
+        ReadOnlySpan<byte> previousBuffer,
+        DrawContext context
+    )
     {
         history.LastAddress = address;
         if (buffer.IsEmpty)

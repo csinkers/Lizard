@@ -12,5 +12,6 @@ public class Property<T> : IProperty<T>
 
     public string Name { get; }
     public T DefaultValue { get; }
+
     public object? FromJson(JsonElement elem) => elem.Deserialize<T>();
 }

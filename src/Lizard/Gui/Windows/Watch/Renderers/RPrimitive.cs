@@ -24,10 +24,21 @@ public class RPrimitive : IGhidraRenderer
         _drawFunc = drawFunc ?? throw new ArgumentNullException(nameof(drawFunc));
         _type = type ?? throw new ArgumentNullException(nameof(type));
     }
+
     public override string ToString() => $"R[{_type}]";
+
     public uint GetSize(History? history) => _type.FixedSize ?? 0;
-    public History HistoryConstructor(string path, IHistoryCreationContext context) => History.DefaultConstructor(path, _type);
-    public bool Draw(History history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer, DrawContext context)
+
+    public History HistoryConstructor(string path, IHistoryCreationContext context) =>
+        History.DefaultConstructor(path, _type);
+
+    public bool Draw(
+        History history,
+        uint address,
+        ReadOnlySpan<byte> buffer,
+        ReadOnlySpan<byte> previousBuffer,
+        DrawContext context
+    )
     {
         history.LastAddress = address;
         if (_type.FixedSize == 0)
@@ -79,30 +90,64 @@ public class RPrimitive : IGhidraRenderer
     public static RPrimitive VaList { get; } = new(GPrimitive.VaList, DrawList);
     public static RPrimitive ImageBaseOffset32 { get; } = new(GPrimitive.ImageBaseOffset32, DrawUInt4);
     public static RPrimitive Pointer32 { get; } = new(GPrimitive.Pointer32, DrawUInt4);
-    public static RPrimitive Pointer { get; } = new(GPrimitive.Pointer, Constants.PointerSize == 8 ? DrawUInt8 : DrawUInt4);
+    public static RPrimitive Pointer { get; } =
+        new(GPrimitive.Pointer, Constants.PointerSize == 8 ? DrawUInt8 : DrawUInt4);
     public static RPrimitive SizeT { get; } = new(GPrimitive.SizeT, Constants.PointerSize == 8 ? DrawUInt8 : DrawUInt4);
 
-    static readonly Dictionary<GPrimitive, RPrimitive> PrimitiveTypes = new[] {
+    static readonly Dictionary<GPrimitive, RPrimitive> PrimitiveTypes = new[]
+    {
         Bool,
-        SByte, Word, Short, Int, Long, Dword, LongLong, Qword,
-        Byte, UChar, UShort, UInt, ULong, ULongLong,
-        Undefined, Undefined1, Undefined2, Undefined4, Undefined6, Undefined8,
+        SByte,
+        Word,
+        Short,
+        Int,
+        Long,
+        Dword,
+        LongLong,
+        Qword,
+        Byte,
+        UChar,
+        UShort,
+        UInt,
+        ULong,
+        ULongLong,
+        Undefined,
+        Undefined1,
+        Undefined2,
+        Undefined4,
+        Undefined6,
+        Undefined8,
         Char,
-        Float, Double, Float10,
+        Float,
+        Double,
+        Float10,
         Void,
         VaList,
         ImageBaseOffset32,
-        Pointer32, Pointer,
+        Pointer32,
+        Pointer,
         SizeT
     }.ToDictionary(x => x._type);
 
     static void DrawFloat10(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, "float10");
-    static void DrawDouble(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, ((float)BitConverter.ToDouble(buffer)).ToString("g3"));
-    static void DrawFloat(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, BitConverter.ToSingle(buffer).ToString("g3"));
-    static void DrawInt1(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, ((sbyte)buffer[0]).ToString());
-    static void DrawInt2(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, BitConverter.ToInt16(buffer).ToString());
-    static void DrawInt4(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, BitConverter.ToInt32(buffer).ToString());
-    static void DrawInt8(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, BitConverter.ToInt64(buffer).ToString());
+
+    static void DrawDouble(ReadOnlySpan<byte> buffer, Vector4 color) =>
+        ImGui.TextColored(color, ((float)BitConverter.ToDouble(buffer)).ToString("g3"));
+
+    static void DrawFloat(ReadOnlySpan<byte> buffer, Vector4 color) =>
+        ImGui.TextColored(color, BitConverter.ToSingle(buffer).ToString("g3"));
+
+    static void DrawInt1(ReadOnlySpan<byte> buffer, Vector4 color) =>
+        ImGui.TextColored(color, ((sbyte)buffer[0]).ToString());
+
+    static void DrawInt2(ReadOnlySpan<byte> buffer, Vector4 color) =>
+        ImGui.TextColored(color, BitConverter.ToInt16(buffer).ToString());
+
+    static void DrawInt4(ReadOnlySpan<byte> buffer, Vector4 color) =>
+        ImGui.TextColored(color, BitConverter.ToInt32(buffer).ToString());
+
+    static void DrawInt8(ReadOnlySpan<byte> buffer, Vector4 color) =>
+        ImGui.TextColored(color, BitConverter.ToInt64(buffer).ToString());
 
     static void DrawUInt1(ReadOnlySpan<byte> buffer, Vector4 color)
     {
@@ -123,6 +168,7 @@ public class RPrimitive : IGhidraRenderer
     }
 
     static void DrawUInt6(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, "undefined6");
+
     static void DrawUInt8(ReadOnlySpan<byte> buffer, Vector4 color)
     {
         var value = BitConverter.ToUInt64(buffer);
@@ -130,15 +176,25 @@ public class RPrimitive : IGhidraRenderer
     }
 
     static void DrawList(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, "va_list");
+
     static void DrawVoid(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, "void");
-    static void DrawString(ReadOnlySpan<byte> buffer, Vector4 color) => ImGui.TextColored(color, Constants.Encoding.GetString(buffer));
+
+    static void DrawString(ReadOnlySpan<byte> buffer, Vector4 color) =>
+        ImGui.TextColored(color, Constants.Encoding.GetString(buffer));
+
     static void DrawBool(ReadOnlySpan<byte> buffer, Vector4 color)
     {
         switch (buffer.Length)
         {
-            case 1: ImGui.TextColored(color, buffer[0] == 0 ? "false" : "true"); break;
-            case 4: ImGui.TextColored(color, BitConverter.ToUInt32(buffer) == 0 ? "false" : "true"); break;
-            default: ImGui.TextColored(color, $"bool len {buffer.Length}"); break;
+            case 1:
+                ImGui.TextColored(color, buffer[0] == 0 ? "false" : "true");
+                break;
+            case 4:
+                ImGui.TextColored(color, BitConverter.ToUInt32(buffer) == 0 ? "false" : "true");
+                break;
+            default:
+                ImGui.TextColored(color, $"bool len {buffer.Length}");
+                break;
         }
     }
 }

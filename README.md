@@ -12,3 +12,44 @@ This project has dependencies on:
 - [veldrid](https://github.com/veldrid/veldrid) is used for access to graphics APIs, licensed under [MIT](https://github.com/veldrid/veldrid/blob/master/LICENSE) © Eric Mellino and Veldrid contributors
 - [ImGUI.NET](https://github.com/ImGuiNET/ImGui.NET) is used for the GUI, licensed under [MIT](https://github.com/ImGuiNET/ImGui.NET/blob/master/LICENSE) © Eric Mellino and ImGui.NET contributors
 - [Tooll 3](https://github.com/tooll3/t3) for some ImGui controls, licensed under [MIT](https://github.com/tooll3/t3/blob/master/LICENSE.txt) © Thomas Mann, Daniel Szymanski, Andreas Rose, Framefield GmbH
+
+## Environment setup
+
+### Machine install:
+Install csharpier VS 2022 plugin
+Run `pip install pre-commit`
+
+### Project Install:
+dotnet tool install csharpier
+Create .csharpierrc:
+{
+    "printWidth": 120,
+    "useTabs": false,
+    "tabWidth": 4,
+    "endOfLine": "auto"
+}
+
+Create .pre-commit-config.yaml:
+repos:
+  - repo: local
+    hooks:
+      - id: dotnet-tool-restore
+        name: Install .NET tools
+        entry: dotnet tool restore
+        language: system
+        always_run: true
+        pass_filenames: false
+        stages:
+          - commit
+          - push
+          - post-checkout
+          - post-rewrite
+        description: Install the .NET tools listed at .config/dotnet-tools.json.
+      - id: csharpier
+        name: Run CSharpier on C# files
+        entry: dotnet tool run dotnet-csharpier
+        language: system
+        types:
+          - c#
+        description: CSharpier is an opinionated C# formatter inspired by Prettier.
+

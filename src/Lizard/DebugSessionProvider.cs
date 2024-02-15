@@ -11,8 +11,11 @@ public class DebugSessionProvider : IDisposable
     public event StoppedDelegate? Stopped;
 
     public IDebugSession Session { get; private set; } = _disconnectedSession;
+
     void OnConnected() => Connected?.Invoke();
+
     void OnDisconnected() => Disconnected?.Invoke();
+
     void OnStopped(Registers state) => Stopped?.Invoke(state);
 
     public void StartIceSession(string hostname, int port)

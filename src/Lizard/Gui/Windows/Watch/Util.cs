@@ -13,7 +13,9 @@ public static class Util
         return (float)(dt - startTime).TotalSeconds;
     }
 
-    public static ReadOnlySpan<T> SafeSlice<T>(ReadOnlySpan<T> span, uint from, uint size) => SafeSlice(span, (int)from, (int)size);
+    public static ReadOnlySpan<T> SafeSlice<T>(ReadOnlySpan<T> span, uint from, uint size) =>
+        SafeSlice(span, (int)from, (int)size);
+
     public static ReadOnlySpan<T> SafeSlice<T>(ReadOnlySpan<T> span, int from, int size)
     {
         from = Math.Min(span.Length, from);
@@ -22,6 +24,7 @@ public static class Util
     }
 
     static readonly long MaxAgeTicks = TimeSpan.FromSeconds(3).Ticks;
+
     public static Vector4 ColorForAge(long ageInTicks)
     {
         if (ageInTicks >= MaxAgeTicks)

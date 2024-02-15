@@ -17,9 +17,13 @@ public class DumpFileSession : IDebugSession, IMemoryReader
     public Registers OldRegisters { get; }
     public Registers Registers { get; }
     public IMemoryCache Memory => new PassthroughMemoryCache(this);
-    public void Refresh() { } 
+
+    public void Refresh() { }
+
     public void Defer(IRequest request) => request.Execute(this);
-    public void FlushDeferredResults() { } 
+
+    public void FlushDeferredResults() { }
+
     public int Version => 1;
 
     public DumpFileSession(DumpFile dump)
@@ -31,22 +35,42 @@ public class DumpFileSession : IDebugSession, IMemoryReader
         OldRegisters = Registers;
     }
 
-    public void Read(uint offset, uint size, Span<byte> buffer) 
-        => _dump.Memory.AsSpan((int)offset, (int)size).CopyTo(buffer);
+    public void Read(uint offset, uint size, Span<byte> buffer) =>
+        _dump.Memory.AsSpan((int)offset, (int)size).CopyTo(buffer);
 
     public void Continue() => throw new NotSupportedException("Invalid operation when debugging a dump file");
+
     public Registers Break() => throw new NotSupportedException("Invalid operation when debugging a dump file");
+
     public Registers StepIn() => throw new NotSupportedException("Invalid operation when debugging a dump file");
+
     public Registers StepOver() => throw new NotSupportedException("Invalid operation when debugging a dump file");
+
     public Registers StepOut() => throw new NotSupportedException("Invalid operation when debugging a dump file");
-    public Registers StepMultiple(int i) => throw new NotSupportedException("Invalid operation when debugging a dump file");
-    public void RunToAddress(Address address) => throw new NotSupportedException("Invalid operation when debugging a dump file");
-    public void SetMemory(Address address, byte[] bytes) => throw new NotSupportedException("Invalid operation when debugging a dump file");
-    public void SetBreakpoint(Breakpoint bp) => throw new NotSupportedException("Invalid operation when debugging a dump file");
-    public void EnableBreakpoint(int id, bool enable) => throw new NotSupportedException("Invalid operation when debugging a dump file");
-    public void DelBreakpoint(int id) => throw new NotSupportedException("Invalid operation when debugging a dump file");
-    public void SetRegister(Register reg, int value) => throw new NotSupportedException("Invalid operation when debugging a dump file");
+
+    public Registers StepMultiple(int i) =>
+        throw new NotSupportedException("Invalid operation when debugging a dump file");
+
+    public void RunToAddress(Address address) =>
+        throw new NotSupportedException("Invalid operation when debugging a dump file");
+
+    public void SetMemory(Address address, byte[] bytes) =>
+        throw new NotSupportedException("Invalid operation when debugging a dump file");
+
+    public void SetBreakpoint(Breakpoint bp) =>
+        throw new NotSupportedException("Invalid operation when debugging a dump file");
+
+    public void EnableBreakpoint(int id, bool enable) =>
+        throw new NotSupportedException("Invalid operation when debugging a dump file");
+
+    public void DelBreakpoint(int id) =>
+        throw new NotSupportedException("Invalid operation when debugging a dump file");
+
+    public void SetRegister(Register reg, int value) =>
+        throw new NotSupportedException("Invalid operation when debugging a dump file");
+
     public Breakpoint[] ListBreakpoints() => Array.Empty<Breakpoint>();
+
     public Registers GetState() => Registers;
 
     public byte[] GetMemory(Address addr, int bufferLength)
@@ -81,14 +105,29 @@ public class DumpFileSession : IDebugSession, IMemoryReader
     }
 
     public Descriptor[] GetGdt() => throw new NotImplementedException();
+
     public Descriptor[] GetLdt() => throw new NotImplementedException();
+
     public void Dispose() => _disassembler.Dispose();
 
-    static Registers ConvertRegisters(DumpRegisters r) => new(true,
+    static Registers ConvertRegisters(DumpRegisters r) =>
+        new(
+            true,
             r.flags,
-            r.eax, r.ebx, r.ecx, r.edx,
-            r.esi, r.edi,
-            r.ebp, r.esp, r.eip,
-            (short)r.es, (short)r.cs, (short)r.ss,
-            (short)r.ds, (short)r.fs, (short)r.gs);
+            r.eax,
+            r.ebx,
+            r.ecx,
+            r.edx,
+            r.esi,
+            r.edi,
+            r.ebp,
+            r.esp,
+            r.eip,
+            (short)r.es,
+            (short)r.cs,
+            (short)r.ss,
+            (short)r.ds,
+            (short)r.fs,
+            (short)r.gs
+        );
 }

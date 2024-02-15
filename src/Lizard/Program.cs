@@ -9,9 +9,10 @@ namespace Lizard;
 internal static class Program
 {
     static readonly string DefaultProjectPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "LizardDebugger",
-            "default.lizard");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "LizardDebugger",
+        "default.lizard"
+    );
 
     public static int Main(string[] args)
     {
@@ -75,4 +76,3 @@ internal static class Program
         }
     }
 }
-

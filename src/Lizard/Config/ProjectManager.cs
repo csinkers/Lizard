@@ -8,8 +8,8 @@ public class ProjectManager : IProjectManager
     public event Action? ProjectLoaded;
     public event Action? ProjectSaved;
 
-    public ProjectManager(ProjectConfig project)
-        => Project = project ?? throw new ArgumentNullException(nameof(project));
+    public ProjectManager(ProjectConfig project) =>
+        Project = project ?? throw new ArgumentNullException(nameof(project));
 
     public void Load(string path)
     {

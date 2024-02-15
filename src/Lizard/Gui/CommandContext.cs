@@ -12,7 +12,12 @@ public class CommandContext
     List<StackFrame> _stack = new();
     int _lastStackVersion = -1;
 
-    public CommandContext(DebugSessionProvider sessionProvider, MemoryMapping mapping, SymbolStore symbols, ProjectManager projectManager)
+    public CommandContext(
+        DebugSessionProvider sessionProvider,
+        MemoryMapping mapping,
+        SymbolStore symbols,
+        ProjectManager projectManager
+    )
     {
         SessionProvider = sessionProvider ?? throw new ArgumentNullException(nameof(sessionProvider));
         Mapping = mapping ?? throw new ArgumentNullException(nameof(mapping));
@@ -26,8 +31,8 @@ public class CommandContext
     public SymbolStore Symbols { get; }
     public ProjectManager ProjectManager { get; }
 
-    public Symbol? LookupSymbolForAddress(uint memoryAddress)
-        => LookupSymbolForAddress(memoryAddress, out _);
+    public Symbol? LookupSymbolForAddress(uint memoryAddress) => LookupSymbolForAddress(memoryAddress, out _);
+
     public Symbol? LookupSymbolForAddress(uint memoryAddress, out int offset)
     {
         offset = 0;
@@ -59,10 +64,8 @@ public class CommandContext
 
     public uint? SelectedAddress { get; set; }
     public int? SelectedFrameIndex { get; set; }
-    public StackFrame? SelectedFrame => SelectedFrameIndex == null || SelectedFrameIndex >= Stack.Count
-        ? null 
-        : Stack[SelectedFrameIndex.Value];
-
+    public StackFrame? SelectedFrame =>
+        SelectedFrameIndex == null || SelectedFrameIndex >= Stack.Count ? null : Stack[SelectedFrameIndex.Value];
 
     public List<StackFrame> GetStackTrace()
     {
@@ -123,14 +126,17 @@ public class CommandContext
     }
 
     MemoryRegion? GetStackRegion(uint addressHint) =>
-        Mapping.Regions.FirstOrDefault(x => x.Contains(addressHint) &&
-        x.Type == MemoryType.Stack);
+        Mapping.Regions.FirstOrDefault(x => x.Contains(addressHint) && x.Type == MemoryType.Stack);
 
     uint[] GetDwords(uint from, uint to)
     {
-        if (to < from) throw new InvalidOperationException("Tried to get array of dwords but the supplied range was backwards");
+        if (to < from)
+            throw new InvalidOperationException("Tried to get array of dwords but the supplied range was backwards");
         var byteCount = to - from;
-        if (byteCount % 4 != 0) throw new InvalidOperationException("Tried to get array of dwords but the length supplied was not a multiple of 4");
+        if (byteCount % 4 != 0)
+            throw new InvalidOperationException(
+                "Tried to get array of dwords but the length supplied was not a multiple of 4"
+            );
 
         var num = byteCount / 4;
         var buf = new uint[num];

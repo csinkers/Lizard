@@ -8,6 +8,7 @@ public class StringListProperty : IProperty<List<string>>
 
     public string Name { get; }
     public List<string> DefaultValue => new();
+
     public object? FromJson(JsonElement elem)
     {
         if (elem.ValueKind != JsonValueKind.Array)

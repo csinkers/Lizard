@@ -16,6 +16,7 @@ public abstract class SingletonWindow : IImGuiWindow
 
     protected bool JustOpened { get; private set; }
     public string Prefix => _name;
+
     public void Open()
     {
         _open = true;
@@ -23,6 +24,7 @@ public abstract class SingletonWindow : IImGuiWindow
     }
 
     public void Close() => _open = false;
+
     public void Draw()
     {
         if (!_open)
@@ -47,7 +49,9 @@ public abstract class SingletonWindow : IImGuiWindow
     public void Load(WindowId id, WindowConfig config)
     {
         if (!string.Equals(id.Prefix, _name, StringComparison.Ordinal))
-            throw new InvalidOperationException($"A window with prefix \"{id.Prefix}\" was passed to {GetType().Name} which expects a prefix of \"{Prefix}\"");
+            throw new InvalidOperationException(
+                $"A window with prefix \"{id.Prefix}\" was passed to {GetType().Name} which expects a prefix of \"{Prefix}\""
+            );
 
         Load(config);
     }
@@ -64,6 +68,8 @@ public abstract class SingletonWindow : IImGuiWindow
     }
 
     protected abstract void DrawContents();
+
     protected virtual void Load(WindowConfig config) => _open = config.Open;
+
     protected virtual void Save(WindowConfig config) => config.Open = _open;
 }

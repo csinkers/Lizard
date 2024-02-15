@@ -18,5 +18,10 @@ public class Request<T> : IRequest
     }
 
     public void Execute(IDebugSession session) => _result = _action(session); // Runs on worker thread, can take a long time
-    public void Complete() { if (_result != null) _finaliser(_result); } // To be run on main thread, must complete quickly
+
+    public void Complete() // To be run on main thread, must complete quickly
+    {
+        if (_result != null)
+            _finaliser(_result);
+    }
 }

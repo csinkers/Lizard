@@ -10,10 +10,10 @@ static class ShaderLoader
         string resourceName = factory.BackendType switch
         {
             GraphicsBackend.Direct3D11 => name + ".hlsl.bytes",
-            GraphicsBackend.OpenGL     => name + ".glsl",
-            GraphicsBackend.OpenGLES   => name + ".glsles",
-            GraphicsBackend.Vulkan     => name + ".spv",
-            GraphicsBackend.Metal      => name + ".metallib",
+            GraphicsBackend.OpenGL => name + ".glsl",
+            GraphicsBackend.OpenGLES => name + ".glsles",
+            GraphicsBackend.Vulkan => name + ".spv",
+            GraphicsBackend.Metal => name + ".metallib",
             _ => throw new NotImplementedException()
         };
         return GetEmbeddedResourceBytes(assembly, resourceName);
@@ -23,7 +23,9 @@ static class ShaderLoader
     {
         var stream = assembly.GetManifestResourceStream(resourceName);
         if (stream == null)
-            throw new InvalidOperationException($"Could not load resource stream \"{resourceName}\" from assembly \"{assembly.FullName}\"");
+            throw new InvalidOperationException(
+                $"Could not load resource stream \"{resourceName}\" from assembly \"{assembly.FullName}\""
+            );
 
         using var sr = new StreamReader(stream);
         return sr.ReadToEnd();
@@ -38,7 +40,9 @@ static class ShaderLoader
         if (s == null)
         {
             var valid = string.Join(", ", assembly.GetManifestResourceNames());
-            throw new FileNotFoundException($"Could not load embedded resource stream \"{name}\". Valid names: {valid}");
+            throw new FileNotFoundException(
+                $"Could not load embedded resource stream \"{name}\". Valid names: {valid}"
+            );
         }
 
         byte[] ret = new byte[s.Length];

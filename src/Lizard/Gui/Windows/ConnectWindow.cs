@@ -15,8 +15,8 @@ internal class ConnectWindow : SingletonWindow
     string _error = "";
     int _port;
 
-    public ConnectWindow(CommandContext context) : base("Connect") 
-        => _context = context ?? throw new ArgumentNullException(nameof(context));
+    public ConnectWindow(CommandContext context)
+        : base("Connect") => _context = context ?? throw new ArgumentNullException(nameof(context));
 
     protected override void Load(WindowConfig config)
     {

@@ -7,6 +7,7 @@ namespace Lizard.Gui.Windows.Watch;
 public class RendererCache
 {
     readonly Dictionary<IGhidraType, IGhidraRenderer> _cache = new();
+
     public IGhidraRenderer Get(IGhidraType type)
     {
         if (!_cache.TryGetValue(type, out var renderer))

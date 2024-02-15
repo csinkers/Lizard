@@ -18,7 +18,7 @@ public class SymbolStore
     public event Action? DataLoading;
     public event Action<ProgramData?>? DataLoaded;
 
-    public Symbol? LookupSymbol(string name) => Data?.LookupSymbol(name); 
+    public Symbol? LookupSymbol(string name) => Data?.LookupSymbol(name);
 
     public void Load(string? path, string? codePath)
     {

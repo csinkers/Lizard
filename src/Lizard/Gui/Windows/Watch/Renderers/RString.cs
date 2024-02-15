@@ -14,16 +14,28 @@ public class RString : IGhidraRenderer
     class StringHistory : History
     {
         public uint Size { get; set; }
-        public StringHistory(string path, IGhidraType type) : base(path, type) { }
+
+        public StringHistory(string path, IGhidraType type)
+            : base(path, type) { }
+
         public override string ToString() => $"StringH:{Path}:{Util.Timestamp(LastModifiedTicks):g3}";
     }
 
     public RString(GString type) => _type = type ?? throw new ArgumentNullException(nameof(type));
+
     public override string ToString() => $"R[{_type}]";
+
     public uint GetSize(History? history) => ((StringHistory?)history)?.Size ?? InitialSize;
+
     public History HistoryConstructor(string path, IHistoryCreationContext context) => new StringHistory(path, _type);
-    public bool Draw(History history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer, DrawContext context)
-        => Draw((StringHistory)history, address, buffer, previousBuffer);
+
+    public bool Draw(
+        History history,
+        uint address,
+        ReadOnlySpan<byte> buffer,
+        ReadOnlySpan<byte> previousBuffer,
+        DrawContext context
+    ) => Draw((StringHistory)history, address, buffer, previousBuffer);
 
     static bool Draw(StringHistory history, uint address, ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> previousBuffer)
     {
