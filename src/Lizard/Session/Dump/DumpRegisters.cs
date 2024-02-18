@@ -1,4 +1,4 @@
-﻿namespace Lizard;
+﻿namespace Lizard.Session.Dump;
 
 public class DumpRegisters
 {

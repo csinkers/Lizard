@@ -1,4 +1,6 @@
-﻿namespace Lizard.Gui.Windows.Watch;
+﻿using Lizard.Memory;
+
+namespace Lizard.Gui.Windows.Watch;
 
 public class MemoryCache : IMemoryCache
 {

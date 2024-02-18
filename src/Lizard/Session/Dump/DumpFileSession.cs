@@ -1,8 +1,9 @@
 ﻿using Gee.External.Capstone;
 using Gee.External.Capstone.X86;
+using Lizard.Memory;
 using LizardProtocol;
 
-namespace Lizard;
+namespace Lizard.Session.Dump;
 
 public sealed class DumpFileSession : IDebugSession, IMemoryReader
 {

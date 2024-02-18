@@ -1,0 +1,127 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Icons\**" />
+    <EmbeddedResource Remove="Icons\**" />
+    <None Remove="Icons\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Gui\IconsDark\debug-continue.png" />
+    <None Remove="Gui\IconsDark\debug-disconnect.png" />
+    <None Remove="Gui\IconsDark\debug-pause.png" />
+    <None Remove="Gui\IconsDark\debug-start.png" />
+    <None Remove="Gui\IconsDark\debug-step-into.png" />
+    <None Remove="Gui\IconsDark\debug-step-out.png" />
+    <None Remove="Gui\IconsDark\debug-step-over.png" />
+    <None Remove="Gui\IconsDark\debug-stop.png" />
+    <None Remove="Gui\IconsDark\debug.png" />
+    <None Remove="Gui\IconsDark\gear.png" />
+    <None Remove="Gui\IconsLight\debug-continue.png" />
+    <None Remove="Gui\IconsLight\debug-disconnect.png" />
+    <None Remove="Gui\IconsLight\debug-pause.png" />
+    <None Remove="Gui\IconsLight\debug-start.png" />
+    <None Remove="Gui\IconsLight\debug-step-into.png" />
+    <None Remove="Gui\IconsLight\debug-step-out.png" />
+    <None Remove="Gui\IconsLight\debug-step-over.png" />
+    <None Remove="Gui\IconsLight\debug-stop.png" />
+    <None Remove="Gui\IconsLight\debug.png" />
+    <None Remove="Gui\IconsLight\gear.png" />
+    <None Remove="shaders\imgui-frag.glsl" />
+    <None Remove="shaders\imgui-frag.glsles" />
+    <None Remove="shaders\imgui-frag.hlsl" />
+    <None Remove="shaders\imgui-frag.hlsl.bytes" />
+    <None Remove="shaders\imgui-frag.metal" />
+    <None Remove="shaders\imgui-frag.metallib" />
+    <None Remove="shaders\imgui-frag.spv" />
+    <None Remove="shaders\imgui-frag.spv.glsl" />
+    <None Remove="shaders\imgui-vertex.glsl" />
+    <None Remove="shaders\imgui-vertex.glsles" />
+    <None Remove="shaders\imgui-vertex.hlsl" />
+    <None Remove="shaders\imgui-vertex.hlsl.bytes" />
+    <None Remove="shaders\imgui-vertex.metal" />
+    <None Remove="shaders\imgui-vertex.metallib" />
+    <None Remove="shaders\imgui-vertex.spv" />
+    <None Remove="shaders\imgui-vertex.spv.glsl" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Gui\IconsDark\debug-continue.png" />
+    <EmbeddedResource Include="Gui\IconsDark\debug-disconnect.png" />
+    <EmbeddedResource Include="Gui\IconsDark\debug-pause.png" />
+    <EmbeddedResource Include="Gui\IconsDark\debug-start.png" />
+    <EmbeddedResource Include="Gui\IconsDark\debug-step-into.png" />
+    <EmbeddedResource Include="Gui\IconsDark\debug-step-out.png" />
+    <EmbeddedResource Include="Gui\IconsDark\debug-step-over.png" />
+    <EmbeddedResource Include="Gui\IconsDark\debug-stop.png" />
+    <EmbeddedResource Include="Gui\IconsDark\debug.png" />
+    <EmbeddedResource Include="Gui\IconsDark\gear.png" />
+    <EmbeddedResource Include="Gui\IconsLight\debug-continue.png" />
+    <EmbeddedResource Include="Gui\IconsLight\debug-disconnect.png" />
+    <EmbeddedResource Include="Gui\IconsLight\debug-pause.png" />
+    <EmbeddedResource Include="Gui\IconsLight\debug-start.png" />
+    <EmbeddedResource Include="Gui\IconsLight\debug-step-into.png" />
+    <EmbeddedResource Include="Gui\IconsLight\debug-step-out.png" />
+    <EmbeddedResource Include="Gui\IconsLight\debug-step-over.png" />
+    <EmbeddedResource Include="Gui\IconsLight\debug-stop.png" />
+    <EmbeddedResource Include="Gui\IconsLight\debug.png" />
+    <EmbeddedResource Include="Gui\IconsLight\gear.png" />
+    <EmbeddedResource Include="shaders\imgui-frag.glsl" />
+    <EmbeddedResource Include="shaders\imgui-frag.glsles" />
+    <EmbeddedResource Include="shaders\imgui-frag.hlsl" />
+    <EmbeddedResource Include="shaders\imgui-frag.hlsl.bytes" />
+    <EmbeddedResource Include="shaders\imgui-frag.metal" />
+    <EmbeddedResource Include="shaders\imgui-frag.metallib" />
+    <EmbeddedResource Include="shaders\imgui-frag.spv" />
+    <EmbeddedResource Include="shaders\imgui-frag.spv.glsl" />
+    <EmbeddedResource Include="shaders\imgui-vertex.glsl" />
+    <EmbeddedResource Include="shaders\imgui-vertex.glsles" />
+    <EmbeddedResource Include="shaders\imgui-vertex.hlsl" />
+    <EmbeddedResource Include="shaders\imgui-vertex.hlsl.bytes" />
+    <EmbeddedResource Include="shaders\imgui-vertex.metal" />
+    <EmbeddedResource Include="shaders\imgui-vertex.metallib" />
+    <EmbeddedResource Include="shaders\imgui-vertex.spv" />
+    <EmbeddedResource Include="shaders\imgui-vertex.spv.glsl" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Gee.External.Capstone" Version="2.3.0" />
+    <PackageReference Include="ImGui.NET" Version="1.90.1.1" />
+    <PackageReference Include="Veldrid" Version="4.9.0" />
+    <PackageReference Include="Veldrid.ImageSharp" Version="4.9.0" />
+    <PackageReference Include="Veldrid.RenderDoc" Version="1.0.1-ga121087cad" />
+    <PackageReference Include="Veldrid.StartupUtilities" Version="4.9.0" />
+    <PackageReference Include="zeroc.ice.net" Version="3.7.10" />
+    <PackageReference Include="zeroc.icebuilder.msbuild" Version="5.0.9" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!Exists('..\..\..\ImGuiColorTextEditNet\')">
+    <PackageReference Include="ImGuiColorTextEditNet" Version="0.1.5" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('..\..\..\ImGuiColorTextEditNet\')">
+    <ProjectReference Include="..\..\..\ImGuiColorTextEditNet\src\TextEdit\ImGuiColorTextEditNet.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="!Exists('..\..\..\GhidraProgramData\')">
+    <PackageReference Include="GhidraProgramData" Version="0.1.3" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('..\..\..\GhidraProgramData\')">
+    <ProjectReference Include="..\..\..\GhidraProgramData\src\GhidraProgramData\GhidraProgramData.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SharpFileDialog\SharpFileDialog.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Util\" />
+  </ItemGroup>
+
+</Project>

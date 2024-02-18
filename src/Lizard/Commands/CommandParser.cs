@@ -5,10 +5,13 @@ using GhidraProgramData.Types;
 using ImGuiColorTextEditNet;
 using Lizard.Gui;
 using Lizard.Gui.Windows;
+using Lizard.Memory;
+using Lizard.Session.Dump;
+using Lizard.Util;
 using LizardProtocol;
 using Exception = System.Exception;
 
-namespace Lizard;
+namespace Lizard.Commands;
 
 static class CommandParser
 {
@@ -231,7 +234,7 @@ static class CommandParser
 
                 default:
                     var seg = (SegmentDescriptor)descriptor;
-                    ushort selector = (ushort)((i << 3) | seg.dpl);
+                    ushort selector = (ushort)(i << 3 | seg.dpl);
                     if (ldt)
                         selector |= 4;
                     Log.Debug(
@@ -480,9 +483,9 @@ static class CommandParser
                     }
 
                     pattern.Add((byte)(dword & 0xff));
-                    pattern.Add((byte)((dword >> 8) & 0xff));
-                    pattern.Add((byte)((dword >> 16) & 0xff));
-                    pattern.Add((byte)((dword >> 24) & 0xff));
+                    pattern.Add((byte)(dword >> 8 & 0xff));
+                    pattern.Add((byte)(dword >> 16 & 0xff));
+                    pattern.Add((byte)(dword >> 24 & 0xff));
                 }
 
                 var results = c.Session.SearchMemory(address, length, pattern.ToArray(), 4);

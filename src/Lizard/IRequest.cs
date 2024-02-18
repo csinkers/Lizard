@@ -1,4 +1,6 @@
-﻿namespace Lizard;
+﻿using Lizard.Session;
+
+namespace Lizard;
 
 public interface IRequest
 {

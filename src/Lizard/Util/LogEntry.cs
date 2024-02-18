@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using ImGuiColorTextEditNet;
 
-namespace Lizard;
+namespace Lizard.Util;
 
 public record LogEntry(Severity Severity, Line Line)
 {

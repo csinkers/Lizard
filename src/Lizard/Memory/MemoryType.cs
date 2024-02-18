@@ -1,4 +1,4 @@
-﻿namespace Lizard;
+﻿namespace Lizard.Memory;
 
 public enum MemoryType
 {

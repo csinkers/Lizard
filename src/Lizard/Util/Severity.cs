@@ -1,4 +1,4 @@
-﻿namespace Lizard;
+﻿namespace Lizard.Util;
 
 public enum Severity
 {

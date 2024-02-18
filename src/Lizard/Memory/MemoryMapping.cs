@@ -2,7 +2,7 @@
 using Lizard.Config;
 using Lizard.Config.Properties;
 
-namespace Lizard;
+namespace Lizard.Memory;
 
 public class MemoryMapping
 {

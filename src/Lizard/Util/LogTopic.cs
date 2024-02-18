@@ -1,6 +1,6 @@
 ﻿using ImGuiColorTextEditNet;
 
-namespace Lizard;
+namespace Lizard.Util;
 
 public class LogTopic : ITracer
 {

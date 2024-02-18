@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Text;
 using ImGuiNET;
+using Lizard.Memory;
 using SharpFileDialog;
 
 namespace Lizard.Gui.Windows;

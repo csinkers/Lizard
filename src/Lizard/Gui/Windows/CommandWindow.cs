@@ -1,6 +1,8 @@
 ﻿using System.Numerics;
 using ImGuiColorTextEditNet;
 using ImGuiNET;
+using Lizard.Commands;
+using Lizard.Util;
 
 namespace Lizard.Gui.Windows;
 

@@ -1,4 +1,4 @@
-﻿namespace Lizard;
+﻿namespace Lizard.Memory;
 
 public record MemoryRegion(uint MemoryStart, uint FileStart, uint Length, MemoryType Type)
 {

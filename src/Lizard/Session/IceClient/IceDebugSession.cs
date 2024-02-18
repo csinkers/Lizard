@@ -1,8 +1,10 @@
 ﻿using System.Globalization;
 using Lizard.Gui.Windows.Watch;
+using Lizard.Memory;
+using Lizard.Util;
 using LizardProtocol;
 
-namespace Lizard;
+namespace Lizard.Session.IceClient;
 
 public sealed class IceDebugSession : IDebugSession, IMemoryReader
 {

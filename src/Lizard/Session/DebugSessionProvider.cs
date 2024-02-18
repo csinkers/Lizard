@@ -1,7 +1,9 @@
 ﻿using Lizard.Gui;
+using Lizard.Session.Dump;
+using Lizard.Session.IceClient;
 using LizardProtocol;
 
-namespace Lizard;
+namespace Lizard.Session;
 
 public sealed class DebugSessionProvider : IDisposable
 {

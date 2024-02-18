@@ -2,6 +2,9 @@
 using GhidraProgramData;
 using GhidraProgramData.Types;
 using Lizard.Config;
+using Lizard.Memory;
+using Lizard.Session;
+using Lizard.Util;
 
 namespace Lizard.Gui;
 

@@ -3,6 +3,8 @@ using ImGuiNET;
 using Lizard.Config;
 using Lizard.Gui.Windows;
 using Lizard.Gui.Windows.Watch;
+using Lizard.Session;
+using Lizard.Util;
 using SharpFileDialog;
 using Veldrid;
 

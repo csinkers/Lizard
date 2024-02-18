@@ -2,7 +2,7 @@
 using Lizard.Gui;
 using LizardProtocol;
 
-namespace Lizard;
+namespace Lizard.Util;
 
 internal static class ParseUtil
 {
@@ -49,7 +49,7 @@ internal static class ParseUtil
             case "ES": segment = r.es; return true;
             case "FS": segment = r.fs; return true;
             case "GS": segment = r.gs; return true;
-            default:   segment = 0;    return false;
+            default: segment = 0; return false;
         }
     }
 
@@ -118,21 +118,21 @@ internal static class ParseUtil
         s.ToUpperInvariant() switch
         {
             "Flags" => Register.Flags,
-            "EAX"   => Register.EAX,
-            "EBX"   => Register.EBX,
-            "ECX"   => Register.ECX,
-            "EDX"   => Register.EDX,
-            "ESI"   => Register.ESI,
-            "EDI"   => Register.EDI,
-            "EBP"   => Register.EBP,
-            "ESP"   => Register.ESP,
-            "EIP"   => Register.EIP,
-            "ES"    => Register.ES,
-            "CS"    => Register.CS,
-            "SS"    => Register.SS,
-            "DS"    => Register.DS,
-            "FS"    => Register.FS,
-            "GS"    => Register.GS,
+            "EAX" => Register.EAX,
+            "EBX" => Register.EBX,
+            "ECX" => Register.ECX,
+            "EDX" => Register.EDX,
+            "ESI" => Register.ESI,
+            "EDI" => Register.EDI,
+            "EBP" => Register.EBP,
+            "ESP" => Register.ESP,
+            "EIP" => Register.EIP,
+            "ES" => Register.ES,
+            "CS" => Register.CS,
+            "SS" => Register.SS,
+            "DS" => Register.DS,
+            "FS" => Register.FS,
+            "GS" => Register.GS,
             _ => throw new FormatException($"Unexpected register \"{s}\"")
         };
 
@@ -140,18 +140,18 @@ internal static class ParseUtil
     public static BreakpointType ParseBpType(string s) =>
         s.ToUpperInvariant() switch
         {
-            "N"               => BreakpointType.Normal,
-            "X"               => BreakpointType.Normal,
-            "R"               => BreakpointType.Read,
-            "W"               => BreakpointType.Write,
-            "NORMAL"          => BreakpointType.Normal,
-            "READ"            => BreakpointType.Read,
-            "WRITE"           => BreakpointType.Write,
-            "INTERRUPT"       => BreakpointType.Interrupt,
-            "INT"             => BreakpointType.Interrupt,
+            "N" => BreakpointType.Normal,
+            "X" => BreakpointType.Normal,
+            "R" => BreakpointType.Read,
+            "W" => BreakpointType.Write,
+            "NORMAL" => BreakpointType.Normal,
+            "READ" => BreakpointType.Read,
+            "WRITE" => BreakpointType.Write,
+            "INTERRUPT" => BreakpointType.Interrupt,
+            "INT" => BreakpointType.Interrupt,
             "INTERRUPTWITHAH" => BreakpointType.InterruptWithAH,
-            "INTAH"           => BreakpointType.InterruptWithAH,
-            "INTAL"           => BreakpointType.InterruptWithAX,
+            "INTAH" => BreakpointType.InterruptWithAH,
+            "INTAL" => BreakpointType.InterruptWithAX,
             _ => throw new FormatException($"Unexpected breakpoint type \"{s}\"")
         };
 }

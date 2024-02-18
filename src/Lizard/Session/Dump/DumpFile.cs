@@ -4,9 +4,10 @@ using System.Text.Json;
 using Lizard.Config;
 using Lizard.Config.Properties;
 using Lizard.Gui;
+using Lizard.Util;
 using LizardProtocol;
 
-namespace Lizard;
+namespace Lizard.Session.Dump;
 
 public class DumpFile
 {

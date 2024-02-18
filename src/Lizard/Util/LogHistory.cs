@@ -1,7 +1,7 @@
 ﻿using ImGuiColorTextEditNet;
 using Lizard.Gui.Windows;
 
-namespace Lizard;
+namespace Lizard.Util;
 
 public class LogHistory
 {

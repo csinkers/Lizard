@@ -1,6 +1,6 @@
 ﻿using Lizard.Gui;
 
-namespace Lizard;
+namespace Lizard.Commands;
 
 public delegate string GetArg();
 public delegate void DebugCommand(GetArg getArg, CommandContext c);

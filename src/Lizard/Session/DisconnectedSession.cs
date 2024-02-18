@@ -1,7 +1,8 @@
 ﻿using Lizard.Gui.Windows.Watch;
+using Lizard.Memory;
 using LizardProtocol;
 
-namespace Lizard;
+namespace Lizard.Session;
 
 public sealed class DisconnectedSession : IDebugSession
 {

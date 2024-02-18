@@ -1,7 +1,7 @@
 ﻿using Ice;
 using LizardProtocol;
 
-namespace Lizard;
+namespace Lizard.Session.IceClient;
 
 public class DebugClientI : DebugClientDisp_
 {

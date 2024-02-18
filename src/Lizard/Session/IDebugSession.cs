@@ -1,6 +1,7 @@
-﻿using LizardProtocol;
+﻿using Lizard.Memory;
+using LizardProtocol;
 
-namespace Lizard;
+namespace Lizard.Session;
 
 public interface IDebugSession : IDisposable
 {
