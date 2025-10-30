@@ -1,22 +1,22 @@
 ﻿using System.Globalization;
 using ImGuiNET;
-using LizardProtocol;
+using Lizard.Protocol.ProtocolGen;
 
 namespace Lizard.Gui.Windows;
 
 public class BreakpointsWindow : SingletonWindow
 {
-    static readonly string[] PossibleTypes = Enum.GetNames(typeof(BreakpointType));
+    static readonly string[] PossibleTypes = Enum.GetNames(typeof(LBreakpointType1));
 
     readonly CommandContext _context;
-    readonly List<Breakpoint> _breakpoints = new();
+    readonly List<LBreakpoint1> _breakpoints = new();
     string[] _idStrings = Array.Empty<string>();
     string[] _checkboxIds = Array.Empty<string>();
     string[] _addressStrings = Array.Empty<string>();
     string[] _nameStrings = Array.Empty<string>();
     string[] _typeStrings = Array.Empty<string>();
     string _pendingAddress = "";
-    int _pendingType = (int)BreakpointType.Normal;
+    int _pendingType = (int)LBreakpointType1.Normal;
     int _version = -1;
 
     public BreakpointsWindow(CommandContext context)
@@ -35,14 +35,14 @@ public class BreakpointsWindow : SingletonWindow
                 .Select(x =>
                     x.type switch
                     {
-                        BreakpointType.Normal          => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Ephemeral       => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Read            => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Write           => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Interrupt       => $"INT {x.address.offset:X2}",
-                        BreakpointType.InterruptWithAH => $"INT {x.address.offset:X2}, AH={x.ah:X2}",
-                        BreakpointType.InterruptWithAX => $"INT {x.address.offset:X2}, AH={x.ah:X2}, AL={x.al:X2}",
-                        BreakpointType.Unknown         => "Unk",
+                        LBreakpointType1.Normal          => $"{x.address.segment}:{x.address.offset}",
+                        LBreakpointType1.Ephemeral       => $"{x.address.segment}:{x.address.offset}",
+                        LBreakpointType1.Read            => $"{x.address.segment}:{x.address.offset}",
+                        LBreakpointType1.Write           => $"{x.address.segment}:{x.address.offset}",
+                        LBreakpointType1.Interrupt       => $"INT {x.address.offset:X2}",
+                        LBreakpointType1.InterruptWithAH => $"INT {x.address.offset:X2}, AH={x.ah:X2}",
+                        LBreakpointType1.InterruptWithAX => $"INT {x.address.offset:X2}, AH={x.ah:X2}, AL={x.al:X2}",
+                        LBreakpointType1.Unknown         => "Unk",
                         _ => throw new ArgumentOutOfRangeException()
                     }
                 )

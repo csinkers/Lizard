@@ -1,14 +1,15 @@
 ﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using Gee.External.Capstone;
 using GhidraProgramData.Types;
 using ImGuiColorTextEditNet;
 using Lizard.Gui;
 using Lizard.Gui.Windows;
 using Lizard.Memory;
+using Lizard.Protocol.ProtocolGen;
 using Lizard.Session.Dump;
 using Lizard.Util;
-using LizardProtocol;
 using Exception = System.Exception;
 
 namespace Lizard.Commands;
@@ -17,10 +18,10 @@ static class CommandParser
 {
     static readonly LogTopic Log = new("Command");
 
-    static void PrintAsm(AssemblyLine[] lines)
+    static void PrintAsm(LAssemblyLine1[] lines)
     {
         foreach (var line in lines)
-            Log.Debug($"{line.address.segment:X}:{line.address.offset:X8} {line.line}");
+            Log.Debug($"{line.Address.Segment:X}:{line.Address.Offset:X8} {line.Line}");
     }
 
     const string HexChars = "0123456789ABCDEF";
@@ -59,7 +60,7 @@ static class CommandParser
         }
     }
 
-    static void PrintMem(Address address, byte[] bytes, LinePrinter printer)
+    static void PrintMem(LAddress1 address, byte[] bytes, LinePrinter printer)
     {
         var sb = new StringBuilder(128);
 
@@ -67,7 +68,7 @@ static class CommandParser
         for (var i = 0; i < bytes.Length; i += bytesPerLine)
         {
             sb.Clear();
-            sb.Append($"{address.segment:X}:{address.offset + i:X8} ");
+            sb.Append($"{address.Segment:X}:{address.Offset + i:X8} ");
 
             var lineBytes = bytes.AsSpan(i);
             printer(sb, lineBytes, bytesPerLine);
@@ -84,10 +85,10 @@ static class CommandParser
         }
     }
 
-    static void PrintMemBytes(Address address, byte[] bytes, CommandContext _) =>
+    static void PrintMemBytes(LAddress1 address, byte[] bytes, CommandContext _) =>
         PrintMem(address, bytes, PrintLineBytes);
 
-    static void PrintMemDwords(Address address, byte[] bytes, CommandContext _) =>
+    static void PrintMemDwords(LAddress1 address, byte[] bytes, CommandContext _) =>
         PrintMem(address, bytes, PrintLineDwords);
 
     static void DescribeAddress(uint address, Line line, CommandContext context)
@@ -129,13 +130,13 @@ static class CommandParser
         line.Append(color, symType);
     }
 
-    static void PrintMemSymbols(Address address, byte[] bytes, CommandContext c)
+    static void PrintMemSymbols(LAddress1 address, byte[] bytes, CommandContext c)
     {
         var uints = MemoryMarshal.Cast<byte, uint>(bytes);
         for (int i = 0; i < uints.Length; i++)
         {
             var line = new Line();
-            PrintAddress((uint)(address.offset + i * 4), line, c);
+            PrintAddress((uint)(address.Offset + i * 4), line, c);
             line.Append(" ");
             DescribeAddress(uints[i], line, c);
             Log.Debug(line);
@@ -169,7 +170,7 @@ static class CommandParser
         line.Append(color, text);
     }
 
-    static void PrintMemPointers(Address address, byte[] bytes, CommandContext c)
+    static void PrintMemPointers(LAddress1 address, byte[] bytes, CommandContext c)
     {
         var uints = MemoryMarshal.Cast<byte, uint>(bytes);
         Span<byte> temp = stackalloc byte[4];
@@ -179,7 +180,7 @@ static class CommandParser
             var value = MemoryMarshal.Cast<byte, uint>(byteVal)[0];
 
             var line = new Line();
-            PrintAddress((uint)(address.offset + i), line, c);
+            PrintAddress((uint)(address.Offset + i), line, c);
             line.Append(" ");
             PrintAddress(uints[i], line, c);
             line.Append(" ");
@@ -187,7 +188,7 @@ static class CommandParser
         }
     }
 
-    static DebugCommand BasePrintMem(Action<Address, byte[], CommandContext> printFunc)
+    static DebugCommand BasePrintMem(Action<LAddress1, byte[], CommandContext> printFunc)
     {
         return (getArg, c) =>
         {
@@ -201,75 +202,75 @@ static class CommandParser
         };
     }
 
-    static void PrintBps(Breakpoint[] breakpoints)
+    static void PrintBps(LBreakpoint1[] breakpoints)
     {
         foreach (var bp in breakpoints)
             Log.Debug(
-                $"{bp.id} {bp.address.segment:X}:{bp.address.offset:X8} {bp.type} {bp.ah:X2} {bp.al:X2}{(bp.enabled ? "" : " [disabled]")}"
+                $"{bp.Id} {bp.Address.Segment:X}:{bp.Address.Offset:X8} {bp.Type} {bp.Ah:X2} {bp.Al:X2}{(bp.IsEnabled ? "" : " [disabled]")}"
             );
     }
 
-    static void PrintDescriptors(Descriptor[] descriptors, bool ldt)
+    static void PrintDescriptors(LDescriptor1[] descriptors, bool ldt)
     {
         for (int i = 0; i < descriptors.Length; i++)
         {
             var descriptor = descriptors[i];
-            switch (descriptor.type)
+            switch (descriptor.Type)
             {
-                case SegmentType.SysInvalid:
+                case LDescriptorType1.SysInvalid:
                     break;
 
-                case SegmentType.Sys286CallGate:
-                case SegmentType.SysTaskGate:
-                case SegmentType.Sys286IntGate:
-                case SegmentType.Sys286TrapGate:
-                case SegmentType.Sys386CallGate:
-                case SegmentType.Sys386IntGate:
-                case SegmentType.Sys386TrapGate:
-                    var gate = (GateDescriptor)descriptor;
+                case LDescriptorType1.Sys286CallGate:
+                case LDescriptorType1.SysTaskGate:
+                case LDescriptorType1.Sys286IntGate:
+                case LDescriptorType1.Sys286TrapGate:
+                case LDescriptorType1.Sys386CallGate:
+                case LDescriptorType1.Sys386IntGate:
+                case LDescriptorType1.Sys386TrapGate:
+                    var gate = descriptor;
                     Log.Debug(
-                        $"{i:X4} {gate.type} {(gate.big ? "32" : "16")} {gate.selector:X4}: {gate.offset:X8} R{gate.dpl}"
+                        $"{i:X4} {gate.Type} {(gate.Big ? "32" : "16")} {gate.Selector:X4}: {gate.Offset:X8} R{gate.Dpl}"
                     );
                     break;
 
                 default:
-                    var seg = (SegmentDescriptor)descriptor;
-                    ushort selector = (ushort)(i << 3 | seg.dpl);
+                    var seg = descriptor;
+                    ushort selector = (ushort)(i << 3 | seg.Dpl);
                     if (ldt)
                         selector |= 4;
                     Log.Debug(
-                        $"{i:X4}={selector:X4} {seg.type} {(seg.big ? "32" : "16")} {seg.@base:X8} {seg.limit:X8} R{seg.dpl}"
+                        $"{i:X4}={selector:X4} {seg.Type} {(seg.Big ? "32" : "16")} {seg.Base:X8} {seg.Limit:X8} R{seg.Dpl}"
                     );
                     break;
             }
         }
     }
 
-    static void PrintRegisters(Registers reg, CommandContext c)
+    static void PrintRegisters(LRegisters1 reg, CommandContext c)
     {
-        Log.Debug($"EAX {reg.eax:X8} ESI {reg.esi:X8} DS {reg.ds:X4} ES {reg.es:X4}");
-        Log.Debug($"EBX {reg.ebx:X8} EDI {reg.edi:X8} FS {reg.fs:X4} GS {reg.gs:X4}");
-        Log.Debug($"ECX {reg.ecx:X8} EBP {reg.ebp:X8}");
-        Log.Debug($"EDX {reg.edx:X8} ESP {reg.esp:X8} SS {reg.ss:X4}");
+        Log.Debug($"EAX {reg.Eax:X8} ESI {reg.Esi:X8} DS {reg.Ds:X4} ES {reg.Es:X4}");
+        Log.Debug($"EBX {reg.Ebx:X8} EDI {reg.Edi:X8} FS {reg.Fs:X4} GS {reg.Gs:X4}");
+        Log.Debug($"ECX {reg.Ecx:X8} EBP {reg.Ebp:X8}");
+        Log.Debug($"EDX {reg.Edx:X8} ESP {reg.Esp:X8} SS {reg.Ss:X4}");
 
-        var symbol = c.LookupSymbolForAddress((uint)reg.eip);
+        var symbol = c.LookupSymbolForAddress(reg.Eip);
         if (symbol != null)
         {
             if (!c.Mapping.ToMemory(symbol.Address, out var symMemOffset, out _))
-                Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8} ???");
-            else if (symMemOffset == reg.eip)
-                Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8} {symbol.Name}");
+                Log.Debug($"CS {reg.Cs:X4} EIP {reg.Eip:X8} ???");
+            else if (symMemOffset == reg.Eip)
+                Log.Debug($"CS {reg.Cs:X4} EIP {reg.Eip:X8} {symbol.Name}");
             else
-                Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8} {symbol.Name}+{reg.eip - symbol.Address:X}");
+                Log.Debug($"CS {reg.Cs:X4} EIP {reg.Eip:X8} {symbol.Name}+{reg.Eip - symbol.Address:X}");
         }
         else
         {
-            Log.Debug($"CS {reg.cs:X4} EIP {reg.eip:X8} ???");
+            Log.Debug($"CS {reg.Cs:X4} EIP {reg.Eip:X8} ???");
         }
 
         var flagsSb = new StringBuilder();
         flagsSb.Append('[');
-        var flags = (CpuFlags)reg.flags;
+        var flags = (CpuFlags)reg.Flags;
         flagsSb.Append((flags & CpuFlags.CF) != 0 ? 'C' : ' ');
         flagsSb.Append((flags & CpuFlags.ZF) != 0 ? 'Z' : ' ');
         flagsSb.Append((flags & CpuFlags.SF) != 0 ? 'S' : ' ');
@@ -367,8 +368,8 @@ static class CommandParser
                     return;
                 }
 
-                Register reg = ParseUtil.ParseReg(arg1);
-                int value = ParseUtil.ParseVal(arg2);
+                LRegister1 reg = ParseUtil.ParseReg(arg1);
+                uint value = ParseUtil.ParseVal(arg2);
                 c.Session.SetRegister(reg, value);
             }
         ),
@@ -380,7 +381,7 @@ static class CommandParser
                 var addressArg = getArg();
                 var address =
                     addressArg == ""
-                        ? new Address(c.Session.Registers.cs, c.Session.Registers.eip)
+                        ? new LAddress1(c.Session.Registers.Cs, c.Session.Registers.Eip)
                         : ParseUtil.ParseAddress(addressArg, c, true);
 
                 var lengthArg = getArg();
@@ -433,7 +434,7 @@ static class CommandParser
                     return;
                 }
 
-                int maxAddress = c.Session.GetMaxNonEmptyAddress(segment);
+                uint maxAddress = c.Session.GetMaxNonEmptyAddress(segment);
                 Log.Info($"MaxAddress: 0x{(uint)maxAddress:X8}");
             }
         ),
@@ -555,7 +556,7 @@ static class CommandParser
             {
                 var address = ParseUtil.ParseAddress(getArg(), c, true);
                 var s = getArg();
-                var type = s == "" ? BreakpointType.Normal : ParseUtil.ParseBpType(getArg());
+                var type = s == "" ? LBreakpointType1.Normal : ParseUtil.ParseBpType(getArg());
 
                 s = getArg();
                 byte ah = s == "" ? (byte)0 : (byte)ParseUtil.ParseVal(s);
@@ -563,7 +564,7 @@ static class CommandParser
                 s = getArg();
                 byte al = s == "" ? (byte)0 : (byte)ParseUtil.ParseVal(s);
 
-                var bp = new Breakpoint(-1, address, type, true, ah, al);
+                var bp = new LBreakpoint1(-1, address, type, true, ah, al);
                 c.Session.SetBreakpoint(bp);
             }
         ),
@@ -595,7 +596,7 @@ static class CommandParser
                 {
                     var all = c.Session.ListBreakpoints();
                     foreach (var bp in all)
-                        c.Session.DelBreakpoint(bp.id);
+                        c.Session.DelBreakpoint(bp.Id);
                 }
 
                 var id = ParseUtil.ParseVal(idString);
@@ -618,13 +619,13 @@ static class CommandParser
             (getArg, c) =>
             {
                 var address = ParseUtil.ParseAddress(getArg(), c, true);
-                var symbol = c.LookupSymbolForAddress((uint)address.offset);
+                var symbol = c.LookupSymbolForAddress((uint)address.Offset);
                 if (symbol == null)
                     Log.Warn("No symbol found");
                 else
                 {
                     c.Mapping.ToMemory(symbol.Address, out var symMem, out _);
-                    Log.Debug($"{symMem:X8} {symbol.Name} + {address.offset - symMem:x} = {address.offset:X8}");
+                    Log.Debug($"{symMem:X8} {symbol.Name} + {address.Offset - symMem:x} = {address.Offset:X8}");
                 }
             }
         ),
@@ -773,9 +774,9 @@ def make_label(address, name):
         string Esc(string s) => s.Replace("\"", "\\\"");
 
         var r = c.Session.Registers;
-        sw.WriteLine($"make_label(0x{r.ebp:x}, \"base_pointer\")");
-        sw.WriteLine($"make_label(0x{r.eip:x}, \"instruction_pointer\")");
-        sw.WriteLine($"make_label(0x{r.esp:x}, \"stack_pointer\")");
+        sw.WriteLine($"make_label(0x{r.Ebp:x}, \"base_pointer\")");
+        sw.WriteLine($"make_label(0x{r.Eip:x}, \"instruction_pointer\")");
+        sw.WriteLine($"make_label(0x{r.Esp:x}, \"stack_pointer\")");
 
         var stackRegion = c.Mapping.Regions.OrderBy(x => x.MemoryStart).FirstOrDefault(x => x.Type == MemoryType.Stack);
 

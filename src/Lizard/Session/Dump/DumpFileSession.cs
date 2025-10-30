@@ -1,7 +1,7 @@
 ﻿using Gee.External.Capstone;
 using Gee.External.Capstone.X86;
 using Lizard.Memory;
-using LizardProtocol;
+using Lizard.Protocol.ProtocolGen;
 
 namespace Lizard.Session.Dump;
 
@@ -15,8 +15,8 @@ public sealed class DumpFileSession : IDebugSession, IMemoryReader
     public bool CanRun => false;
     public bool IsPaused => true;
     public bool IsActive => true;
-    public Registers OldRegisters { get; }
-    public Registers Registers { get; }
+    public LRegisters1 OldRegisters { get; }
+    public LRegisters1 Registers { get; }
     public IMemoryCache Memory => new PassthroughMemoryCache(this);
 
     public void Refresh() { }
@@ -41,94 +41,94 @@ public sealed class DumpFileSession : IDebugSession, IMemoryReader
 
     public void Continue() => throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public Registers Break() => throw new NotSupportedException("Invalid operation when debugging a dump file");
+    public LRegisters1 Break() => throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public Registers StepIn() => throw new NotSupportedException("Invalid operation when debugging a dump file");
+    public LRegisters1 StepIn() => throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public Registers StepOver() => throw new NotSupportedException("Invalid operation when debugging a dump file");
+    public LRegisters1 StepOver() => throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public Registers StepOut() => throw new NotSupportedException("Invalid operation when debugging a dump file");
+    public LRegisters1 StepOut() => throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public Registers StepMultiple(int i) =>
+    public LRegisters1 StepMultiple(uint i) =>
         throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public void RunToAddress(Address address) =>
+    public void RunToAddress(LAddress1 address) =>
         throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public void SetMemory(Address address, byte[] bytes) =>
+    public void SetMemory(LAddress1 address, byte[] bytes) =>
         throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public void SetBreakpoint(Breakpoint bp) =>
+    public void SetBreakpoint(LBreakpoint1 bp) =>
         throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public void EnableBreakpoint(int id, bool enable) =>
+    public void EnableBreakpoint(uint id, bool enable) =>
         throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public void DelBreakpoint(int id) =>
+    public void DelBreakpoint(uint id) =>
         throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public void SetRegister(Register reg, int value) =>
+    public void SetRegister(LRegister1 reg, uint value) =>
         throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public Breakpoint[] ListBreakpoints() => Array.Empty<Breakpoint>();
+    public LBreakpoint1[] ListBreakpoints() => Array.Empty<LBreakpoint1>();
 
-    public Registers GetState() => Registers;
+    public LRegisters1 GetState() => Registers;
 
-    public byte[] GetMemory(Address addr, int bufferLength)
+    public byte[] GetMemory(LAddress1 addr, uint bufferLength)
     {
         var result = new byte[bufferLength];
-        _dump.Memory.AsSpan(addr.offset, bufferLength).CopyTo(result.AsSpan());
+        _dump.Memory.AsSpan(addr.Offset, bufferLength).CopyTo(result.AsSpan());
         return result;
     }
 
-    public AssemblyLine[] Disassemble(Address address, int length)
+    public LAssemblyLine1[] Disassemble(LAddress1 address, uint length)
     {
         var memory = GetMemory(address, length);
         var instructions = _disassembler.Disassemble(memory);
-        var results = new AssemblyLine[instructions.Length];
+        var results = new LAssemblyLine1[instructions.Length];
 
         for (var i = 0; i < instructions.Length; i++)
         {
             var instruction = instructions[i];
-            var instrAddr = new Address(address.segment, (int)instruction.Address);
+            var instrAddr = new LAddress1(address.Segment, instruction.Address);
             var text = $"{instruction.Mnemonic} {instruction.Operand}";
-            results[i] = new AssemblyLine(instrAddr, text, instruction.Bytes);
+            results[i] = new LAssemblyLine1(instrAddr, text, instruction.Bytes);
         }
 
         return results;
     }
 
-    public int GetMaxNonEmptyAddress(short segment) => _dump.Memory.Length - 1;
+    public uint GetMaxNonEmptyAddress(ushort segment) => (uint)(_dump.Memory.Length - 1);
 
-    public IEnumerable<Address> SearchMemory(Address address, int length, byte[] toArray, int advance)
+    public IEnumerable<LAddress1> SearchMemory(LAddress1 address, uint length, byte[] toArray, uint advance)
     {
         throw new NotImplementedException();
     }
 
-    public Descriptor[] GetGdt() => throw new NotImplementedException();
+    public LDescriptor1[] GetGdt() => throw new NotImplementedException();
 
-    public Descriptor[] GetLdt() => throw new NotImplementedException();
+    public LDescriptor1[] GetLdt() => throw new NotImplementedException();
 
     public void Dispose() => _disassembler.Dispose();
 
-    static Registers ConvertRegisters(DumpRegisters r) =>
+    static LRegisters1 ConvertRegisters(DumpRegisters r) =>
         new(
             true,
-            r.flags,
-            r.eax,
-            r.ebx,
-            r.ecx,
-            r.edx,
-            r.esi,
-            r.edi,
-            r.ebp,
-            r.esp,
-            r.eip,
-            (short)r.es,
-            (short)r.cs,
-            (short)r.ss,
-            (short)r.ds,
-            (short)r.fs,
-            (short)r.gs
+            r.Flags,
+            r.Eax,
+            r.Ebx,
+            r.Ecx,
+            r.Edx,
+            r.Esi,
+            r.Edi,
+            r.Ebp,
+            r.Esp,
+            r.Eip,
+            r.Es,
+            r.Cs,
+            r.Ss,
+            r.Ds,
+            r.Fs,
+            r.Gs
         );
 }

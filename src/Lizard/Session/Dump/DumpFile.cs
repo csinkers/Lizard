@@ -4,8 +4,8 @@ using System.Text.Json;
 using Lizard.Config;
 using Lizard.Config.Properties;
 using Lizard.Gui;
+using Lizard.Protocol.ProtocolGen;
 using Lizard.Util;
-using LizardProtocol;
 
 namespace Lizard.Session.Dump;
 
@@ -107,8 +107,8 @@ public class DumpFile
         }
 
         var r = c.Session.Registers;
-        int maxAddress = c.Session.GetMaxNonEmptyAddress(r.cs);
-        var bytes = c.Session.GetMemory(new Address(r.cs, 0), maxAddress);
+        uint maxAddress = c.Session.GetMaxNonEmptyAddress(r.Cs);
+        var bytes = c.Session.GetMemory(new LAddress1(r.Cs, 0), maxAddress);
         var state = new ProjectConfig();
         c.ProjectManager.Save(state);
 
@@ -116,22 +116,22 @@ public class DumpFile
             RegistersProperty,
             new DumpRegisters
             {
-                cs = r.cs,
-                ds = r.ds,
-                es = r.es,
-                fs = r.fs,
-                gs = r.gs,
-                ss = r.ss,
-                eax = r.eax,
-                ebx = r.ebx,
-                ecx = r.ecx,
-                edx = r.edx,
-                esi = r.esi,
-                edi = r.edi,
-                ebp = r.ebp,
-                esp = r.esp,
-                eip = r.eip,
-                flags = r.flags,
+                cs = r.Cs,
+                ds = r.Ds,
+                es = r.Es,
+                fs = r.Fs,
+                gs = r.Gs,
+                ss = r.Ss,
+                eax = r.Eax,
+                ebx = r.Ebx,
+                ecx = r.Ecx,
+                edx = r.Edx,
+                esi = r.Esi,
+                edi = r.Edi,
+                ebp = r.Ebp,
+                esp = r.Esp,
+                eip = r.Eip,
+                flags = r.Flags,
             }
         );
 

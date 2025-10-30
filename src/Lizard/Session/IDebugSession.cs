@@ -1,5 +1,5 @@
 ﻿using Lizard.Memory;
-using LizardProtocol;
+using Lizard.Protocol.ProtocolGen;
 
 namespace Lizard.Session;
 
@@ -12,32 +12,32 @@ public interface IDebugSession : IDisposable
     bool IsPaused { get; }
     bool IsActive { get; }
     int Version { get; }
-    Registers OldRegisters { get; }
-    Registers Registers { get; }
+    LRegisters1 OldRegisters { get; }
+    LRegisters1 Registers { get; }
     IMemoryCache Memory { get; }
 
     void Refresh();
     void Defer(IRequest request);
     void FlushDeferredResults();
 
-    Registers GetState();
-    byte[] GetMemory(Address addr, int bufferLength);
+    LRegisters1 GetState();
+    byte[] GetMemory(LAddress1 addr, uint bufferLength);
     void Continue();
-    Registers Break();
-    Registers StepIn();
-    Registers StepOver();
-    Registers StepOut();
-    Registers StepMultiple(int i);
-    void RunToAddress(Address address);
-    AssemblyLine[] Disassemble(Address address, int length);
-    void SetMemory(Address address, byte[] bytes);
-    int GetMaxNonEmptyAddress(short segment);
-    IEnumerable<Address> SearchMemory(Address address, int length, byte[] toArray, int advance);
-    Breakpoint[] ListBreakpoints();
-    void SetBreakpoint(Breakpoint bp);
-    void EnableBreakpoint(int id, bool enable);
-    void DelBreakpoint(int id);
-    void SetRegister(Register reg, int value);
-    Descriptor[] GetGdt();
-    Descriptor[] GetLdt();
+    LRegisters1 Break();
+    LRegisters1 StepIn();
+    LRegisters1 StepOver();
+    LRegisters1 StepOut();
+    LRegisters1 StepMultiple(uint i);
+    void RunToAddress(LAddress1 address);
+    LAssemblyLine1[] Disassemble(LAddress1 address, uint length);
+    void SetMemory(LAddress1 address, byte[] bytes);
+    uint GetMaxNonEmptyAddress(ushort segment);
+    IEnumerable<LAddress1> SearchMemory(LAddress1 address, uint length, byte[] toArray, uint advance);
+    LBreakpoint1[] ListBreakpoints();
+    void SetBreakpoint(LBreakpoint1 bp);
+    void EnableBreakpoint(uint id, bool enable);
+    void DelBreakpoint(uint id);
+    void SetRegister(LRegister1 reg, uint value);
+    LDescriptor1[] GetGdt();
+    LDescriptor1[] GetLdt();
 }

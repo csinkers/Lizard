@@ -1,13 +1,12 @@
-﻿using Ice;
-using LizardProtocol;
+﻿using Lizard.Protocol.ProtocolGen;
 
 namespace Lizard.Session.IceClient;
 
-public class DebugClientI : DebugClientDisp_
+public class DebugClientI : ILizardClient1
 {
     public event StoppedDelegate? StoppedEvent;
 
-    public override void Stopped(Registers state, Current? current = null)
+    public void Stopped(LRegisters1 state)
     {
         var handler = StoppedEvent;
         handler?.Invoke(state);

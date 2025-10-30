@@ -1,23 +1,23 @@
 ﻿using System.Globalization;
 using Lizard.Gui;
-using LizardProtocol;
+using Lizard.Protocol.ProtocolGen;
 
 namespace Lizard.Util;
 
 internal static class ParseUtil
 {
-    public static Address ParseAddress(string s, CommandContext c, bool code)
+    public static LAddress1 ParseAddress(string s, CommandContext c, bool code)
     {
         var r = c.Session.Registers;
         int index = s.IndexOf(':');
         uint offset;
-        short segment;
+        ushort segment;
 
         if (index == -1)
         {
             offset = ParseOffset(s, c, out segment);
             if (segment == 0)
-                segment = code ? r.cs : r.ds;
+                segment = code ? r.Cs : r.Ds;
         }
         else
         {
@@ -28,27 +28,26 @@ internal static class ParseUtil
             offset = ParseOffset(s[(index + 1)..], c, out _);
         }
 
-        var signedOffset = unchecked((int)offset);
-        return new Address(segment, signedOffset);
+        return new LAddress1 { Segment = segment, Offset = offset };
     }
 
     // csharpier-ignore
-    public static bool TryParseSegment(string s, Registers r, out short segment)
+    public static bool TryParseSegment(string s, LRegisters1 r, out ushort segment)
     {
-        if (ushort.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var temp))
+        if (ushort.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ushort temp))
         {
-            segment = (short)temp;
+            segment = temp;
             return true;
         }
 
         switch (s.ToUpperInvariant())
         {
-            case "CS": segment = r.cs; return true;
-            case "DS": segment = r.ds; return true;
-            case "SS": segment = r.ss; return true;
-            case "ES": segment = r.es; return true;
-            case "FS": segment = r.fs; return true;
-            case "GS": segment = r.gs; return true;
+            case "CS": segment = r.Cs; return true;
+            case "DS": segment = r.Ds; return true;
+            case "SS": segment = r.Ss; return true;
+            case "ES": segment = r.Es; return true;
+            case "FS": segment = r.Fs; return true;
+            case "GS": segment = r.Gs; return true;
             default: segment = 0; return false;
         }
     }
@@ -64,7 +63,7 @@ internal static class ParseUtil
         return int.Parse(s);
     }
 
-    static uint ParseOffset(string s, CommandContext c, out short segmentHint)
+    static uint ParseOffset(string s, CommandContext c, out ushort segmentHint)
     {
         var r = c.Session.Registers;
         segmentHint = 0;
@@ -75,32 +74,32 @@ internal static class ParseUtil
         switch (upper)
         {
             case "EAX":
-                segmentHint = r.ds;
-                return (uint)r.eax;
+                segmentHint = r.Ds;
+                return r.Eax;
             case "EBX":
-                segmentHint = r.ds;
-                return (uint)r.ebx;
+                segmentHint = r.Ds;
+                return r.Ebx;
             case "ECX":
-                segmentHint = r.ds;
-                return (uint)r.ecx;
+                segmentHint = r.Ds;
+                return r.Ecx;
             case "EDX":
-                segmentHint = r.ds;
-                return (uint)r.edx;
+                segmentHint = r.Ds;
+                return r.Edx;
             case "ESI":
-                segmentHint = r.ds;
-                return (uint)r.esi;
+                segmentHint = r.Ds;
+                return r.Esi;
             case "EDI":
-                segmentHint = r.ds;
-                return (uint)r.edi;
+                segmentHint = r.Ds;
+                return r.Edi;
             case "EBP":
-                segmentHint = r.ss;
-                return (uint)r.ebp;
+                segmentHint = r.Ss;
+                return r.Ebp;
             case "ESP":
-                segmentHint = r.ss;
-                return (uint)r.esp;
+                segmentHint = r.Ss;
+                return r.Esp;
             case "EIP":
-                segmentHint = r.cs;
-                return (uint)r.eip;
+                segmentHint = r.Cs;
+                return r.Eip;
         }
 
         var sym = c.Symbols.LookupSymbol(s);
@@ -114,44 +113,44 @@ internal static class ParseUtil
     }
 
     // csharpier-ignore
-    public static Register ParseReg(string s) =>
+    public static LRegister1 ParseReg(string s) =>
         s.ToUpperInvariant() switch
         {
-            "Flags" => Register.Flags,
-            "EAX" => Register.EAX,
-            "EBX" => Register.EBX,
-            "ECX" => Register.ECX,
-            "EDX" => Register.EDX,
-            "ESI" => Register.ESI,
-            "EDI" => Register.EDI,
-            "EBP" => Register.EBP,
-            "ESP" => Register.ESP,
-            "EIP" => Register.EIP,
-            "ES" => Register.ES,
-            "CS" => Register.CS,
-            "SS" => Register.SS,
-            "DS" => Register.DS,
-            "FS" => Register.FS,
-            "GS" => Register.GS,
+            "Flags" => LRegister1.Flags,
+            "EAX"   => LRegister1.EAX,
+            "EBX"   => LRegister1.EBX,
+            "ECX"   => LRegister1.ECX,
+            "EDX"   => LRegister1.EDX,
+            "ESI"   => LRegister1.ESI,
+            "EDI"   => LRegister1.EDI,
+            "EBP"   => LRegister1.EBP,
+            "ESP"   => LRegister1.ESP,
+            "EIP"   => LRegister1.EIP,
+            "ES"    => LRegister1.ES,
+            "CS"    => LRegister1.CS,
+            "SS"    => LRegister1.SS,
+            "DS"    => LRegister1.DS,
+            "FS"    => LRegister1.FS,
+            "GS"    => LRegister1.GS,
             _ => throw new FormatException($"Unexpected register \"{s}\"")
         };
 
     // csharpier-ignore
-    public static BreakpointType ParseBpType(string s) =>
+    public static LBreakpointType1 ParseBpType(string s) =>
         s.ToUpperInvariant() switch
         {
-            "N" => BreakpointType.Normal,
-            "X" => BreakpointType.Normal,
-            "R" => BreakpointType.Read,
-            "W" => BreakpointType.Write,
-            "NORMAL" => BreakpointType.Normal,
-            "READ" => BreakpointType.Read,
-            "WRITE" => BreakpointType.Write,
-            "INTERRUPT" => BreakpointType.Interrupt,
-            "INT" => BreakpointType.Interrupt,
-            "INTERRUPTWITHAH" => BreakpointType.InterruptWithAH,
-            "INTAH" => BreakpointType.InterruptWithAH,
-            "INTAL" => BreakpointType.InterruptWithAX,
+            "N" => LBreakpointType1.Normal,
+            "X" => LBreakpointType1.Normal,
+            "R" => LBreakpointType1.Read,
+            "W" => LBreakpointType1.Write,
+            "NORMAL" => LBreakpointType1.Normal,
+            "READ" => LBreakpointType1.Read,
+            "WRITE" => LBreakpointType1.Write,
+            "INTERRUPT" => LBreakpointType1.Interrupt,
+            "INT" => LBreakpointType1.Interrupt,
+            "INTERRUPTWITHAH" => LBreakpointType1.InterruptWithAH,
+            "INTAH" => LBreakpointType1.InterruptWithAH,
+            "INTAL" => LBreakpointType1.InterruptWithAX,
             _ => throw new FormatException($"Unexpected breakpoint type \"{s}\"")
         };
 }

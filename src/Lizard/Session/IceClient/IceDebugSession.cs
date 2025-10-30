@@ -1,8 +1,7 @@
-﻿using System.Globalization;
-using Lizard.Gui.Windows.Watch;
+﻿using Lizard.Gui.Windows.Watch;
 using Lizard.Memory;
+using Lizard.Protocol.ProtocolGen;
 using Lizard.Util;
-using LizardProtocol;
 
 namespace Lizard.Session.IceClient;
 
@@ -15,15 +14,13 @@ public sealed class IceDebugSession : IDebugSession, IMemoryReader
     readonly TimeSpan _refreshInterval = TimeSpan.FromMilliseconds(300);
     DateTime _lastVersionBump = DateTime.MinValue;
 
-    readonly Ice.Communicator _communicator;
-    readonly DebugHostPrx _debugHost;
     readonly DebugClientI _client;
-    Registers _registers;
+    LRegisters1 _registers;
     int _version;
 
     public IMemoryCache Memory { get; }
-    public Registers OldRegisters { get; private set; }
-    public Registers Registers
+    public LRegisters1 OldRegisters { get; private set; }
+    public LRegisters1 Registers
     {
         get => _registers;
         private set
@@ -50,7 +47,7 @@ public sealed class IceDebugSession : IDebugSession, IMemoryReader
                 $"Tried to retrieve {size} bytes, but the supplied buffer can only hold {buffer.Length}"
             );
 
-        var addr = new Address(_registers.ds, (int)offset);
+        var addr = new LAddress1(_registers.Ds, offset);
         var result = GetMemory(addr, (int)size);
         result.CopyTo(buffer);
     }
@@ -80,34 +77,7 @@ public sealed class IceDebugSession : IDebugSession, IMemoryReader
     public IceDebugSession(string hostname, int port)
     {
         Memory = new MemoryCache(this);
-        var properties = Ice.Util.createProperties();
-        properties.setProperty("Ice.MessageSizeMax", (2 * 1024 * 1024).ToString(CultureInfo.InvariantCulture));
-
-        var initData = new Ice.InitializationData { properties = properties };
-        _communicator = Ice.Util.initialize(initData);
-
-        Ice.ObjectPrx? proxy = _communicator
-            .stringToProxy($"DebugHost:default -h {hostname} -p {port}")
-            .ice_twoway()
-            .ice_secure(false);
-
-        _debugHost = DebugHostPrxHelper.uncheckedCast(proxy);
-
-        if (_debugHost == null)
-            throw new ApplicationException("Invalid proxy");
-
-        var adapter = _communicator.createObjectAdapterWithEndpoints("Callback.Client", $"default -h {hostname}");
         _client = new DebugClientI();
-        adapter.add(_client, Ice.Util.stringToIdentity("debugClient"));
-        adapter.activate();
-
-        var clientProxy = DebugClientPrxHelper.uncheckedCast(
-            adapter.createProxy(Ice.Util.stringToIdentity("debugClient"))
-        );
-
-        if (clientProxy == null)
-            throw new ApplicationException("Could not build client");
-
         _client.StoppedEvent += OnStopped;
 
         _queueThread = new Thread(QueueThreadMethod) { Name = "Request Queue" };
@@ -141,16 +111,16 @@ public sealed class IceDebugSession : IDebugSession, IMemoryReader
         }
     }
 
-    void OnStopped(Registers state)
+    void OnStopped(LRegisters1 state)
     {
         Update(state);
         Stopped?.Invoke(state);
     }
 
-    Registers Update(Registers state)
+    LRegisters1 Update(LRegisters1 state)
     {
-        IsPaused = state.stopped;
-        if (Registers.eip != state.eip)
+        IsPaused = state.IsStopped;
+        if (Registers.Eip != state.Eip)
             Version++;
 
         Registers = state;
@@ -160,7 +130,6 @@ public sealed class IceDebugSession : IDebugSession, IMemoryReader
     public void Dispose()
     {
         _client.StoppedEvent -= OnStopped;
-        _communicator.Dispose();
         _tokenSource.Cancel();
         _queueThread.Join();
         Disconnected?.Invoke();
@@ -172,60 +141,60 @@ public sealed class IceDebugSession : IDebugSession, IMemoryReader
         IsPaused = false;
     }
 
-    public void SetRegister(Register reg, int value) => _debugHost.SetRegister(reg, value);
+    public void SetRegister(LRegister1 reg, uint value) => _debugHost.SetRegister(reg, value);
 
-    public Registers Break() => Update(_debugHost.Break());
+    public LRegisters1 Break() => Update(_debugHost.Break());
 
-    public Registers StepIn() => Update(_debugHost.StepIn());
+    public LRegisters1 StepIn() => Update(_debugHost.StepIn());
 
-    public Registers StepOver() => Update(_debugHost.StepOver());
+    public LRegisters1 StepOver() => Update(_debugHost.StepOver());
 
-    public Registers StepOut() => _registers; // TODO
+    public LRegisters1 StepOut() => _registers; // TODO
 
-    public Registers StepMultiple(int i) => Update(_debugHost.StepMultiple(i));
+    public LRegisters1 StepMultiple(uint i) => Update(_debugHost.StepMultiple(i));
 
-    public void RunToAddress(Address address) => _debugHost.RunToAddress(address);
+    public void RunToAddress(LAddress1 address) => _debugHost.RunToAddress(address);
 
-    public Registers GetState() => Update(_debugHost.GetState());
+    public LRegisters1 GetState() => Update(_debugHost.GetState());
 
-    public AssemblyLine[] Disassemble(Address address, int length) => _debugHost.Disassemble(address, length);
+    public LAssemblyLine1[] Disassemble(LAddress1 address, uint length) => _debugHost.Disassemble(address, length);
 
-    public byte[] GetMemory(Address addr, int bufferLength) => _debugHost.GetMemory(addr, bufferLength);
+    public byte[] GetMemory(LAddress1 addr, uint bufferLength) => _debugHost.GetMemory(addr, bufferLength);
 
-    public void SetMemory(Address address, byte[] bytes) => _debugHost.SetMemory(address, bytes);
+    public void SetMemory(LAddress1 address, byte[] bytes) => _debugHost.SetMemory(address, bytes);
 
-    public int GetMaxNonEmptyAddress(short segment) => _debugHost.GetMaxNonEmptyAddress(segment);
+    public uint GetMaxNonEmptyAddress(ushort segment) => _debugHost.GetMaxNonEmptyAddress(segment);
 
-    public IEnumerable<Address> SearchMemory(Address address, int length, byte[] toArray, int advance) =>
+    public IEnumerable<LAddress1> SearchMemory(LAddress1 address, uint length, byte[] toArray, uint advance) =>
         _debugHost.SearchMemory(address, length, toArray, advance);
 
-    public Breakpoint[] ListBreakpoints() => _debugHost.ListBreakpoints();
+    public LBreakpoint1[] ListBreakpoints() => _debugHost.ListBreakpoints();
 
-    public void SetBreakpoint(Breakpoint bp)
+    public void SetBreakpoint(LBreakpoint1 bp)
     {
         _debugHost.SetBreakpoint(bp);
         Version++;
     }
 
-    public void EnableBreakpoint(int id, bool enable)
+    public void EnableBreakpoint(uint id, bool enable)
     {
         _debugHost.EnableBreakpoint(id, enable);
         Version++;
     }
 
-    public void DelBreakpoint(int id)
+    public void DelBreakpoint(uint id)
     {
         _debugHost.DelBreakpoint(id);
         Version++;
     }
 
-    public void SetReg(Register reg, int value)
+    public void SetReg(LRegister1 reg, uint value)
     {
         _debugHost.SetRegister(reg, value);
         Version++;
     }
 
-    public Descriptor[] GetGdt() => _debugHost.GetGdt();
+    public LDescriptor1[] GetGdt() => _debugHost.GetGdt();
 
-    public Descriptor[] GetLdt() => _debugHost.GetLdt();
+    public LDescriptor1[] GetLdt() => _debugHost.GetLdt();
 }

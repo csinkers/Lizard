@@ -1,7 +1,7 @@
 ﻿using Lizard.Gui;
+using Lizard.Protocol.ProtocolGen;
 using Lizard.Session.Dump;
 using Lizard.Session.IceClient;
-using LizardProtocol;
 
 namespace Lizard.Session;
 
@@ -18,7 +18,7 @@ public sealed class DebugSessionProvider : IDisposable
 
     void OnDisconnected() => Disconnected?.Invoke();
 
-    void OnStopped(Registers state) => Stopped?.Invoke(state);
+    void OnStopped(LRegisters1 state) => Stopped?.Invoke(state);
 
     public void StartIceSession(string hostname, int port)
     {
