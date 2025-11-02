@@ -5,7 +5,7 @@ namespace Lizard;
 
 public class RequestQueue
 {
-    readonly object _syncRoot = new();
+    readonly Lock _syncRoot = new();
     readonly BlockingCollection<IRequest> _pending = new();
     readonly Queue<IRequest> _completed = new();
 

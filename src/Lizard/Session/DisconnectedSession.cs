@@ -1,12 +1,12 @@
-﻿using Lizard.Gui.Windows.Watch;
+﻿using Lizard.Comms;
+using Lizard.Gui.Windows.Watch;
 using Lizard.Memory;
-using Lizard.Protocol.ProtocolGen;
 
 namespace Lizard.Session;
 
 public sealed class DisconnectedSession : IDebugSession
 {
-    static readonly LRegisters1 EmptyRegisters = new(true, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    static LRegisters1 EmptyRegisters => new() { IsStopped = true };
 
     public event Action? Disconnected;
     public event StoppedDelegate? Stopped;
@@ -44,26 +44,26 @@ public sealed class DisconnectedSession : IDebugSession
 
     public void EnableBreakpoint(uint id, bool enable) => throw new NotSupportedException("Disconnected session");
 
-    public void DelBreakpoint(uint id) => throw new NotSupportedException("Disconnected session");
+    public void DeleteBreakpoint(uint id) => throw new NotSupportedException("Disconnected session");
 
     public void SetRegister(LRegister1 reg, uint value) => throw new NotSupportedException("Disconnected session");
 
-    public LBreakpoint1[] ListBreakpoints() => Array.Empty<LBreakpoint1>();
+    public List<LBreakpoint1> ListBreakpoints() => [];
 
     public LRegisters1 GetState() => EmptyRegisters;
 
-    public byte[] GetMemory(LAddress1 addr, uint bufferLength) => Array.Empty<byte>();
+    public byte[] GetMemory(LAddress1 addr, uint bufferLength) => [];
 
-    public LAssemblyLine1[] Disassemble(LAddress1 address, uint length) => Array.Empty<LAssemblyLine1>();
+    public List<LAssemblyLine1> Disassemble(LAddress1 address, uint length) => [];
 
     public uint GetMaxNonEmptyAddress(ushort segment) => 0;
 
     public IEnumerable<LAddress1> SearchMemory(LAddress1 address, uint length, byte[] toArray, uint advance) =>
         throw new NotSupportedException("Disconnected session");
 
-    public LDescriptor1[] GetGdt() => throw new NotSupportedException("Disconnected session");
+    public List<LDescriptor1> GetGdt() => throw new NotSupportedException("Disconnected session");
 
-    public LDescriptor1[] GetLdt() => throw new NotSupportedException("Disconnected session");
+    public List<LDescriptor1> GetLdt() => throw new NotSupportedException("Disconnected session");
 
     public void Dispose() { }
 }

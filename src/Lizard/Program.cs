@@ -50,7 +50,7 @@ internal static class Program
                     var p = projectManager.Project;
                     var hostname = p.GetProperty(ConnectWindow.HostProperty)!;
                     var port = p.GetProperty(ConnectWindow.PortProperty);
-                    sp1.StartIceSession(hostname, port);
+                    sp1.StartNetSession(hostname, port);
                     projectManager.ProjectLoaded -= Connect;
                 }
 

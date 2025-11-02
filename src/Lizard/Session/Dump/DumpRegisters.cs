@@ -3,12 +3,12 @@
 public class DumpRegisters
 {
     // ReSharper disable InconsistentNaming
-    public uint Cs { get; set; }
-    public uint Ds { get; set; }
-    public uint Es { get; set; }
-    public uint Fs { get; set; }
-    public uint Gs { get; set; }
-    public uint Ss { get; set; }
+    public ushort Cs { get; set; }
+    public ushort Ds { get; set; }
+    public ushort Es { get; set; }
+    public ushort Fs { get; set; }
+    public ushort Gs { get; set; }
+    public ushort Ss { get; set; }
     public uint Eax { get; set; }
     public uint Ebx { get; set; }
     public uint Ecx { get; set; }

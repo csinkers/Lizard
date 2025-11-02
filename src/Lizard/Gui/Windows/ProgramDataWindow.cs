@@ -205,6 +205,7 @@ public class ProgramDataWindow : SingletonWindow
 
         if (string.IsNullOrEmpty(s))
             throw new FormatException($"No value supplied for {description}");
+
         return uint.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
     }
 }

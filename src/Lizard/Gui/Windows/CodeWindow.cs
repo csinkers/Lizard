@@ -1,6 +1,7 @@
 ﻿using GhidraProgramData;
 using GhidraProgramData.Types;
 using ImGuiColorTextEditNet;
+using ImGuiColorTextEditNet.Syntax;
 
 namespace Lizard.Gui.Windows;
 
@@ -29,7 +30,7 @@ public class CodeWindow : SingletonWindow
         if (!session.IsPaused)
             return;
 
-        var ip = _context.SelectedAddress ?? (uint)session.Registers.eip;
+        var ip = _context.SelectedAddress ?? session.Registers.Eip;
         if (_address == ip)
             return;
 

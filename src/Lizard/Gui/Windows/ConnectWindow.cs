@@ -44,7 +44,7 @@ internal class ConnectWindow : SingletonWindow
         {
             try
             {
-                _context.SessionProvider.StartIceSession(_hostname.Text, _port);
+                _context.SessionProvider.StartNetSession(_hostname.Text, _port);
                 _error = "";
                 Close();
             }

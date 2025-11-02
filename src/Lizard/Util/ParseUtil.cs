@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
+using Lizard.Comms;
 using Lizard.Gui;
-using Lizard.Protocol.ProtocolGen;
 
 namespace Lizard.Util;
 
@@ -52,7 +52,18 @@ internal static class ParseUtil
         }
     }
 
-    public static int ParseVal(string s)
+    public static uint ParseUInt32(string s)
+    {
+        if (s.StartsWith("0x"))
+            return uint.Parse(s[2..], NumberStyles.HexNumber);
+
+        if (s.StartsWith("0"))
+            return uint.Parse(s[1..], NumberStyles.HexNumber);
+
+        return uint.Parse(s);
+    }
+
+    public static int ParseInt32(string s)
     {
         if (s.StartsWith("0x"))
             return int.Parse(s[2..], NumberStyles.HexNumber);

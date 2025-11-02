@@ -2,7 +2,7 @@
 using ImGuiColorTextEditNet;
 using ImGuiColorTextEditNet.Syntax;
 using ImGuiNET;
-using Lizard.Protocol.ProtocolGen;
+using Lizard.Comms;
 
 namespace Lizard.Gui.Windows;
 
@@ -55,14 +55,19 @@ class DisassemblyWindow : SingletonWindow
                 {
                     var rawLines = host.Disassemble(address, LinesToShow);
                     var sb = new StringBuilder(MaxByteStringLength);
-                    var formattedLines = new Line[rawLines.Length];
+                    var formattedLines = new Line[rawLines.Count];
 
-                    for (var i = 0; i < rawLines.Length; i++)
+                    for (var i = 0; i < rawLines.Count; i++)
                     {
                         var rawLine = rawLines[i];
+                        if (rawLine.Address == null || rawLine.Line == null)
+                            continue;
+
                         sb.Clear();
-                        for (int j = 0; j < rawLine.Bytes.Length; j++)
-                            sb.AppendFormat(j > 0 ? " {0:X2}" : "{0:X2}", rawLine.Bytes[j]);
+                        if (rawLine.Bytes != null)
+                            for (int j = 0; j < rawLine.Bytes.Length; j++)
+                                sb.AppendFormat(j > 0 ? " {0:X2}" : "{0:X2}", rawLine.Bytes[j]);
+
                         sb.Append(' ');
 
                         formattedLines[i] = new Line(rawLine.Address, sb.ToString(), rawLine.Line);

@@ -1,30 +1,28 @@
 ﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
-using Gee.External.Capstone;
 using GhidraProgramData.Types;
 using ImGuiColorTextEditNet;
+using Lizard.Comms;
 using Lizard.Gui;
 using Lizard.Gui.Windows;
 using Lizard.Memory;
-using Lizard.Protocol.ProtocolGen;
 using Lizard.Session.Dump;
 using Lizard.Util;
-using Exception = System.Exception;
 
 namespace Lizard.Commands;
 
 static class CommandParser
 {
+    const string HexChars = "0123456789ABCDEF";
     static readonly LogTopic Log = new("Command");
 
-    static void PrintAsm(LAssemblyLine1[] lines)
+    static void PrintAsm(List<LAssemblyLine1> lines)
     {
         foreach (var line in lines)
-            Log.Debug($"{line.Address.Segment:X}:{line.Address.Offset:X8} {line.Line}");
+            if (line.Address != null)
+                Log.Debug($"{line.Address.Segment:X}:{line.Address.Offset:X8} {line.Line}");
     }
-
-    const string HexChars = "0123456789ABCDEF";
 
     delegate void LinePrinter(StringBuilder sb, ReadOnlySpan<byte> bytes, int bytesPerLine);
 
@@ -118,8 +116,8 @@ static class CommandParser
 
         var (symType, color) = symbol.Context switch
         {
-            GFunction _ => (" [FUNC]", CommandWindow.CodeColor),
-            GGlobal _ => (" [Global]", CommandWindow.DataColor),
+            GFunction => (" [FUNC]", CommandWindow.CodeColor),
+            GGlobal => (" [Global]", CommandWindow.DataColor),
             _ => ("", PaletteIndex.Number),
         };
 
@@ -194,7 +192,7 @@ static class CommandParser
         {
             var address = ParseUtil.ParseAddress(getArg(), c, false);
             var lengthArg = getArg();
-            var length = lengthArg == "" ? 64 : ParseUtil.ParseVal(lengthArg);
+            var length = lengthArg == "" ? 64 : ParseUtil.ParseUInt32(lengthArg);
 
             if (!c.Session.IsActive)
                 return;
@@ -202,17 +200,21 @@ static class CommandParser
         };
     }
 
-    static void PrintBps(LBreakpoint1[] breakpoints)
+    static void PrintBps(List<LBreakpoint1> breakpoints)
     {
         foreach (var bp in breakpoints)
+        {
             Log.Debug(
-                $"{bp.Id} {bp.Address.Segment:X}:{bp.Address.Offset:X8} {bp.Type} {bp.Ah:X2} {bp.Al:X2}{(bp.IsEnabled ? "" : " [disabled]")}"
+                bp.Address == null
+                    ? $"{bp.Id} {bp.Type} {bp.Ah:X2} {bp.Al:X2}{(bp.IsEnabled ? "" : " [disabled]")}"
+                    : $"{bp.Id} {bp.Address.Segment:X}:{bp.Address.Offset:X8} {bp.Type} {bp.Ah:X2} {bp.Al:X2}{(bp.IsEnabled ? "" : " [disabled]")}"
             );
+        }
     }
 
-    static void PrintDescriptors(LDescriptor1[] descriptors, bool ldt)
+    static void PrintDescriptors(List<LDescriptor1> descriptors, bool ldt)
     {
-        for (int i = 0; i < descriptors.Length; i++)
+        for (int i = 0; i < descriptors.Count; i++)
         {
             var descriptor = descriptors[i];
             switch (descriptor.Type)
@@ -227,19 +229,25 @@ static class CommandParser
                 case LDescriptorType1.Sys386CallGate:
                 case LDescriptorType1.Sys386IntGate:
                 case LDescriptorType1.Sys386TrapGate:
+                {
                     var gate = descriptor;
                     Log.Debug(
-                        $"{i:X4} {gate.Type} {(gate.Big ? "32" : "16")} {gate.Selector:X4}: {gate.Offset:X8} R{gate.Dpl}"
+                        $"{i:X4} {gate.Type} {(gate.IsBig ? "32" : "16")} {gate.Selector:X4}: {gate.Offset:X8} R{gate.Dpl}"
                     );
                     break;
+                }
 
                 default:
-                    var seg = descriptor;
+                    LDescriptor1 seg = descriptor;
                     ushort selector = (ushort)(i << 3 | seg.Dpl);
                     if (ldt)
                         selector |= 4;
+
+                    var segmentBase = seg.Offset; // See LizardProtocol1.lproto
+                    var segmentLimit = seg.Selector;
+
                     Log.Debug(
-                        $"{i:X4}={selector:X4} {seg.Type} {(seg.Big ? "32" : "16")} {seg.Base:X8} {seg.Limit:X8} R{seg.Dpl}"
+                        $"{i:X4}={selector:X4} {seg.Type} {(seg.IsBig ? "32" : "16")} {segmentBase:X8} {segmentLimit:X8} R{seg.Dpl}"
                     );
                     break;
             }
@@ -288,9 +296,9 @@ static class CommandParser
     static readonly Dictionary<string, Command> Commands = new Command[]
     {
         new(
-            new[] { "help", "?" },
+            ["help", "?"],
             "Show help",
-            (_, c) =>
+            (_, _) =>
             {
                 var commands = Commands!.Values.Distinct().OrderBy(x => x.Names[0]).ToList();
                 int maxLength = 0;
@@ -309,44 +317,44 @@ static class CommandParser
                 }
             }
         ),
-        new(new[] { "clear", "cls", ".cls" }, "Clear the log history", (_, c) => LogHistory.Instance.Clear()),
-        new(new[] { "exit", "quit" }, "Exits the debugger", (_, c) => c.Exit()),
-        new(new[] { "Continue", "g" }, "Resume execution", (_, c) => c.Session.Continue()),
+        new(["clear", "cls", ".cls"], "Clear the log history", (_, _) => LogHistory.Instance.Clear()),
+        new(["exit", "quit"], "Exits the debugger", (_, c) => c.Exit()),
+        new(["Continue", "g"], "Resume execution", (_, c) => c.Session.Continue()),
         // TODO
-        new(new[] { "Break", "b" }, "Pause execution", (_, c) => PrintRegisters(c.Session.Break(), c)),
+        new(["Break", "b"], "Pause execution", (_, c) => PrintRegisters(c.Session.Break(), c)),
         new(
-            new[] { "StepOver", "p" },
+            ["StepOver", "p"],
             "Steps to the next instruction, ignoring function calls / interrupts etc",
             (_, c) => PrintRegisters(c.Session.StepOver(), c)
         ),
         new(
-            new[] { "StepIn", "n" },
+            ["StepIn", "n"],
             "Steps to the next instruction, including into function calls etc",
             (_, c) => PrintRegisters(c.Session.StepIn(), c)
         ),
         new(
-            new[] { "StepMultiple", "gn" },
+            ["StepMultiple", "gn"],
             "Runs the CPU for the given number of cycles",
             (getArg, c) =>
             {
-                var n = ParseUtil.ParseVal(getArg());
+                var n = ParseUtil.ParseUInt32(getArg());
                 PrintRegisters(c.Session.StepMultiple(n), c);
             }
         ),
         new(
-            new[] { "StepOut", "go" },
+            ["StepOut", "go"],
             "Run until the current function returns",
             (_, c) => PrintRegisters(c.Session.StepOut(), c)
         ),
         new(
-            new[] { "RunToCall", "gc" },
+            ["RunToCall", "gc"],
             "Run until the next 'call' instruction is encountered",
             (_, _) => {
                 // TODO
             }
         ),
         new(
-            new[] { "RunToAddress", "ga" },
+            ["RunToAddress", "ga"],
             "Run until the given address is reached",
             (getArg, c) =>
             {
@@ -355,7 +363,7 @@ static class CommandParser
             }
         ),
         new(
-            new[] { "GetState", "r" },
+            ["GetState", "r"],
             "Get the current CPU state or update the contents of a CPU register",
             (getArg, c) =>
             {
@@ -369,60 +377,56 @@ static class CommandParser
                 }
 
                 LRegister1 reg = ParseUtil.ParseReg(arg1);
-                uint value = ParseUtil.ParseVal(arg2);
+                uint value = ParseUtil.ParseUInt32(arg2);
                 c.Session.SetRegister(reg, value);
             }
         ),
         new(
-            new[] { "Disassemble", "u" },
+            ["Disassemble", "u"],
             "Disassemble instructions at the given address",
             (getArg, c) =>
             {
                 var addressArg = getArg();
                 var address =
                     addressArg == ""
-                        ? new LAddress1(c.Session.Registers.Cs, c.Session.Registers.Eip)
+                        ? new LAddress1 { Segment = c.Session.Registers.Cs, Offset = c.Session.Registers.Eip }
                         : ParseUtil.ParseAddress(addressArg, c, true);
 
                 var lengthArg = getArg();
-                var length = addressArg == "" || lengthArg == "" ? 10 : ParseUtil.ParseVal(lengthArg);
+                var length = addressArg == "" || lengthArg == "" ? 10 : ParseUtil.ParseUInt32(lengthArg);
 
                 PrintAsm(c.Session.Disassemble(address, length));
             }
         ),
+        new(["GetMemory", "d", "db"], "Gets the contents of memory at the given address", BasePrintMem(PrintMemBytes)),
         new(
-            new[] { "GetMemory", "d", "db" },
-            "Gets the contents of memory at the given address",
-            BasePrintMem(PrintMemBytes)
-        ),
-        new(
-            new[] { "dc" },
+            ["dc"],
             "Gets the contents of memory at the given address, formatting as DWORDs",
             BasePrintMem(PrintMemDwords)
         ),
         new(
-            new[] { "dps" },
+            ["dps"],
             "Gets the contents of memory at the given address, formatting as symbols",
             BasePrintMem(PrintMemSymbols)
         ),
         new(
-            new[] { "dpp" },
+            ["dpp"],
             "Gets the contents of memory at the given address, formatting as pointers",
             BasePrintMem(PrintMemPointers)
         ),
         new(
-            new[] { "SetMemory", "e" },
+            ["SetMemory", "e"],
             "Changes the contents of memory at the given address",
             (getArg, c) =>
             {
                 var address = ParseUtil.ParseAddress(getArg(), c, false);
-                var value = ParseUtil.ParseVal(getArg());
+                var value = ParseUtil.ParseUInt32(getArg());
                 var bytes = BitConverter.GetBytes(value);
                 c.Session.SetMemory(address, bytes);
             }
         ),
         new(
-            new[] { "GetMaxAddress" },
+            ["GetMaxAddress"],
             "Gets the maximum address that has been used in the given segment",
             (getArg, c) =>
             {
@@ -435,16 +439,16 @@ static class CommandParser
                 }
 
                 uint maxAddress = c.Session.GetMaxNonEmptyAddress(segment);
-                Log.Info($"MaxAddress: 0x{(uint)maxAddress:X8}");
+                Log.Info($"MaxAddress: 0x{maxAddress:X8}");
             }
         ),
         new(
-            new[] { "Search", "s" },
+            ["Search", "s"],
             "Searches for occurrences of a byte pattern in a memory range (e.g. \"s 0 -1 24 3a 99\"",
             (getArg, c) =>
             {
                 var address = ParseUtil.ParseAddress(getArg(), c, false);
-                var length = ParseUtil.ParseVal(getArg());
+                var length = ParseUtil.ParseUInt32(getArg());
                 var pattern = new List<byte>();
 
                 string arg;
@@ -462,16 +466,16 @@ static class CommandParser
                 var results = c.Session.SearchMemory(address, length, pattern.ToArray(), 1);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
-                    PrintMemBytes(result, c.Session.GetMemory(result, displayLength), c);
+                    PrintMemBytes(result, c.Session.GetMemory(result, (uint)displayLength), c);
             }
         ),
         new(
-            new[] { "SearchDwords", "s-d" },
+            ["SearchDwords", "s-d"],
             "Searches for occurrences of one or more little-endian dwords in a memory range (e.g. \"s 0 -1 badf00d 12341234\")",
             (getArg, c) =>
             {
                 var address = ParseUtil.ParseAddress(getArg(), c, false);
-                var length = ParseUtil.ParseVal(getArg());
+                var length = ParseUtil.ParseUInt32(getArg());
                 var pattern = new List<byte>();
 
                 string arg;
@@ -492,16 +496,16 @@ static class CommandParser
                 var results = c.Session.SearchMemory(address, length, pattern.ToArray(), 4);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
-                    PrintMemBytes(result, c.Session.GetMemory(result, displayLength), c);
+                    PrintMemBytes(result, c.Session.GetMemory(result, (uint)displayLength), c);
             }
         ),
         new(
-            new[] { "SearchAscii", "s-a" },
+            ["SearchAscii", "s-a"],
             "Searches for occurrences of an ASCII pattern in a memory range (e.g. \"s-a 0 -1 test\"",
             (getArg, c) =>
             {
                 var address = ParseUtil.ParseAddress(getArg(), c, false);
-                var length = ParseUtil.ParseVal(getArg());
+                var length = ParseUtil.ParseUInt32(getArg());
 
                 string pattern = getArg();
                 if (string.IsNullOrEmpty(pattern))
@@ -512,11 +516,11 @@ static class CommandParser
                 var results = c.Session.SearchMemory(address, length, bytes, 1);
                 int displayLength = 16 * ((pattern.Length + 15) / 16);
                 foreach (var result in results)
-                    PrintMemBytes(result, c.Session.GetMemory(result, displayLength), c);
+                    PrintMemBytes(result, c.Session.GetMemory(result, (uint)displayLength), c);
             }
         ),
         new(
-            new[] { ".writemem" },
+            [".writemem"],
             "<path> <addr> <len> : Writes a section of memory to a local file, e.g. .dumpmem c:\\data.bin cs:0 0x800000",
             (getArg, c) =>
             {
@@ -526,14 +530,14 @@ static class CommandParser
 
                 var address = ParseUtil.ParseAddress(getArg(), c, false);
                 var lengthArg = getArg();
-                var length = lengthArg == "" ? 64 : ParseUtil.ParseVal(lengthArg);
+                var length = lengthArg == "" ? 64 : ParseUtil.ParseUInt32(lengthArg);
 
                 var bytes = c.Session.GetMemory(address, length);
                 File.WriteAllBytes(filename, bytes);
             }
         ),
         new(
-            new[] { ".dump" },
+            [".dump"],
             "<path> : Saves a dump file containing the entire memory space as well as the current processor context",
             (getArg, c) =>
             {
@@ -542,7 +546,7 @@ static class CommandParser
             }
         ),
         new(
-            new[] { "ListBreakpoints", "bps", "bl" },
+            ["ListBreakpoints", "bps", "bl"],
             "Retrieves the current breakpoint list",
             (_, c) =>
             {
@@ -550,7 +554,7 @@ static class CommandParser
             }
         ),
         new(
-            new[] { "SetBreakpoint", "bp" },
+            ["SetBreakpoint", "bp"],
             "<address> [type] [ah] [al] - Sets or updates a breakpoint",
             (getArg, c) =>
             {
@@ -559,35 +563,43 @@ static class CommandParser
                 var type = s == "" ? LBreakpointType1.Normal : ParseUtil.ParseBpType(getArg());
 
                 s = getArg();
-                byte ah = s == "" ? (byte)0 : (byte)ParseUtil.ParseVal(s);
+                byte ah = s == "" ? (byte)0 : (byte)ParseUtil.ParseUInt32(s);
 
                 s = getArg();
-                byte al = s == "" ? (byte)0 : (byte)ParseUtil.ParseVal(s);
+                byte al = s == "" ? (byte)0 : (byte)ParseUtil.ParseUInt32(s);
 
-                var bp = new LBreakpoint1(-1, address, type, true, ah, al);
+                var bp = new LBreakpoint1
+                {
+                    Id = uint.MaxValue,
+                    Address = address,
+                    Type = type,
+                    IsEnabled = true,
+                    Ah = ah,
+                    Al = al
+                };
                 c.Session.SetBreakpoint(bp);
             }
         ),
         new(
-            new[] { "EnableBreakpoint", "be" },
+            ["EnableBreakpoint", "be"],
             "Enables the breakpoint with the given id",
             (getArg, c) =>
             {
-                var id = ParseUtil.ParseVal(getArg());
+                var id = ParseUtil.ParseUInt32(getArg());
                 c.Session.EnableBreakpoint(id, true);
             }
         ),
         new(
-            new[] { "DisableBreakpoint", "bd" },
+            ["DisableBreakpoint", "bd"],
             "Disables the breakpoint with the given id",
             (getArg, c) =>
             {
-                var id = ParseUtil.ParseVal(getArg());
+                var id = ParseUtil.ParseUInt32(getArg());
                 c.Session.EnableBreakpoint(id, false);
             }
         ),
         new(
-            new[] { "DelBreakpoint", "bc" },
+            ["DelBreakpoint", "bc"],
             "Removes the breakpoint with the given id. * will remove all breakpoints.",
             (getArg, c) =>
             {
@@ -596,30 +608,30 @@ static class CommandParser
                 {
                     var all = c.Session.ListBreakpoints();
                     foreach (var bp in all)
-                        c.Session.DelBreakpoint(bp.Id);
+                        c.Session.DeleteBreakpoint(bp.Id);
                 }
 
-                var id = ParseUtil.ParseVal(idString);
-                c.Session.DelBreakpoint(id);
+                var id = ParseUtil.ParseUInt32(idString);
+                c.Session.DeleteBreakpoint(id);
             }
         ),
         new(
-            new[] { "GetGDT", "gdt" },
+            ["GetGDT", "gdt"],
             "Retrieves the Global Descriptor Table",
-            (getArg, c) => PrintDescriptors(c.Session.GetGdt(), false)
+            (_, c) => PrintDescriptors(c.Session.GetGdt(), false)
         ),
         new(
-            new[] { "GetLDT", "ldt" },
+            ["GetLDT", "ldt"],
             "Retrieves the Local Descriptor Table",
-            (getArg, c) => PrintDescriptors(c.Session.GetLdt(), true)
+            (_, c) => PrintDescriptors(c.Session.GetLdt(), true)
         ),
         new(
-            new[] { "x" },
+            ["x"],
             "Retrieves the nearest symbol on or before the given address",
             (getArg, c) =>
             {
                 var address = ParseUtil.ParseAddress(getArg(), c, true);
-                var symbol = c.LookupSymbolForAddress((uint)address.Offset);
+                var symbol = c.LookupSymbolForAddress(address.Offset);
                 if (symbol == null)
                     Log.Warn("No symbol found");
                 else
@@ -629,9 +641,9 @@ static class CommandParser
                 }
             }
         ),
-        new(new[] { "k" }, "Print a stack trace", (getArg, c) => PrintStackTrace(c)),
+        new(["k"], "Print a stack trace", (_, c) => PrintStackTrace(c)),
         new(
-            new[] { ".ghidra_script" },
+            [".ghidra_script"],
             "Generate a python script for ghidra to add symbols to a dump file",
             (getArg, c) =>
             {

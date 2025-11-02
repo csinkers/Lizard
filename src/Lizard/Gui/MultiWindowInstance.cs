@@ -7,7 +7,7 @@ public abstract class MultiWindowInstance
     public WindowId Id { get; }
     bool _open = true;
 
-    public MultiWindowInstance(WindowId id) => Id = id;
+    protected MultiWindowInstance(WindowId id) => Id = id;
 
     public abstract void DrawContents();
 

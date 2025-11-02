@@ -74,7 +74,7 @@ public class CommandContext
     {
         var r = Session.Registers;
 
-        var stackRegion = GetStackRegion((uint)r.ebp);
+        var stackRegion = GetStackRegion(r.Ebp);
         if (stackRegion == null)
         {
             Log.Warn("No stack region found");
@@ -83,8 +83,8 @@ public class CommandContext
 
         uint stackBase = stackRegion.MemoryEnd;
 
-        uint ip = (uint)r.eip;
-        uint bp = (uint)r.ebp;
+        uint ip = r.Eip;
+        uint bp = r.Ebp;
 
         var ipSymbol = LookupSymbolForAddress(ip, out var offset);
         var stack = new List<StackFrame> { new(bp) };
@@ -96,10 +96,10 @@ public class CommandContext
 
         uint GetDword(uint addr)
         {
-            if (addr < r.ebp)
+            if (addr < r.Ebp)
                 return 0;
 
-            uint index = (addr - (uint)r.ebp) / 4;
+            uint index = (addr - r.Ebp) / 4;
             if (index >= dwords.Length)
                 return 0;
 

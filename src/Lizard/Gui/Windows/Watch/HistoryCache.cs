@@ -5,11 +5,11 @@ namespace Lizard.Gui.Windows.Watch;
 public class HistoryCache : IHistoryCreationContext
 {
     static readonly TimeSpan CycleInterval = TimeSpan.FromSeconds(5);
+    readonly RendererCache _renderers;
+    readonly MemoryMapping _mapping;
     Dictionary<string, History> _oldHistory = new();
     Dictionary<string, History> _history = new();
     DateTime _lastCycleTime;
-    readonly RendererCache _renderers;
-    readonly MemoryMapping _mapping;
 
     public HistoryCache(RendererCache renderers, MemoryMapping mapping)
     {

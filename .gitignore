@@ -9,7 +9,6 @@ deps/
 *.lock
 *.lock~
 *.user
-*.DotSettings
 *.code-workspace
 *.gfxr
 launchSettings.json

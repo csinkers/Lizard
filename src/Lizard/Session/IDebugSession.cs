@@ -1,5 +1,5 @@
-﻿using Lizard.Memory;
-using Lizard.Protocol.ProtocolGen;
+﻿using Lizard.Comms;
+using Lizard.Memory;
 
 namespace Lizard.Session;
 
@@ -29,15 +29,15 @@ public interface IDebugSession : IDisposable
     LRegisters1 StepOut();
     LRegisters1 StepMultiple(uint i);
     void RunToAddress(LAddress1 address);
-    LAssemblyLine1[] Disassemble(LAddress1 address, uint length);
+    List<LAssemblyLine1> Disassemble(LAddress1 address, uint length);
     void SetMemory(LAddress1 address, byte[] bytes);
     uint GetMaxNonEmptyAddress(ushort segment);
     IEnumerable<LAddress1> SearchMemory(LAddress1 address, uint length, byte[] toArray, uint advance);
-    LBreakpoint1[] ListBreakpoints();
+    List<LBreakpoint1> ListBreakpoints();
     void SetBreakpoint(LBreakpoint1 bp);
     void EnableBreakpoint(uint id, bool enable);
-    void DelBreakpoint(uint id);
+    void DeleteBreakpoint(uint id);
     void SetRegister(LRegister1 reg, uint value);
-    LDescriptor1[] GetGdt();
-    LDescriptor1[] GetLdt();
+    List<LDescriptor1> GetGdt();
+    List<LDescriptor1> GetLdt();
 }

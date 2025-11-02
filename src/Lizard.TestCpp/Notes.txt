@@ -1,0 +1,8 @@
+One-time machine:
+    vcpkg integrate install (from downloaded standalone or from VS x64 Native Tools prompt after installing vcpkg VS feature)
+    vcpkg install pkgconf
+    Copy vcpkg-path\installed\x64-windows\tools\pkgconf\* to somewhere on the path
+
+cmake --preset debug-windows
+cmake --build --preset debug-windows
+

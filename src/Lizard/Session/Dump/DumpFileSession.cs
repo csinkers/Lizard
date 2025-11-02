@@ -1,7 +1,7 @@
 ﻿using Gee.External.Capstone;
 using Gee.External.Capstone.X86;
+using Lizard.Comms;
 using Lizard.Memory;
-using Lizard.Protocol.ProtocolGen;
 
 namespace Lizard.Session.Dump;
 
@@ -64,35 +64,40 @@ public sealed class DumpFileSession : IDebugSession, IMemoryReader
     public void EnableBreakpoint(uint id, bool enable) =>
         throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public void DelBreakpoint(uint id) =>
+    public void DeleteBreakpoint(uint id) =>
         throw new NotSupportedException("Invalid operation when debugging a dump file");
 
     public void SetRegister(LRegister1 reg, uint value) =>
         throw new NotSupportedException("Invalid operation when debugging a dump file");
 
-    public LBreakpoint1[] ListBreakpoints() => Array.Empty<LBreakpoint1>();
+    public List<LBreakpoint1> ListBreakpoints() => [];
 
     public LRegisters1 GetState() => Registers;
 
     public byte[] GetMemory(LAddress1 addr, uint bufferLength)
     {
         var result = new byte[bufferLength];
-        _dump.Memory.AsSpan(addr.Offset, bufferLength).CopyTo(result.AsSpan());
+        _dump.Memory.AsSpan((int)addr.Offset, (int)bufferLength).CopyTo(result.AsSpan());
         return result;
     }
 
-    public LAssemblyLine1[] Disassemble(LAddress1 address, uint length)
+    public List<LAssemblyLine1> Disassemble(LAddress1 address, uint length)
     {
         var memory = GetMemory(address, length);
         var instructions = _disassembler.Disassemble(memory);
-        var results = new LAssemblyLine1[instructions.Length];
+        var results = new List<LAssemblyLine1>(instructions.Length);
 
         for (var i = 0; i < instructions.Length; i++)
         {
             var instruction = instructions[i];
-            var instrAddr = new LAddress1(address.Segment, instruction.Address);
+            var instrAddr = new LAddress1 { Segment = address.Segment, Offset = (uint)instruction.Address };
             var text = $"{instruction.Mnemonic} {instruction.Operand}";
-            results[i] = new LAssemblyLine1(instrAddr, text, instruction.Bytes);
+            results[i] = new LAssemblyLine1
+            {
+                Address = instrAddr,
+                Line = text,
+                Bytes = instruction.Bytes
+            };
         }
 
         return results;
@@ -105,30 +110,31 @@ public sealed class DumpFileSession : IDebugSession, IMemoryReader
         throw new NotImplementedException();
     }
 
-    public LDescriptor1[] GetGdt() => throw new NotImplementedException();
+    public List<LDescriptor1> GetGdt() => throw new NotImplementedException();
 
-    public LDescriptor1[] GetLdt() => throw new NotImplementedException();
+    public List<LDescriptor1> GetLdt() => throw new NotImplementedException();
 
     public void Dispose() => _disassembler.Dispose();
 
     static LRegisters1 ConvertRegisters(DumpRegisters r) =>
-        new(
-            true,
-            r.Flags,
-            r.Eax,
-            r.Ebx,
-            r.Ecx,
-            r.Edx,
-            r.Esi,
-            r.Edi,
-            r.Ebp,
-            r.Esp,
-            r.Eip,
-            r.Es,
-            r.Cs,
-            r.Ss,
-            r.Ds,
-            r.Fs,
-            r.Gs
-        );
+        new()
+        {
+            IsStopped = true,
+            Flags = r.Flags,
+            Eax = r.Eax,
+            Ebx = r.Ebx,
+            Ecx = r.Ecx,
+            Edx = r.Edx,
+            Esi = r.Esi,
+            Edi = r.Edi,
+            Ebp = r.Ebp,
+            Esp = r.Esp,
+            Eip = r.Eip,
+            Es = r.Es,
+            Cs = r.Cs,
+            Ss = r.Ss,
+            Ds = r.Ds,
+            Fs = r.Fs,
+            Gs = r.Gs
+        };
 }

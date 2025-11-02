@@ -29,6 +29,9 @@ class ToolbarIcons
         {
             var resourceName = Prefix + name;
             using var stream = _assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+                throw new InvalidOperationException($"Could not find embedded resource '{resourceName}'");
+
             var imageSharpTexture = new Veldrid.ImageSharp.ImageSharpTexture(stream);
             var texture = imageSharpTexture.CreateDeviceTexture(gd, gd.ResourceFactory);
             return uiManager.GetOrCreateImGuiBinding(texture);

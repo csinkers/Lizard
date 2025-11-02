@@ -17,8 +17,9 @@ public class PropertyProvider : IPropertyProvider
     /// <returns>The parsed value, or defaultValue if no value existed or could be parsed.</returns>
     public T GetProperty<T>(IProperty<T> property)
     {
-        if (property == null)
+        if (property == null!)
             throw new ArgumentNullException(nameof(property));
+
         return GetProperty(property, property.DefaultValue);
     }
 
@@ -31,10 +32,10 @@ public class PropertyProvider : IPropertyProvider
     /// <returns>The parsed value, or defaultValue if no value existed or could be parsed.</returns>
     public T GetProperty<T>(IProperty<T> property, T defaultValue)
     {
-        if (property == null)
+        if (property == null!)
             throw new ArgumentNullException(nameof(property));
-        var name = property.Name;
 
+        var name = property.Name;
         if (!Properties.TryGetValue(name, out var value))
             return defaultValue;
 
@@ -54,8 +55,9 @@ public class PropertyProvider : IPropertyProvider
     /// <param name="value">The value to set the property to</param>
     public void SetProperty<T>(IProperty<T> property, T value)
     {
-        if (property == null)
+        if (property == null!)
             throw new ArgumentNullException(nameof(property));
+
         Properties[property.Name] = value;
     }
 }

@@ -6,7 +6,7 @@ using Lizard.Gui.Windows.Watch;
 using Lizard.Session;
 using Lizard.Util;
 using SharpFileDialog;
-using Veldrid;
+using Veldrid.Sdl2;
 
 namespace Lizard.Gui;
 
@@ -73,7 +73,7 @@ class Ui
         uiManager.AddWindow(_programDataWindow);
 
         uiManager.AddHotkey(
-            new KeyBinding(Key.S, ModifierKeys.Control),
+            new KeyBinding(Key.S, ModifierKeys.LeftControl),
             () =>
             {
                 if (!string.IsNullOrEmpty(_projectManager.Project.Path))
@@ -84,11 +84,11 @@ class Ui
 
         uiManager.AddHotkey(new KeyBinding(Key.Grave, ModifierKeys.None), () => _commandWindow.Open(), true);
         uiManager.AddHotkey(new KeyBinding(Key.F5, ModifierKeys.None), () => Session.Continue(), true);
-        uiManager.AddHotkey(new KeyBinding(Key.Pause, ModifierKeys.Control), () => Session.Break(), true);
-        uiManager.AddHotkey(new KeyBinding(Key.ScrollLock, ModifierKeys.Control), () => Session.Break(), true); // Control+Pause is coming through as scroll lock for some weird reason
+        uiManager.AddHotkey(new KeyBinding(Key.Pause, ModifierKeys.LeftControl), () => Session.Break(), true);
+        uiManager.AddHotkey(new KeyBinding(Key.ScrollLock, ModifierKeys.LeftControl), () => Session.Break(), true); // Control+Pause is coming through as scroll lock for some weird reason
         uiManager.AddHotkey(new KeyBinding(Key.F10, ModifierKeys.None), () => Session.StepOver(), true);
         uiManager.AddHotkey(new KeyBinding(Key.F11, ModifierKeys.None), () => Session.StepIn(), true);
-        uiManager.AddHotkey(new KeyBinding(Key.F11, ModifierKeys.Shift), () => Session.StepOut(), true);
+        uiManager.AddHotkey(new KeyBinding(Key.F11, ModifierKeys.LeftShift), () => Session.StepOut(), true);
     }
 
     public void Run()

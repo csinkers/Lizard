@@ -35,22 +35,6 @@
     <None Remove="Gui\IconsLight\debug-stop.png" />
     <None Remove="Gui\IconsLight\debug.png" />
     <None Remove="Gui\IconsLight\gear.png" />
-    <None Remove="shaders\imgui-frag.glsl" />
-    <None Remove="shaders\imgui-frag.glsles" />
-    <None Remove="shaders\imgui-frag.hlsl" />
-    <None Remove="shaders\imgui-frag.hlsl.bytes" />
-    <None Remove="shaders\imgui-frag.metal" />
-    <None Remove="shaders\imgui-frag.metallib" />
-    <None Remove="shaders\imgui-frag.spv" />
-    <None Remove="shaders\imgui-frag.spv.glsl" />
-    <None Remove="shaders\imgui-vertex.glsl" />
-    <None Remove="shaders\imgui-vertex.glsles" />
-    <None Remove="shaders\imgui-vertex.hlsl" />
-    <None Remove="shaders\imgui-vertex.hlsl.bytes" />
-    <None Remove="shaders\imgui-vertex.metal" />
-    <None Remove="shaders\imgui-vertex.metallib" />
-    <None Remove="shaders\imgui-vertex.spv" />
-    <None Remove="shaders\imgui-vertex.spv.glsl" />
   </ItemGroup>
 
   <ItemGroup>
@@ -74,32 +58,21 @@
     <EmbeddedResource Include="Gui\IconsLight\debug-stop.png" />
     <EmbeddedResource Include="Gui\IconsLight\debug.png" />
     <EmbeddedResource Include="Gui\IconsLight\gear.png" />
-    <EmbeddedResource Include="shaders\imgui-frag.glsl" />
-    <EmbeddedResource Include="shaders\imgui-frag.glsles" />
-    <EmbeddedResource Include="shaders\imgui-frag.hlsl" />
-    <EmbeddedResource Include="shaders\imgui-frag.hlsl.bytes" />
-    <EmbeddedResource Include="shaders\imgui-frag.metal" />
-    <EmbeddedResource Include="shaders\imgui-frag.metallib" />
-    <EmbeddedResource Include="shaders\imgui-frag.spv" />
-    <EmbeddedResource Include="shaders\imgui-frag.spv.glsl" />
-    <EmbeddedResource Include="shaders\imgui-vertex.glsl" />
-    <EmbeddedResource Include="shaders\imgui-vertex.glsles" />
-    <EmbeddedResource Include="shaders\imgui-vertex.hlsl" />
-    <EmbeddedResource Include="shaders\imgui-vertex.hlsl.bytes" />
-    <EmbeddedResource Include="shaders\imgui-vertex.metal" />
-    <EmbeddedResource Include="shaders\imgui-vertex.metallib" />
-    <EmbeddedResource Include="shaders\imgui-vertex.spv" />
-    <EmbeddedResource Include="shaders\imgui-vertex.spv.glsl" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Gee.External.Capstone" Version="2.3.0" />
-    <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
     <PackageReference Include="SerdesNet" Version="4.0.2" />
-    <PackageReference Include="Veldrid" Version="4.9.0" />
-    <PackageReference Include="Veldrid.ImageSharp" Version="4.9.0" />
-    <PackageReference Include="Veldrid.RenderDoc" Version="1.0.1-ga121087cad" />
-    <PackageReference Include="Veldrid.StartupUtilities" Version="4.9.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!Exists('..\..\..\veldrid\')">
+    <PackageReference Include="Sinkers.Veldrid" Version="0.4.16" />
+    <PackageReference Include="Sinkers.Veldrid.ImageSharp" Version="0.4.16" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('..\..\..\veldrid\')">
+    <ProjectReference Include="..\..\..\veldrid\src\Veldrid\Veldrid.csproj" />
+    <ProjectReference Include="..\..\..\veldrid\src\Veldrid.ImageSharp\Veldrid.ImageSharp.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="!Exists('..\..\..\ImGuiColorTextEditNet\')">
@@ -116,6 +89,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Lizard.Comms\Lizard.Comms.csproj" />
     <ProjectReference Include="..\SharpFileDialog\SharpFileDialog.csproj" />
   </ItemGroup>
 

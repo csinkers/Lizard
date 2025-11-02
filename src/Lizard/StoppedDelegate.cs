@@ -1,4 +1,4 @@
-﻿using Lizard.Protocol.ProtocolGen;
+﻿using Lizard.Comms;
 
 namespace Lizard;
 

@@ -1,13 +1,14 @@
-﻿using Lizard.Gui;
-using Lizard.Protocol.ProtocolGen;
+﻿using Lizard.Comms;
+using Lizard.Gui;
 using Lizard.Session.Dump;
-using Lizard.Session.IceClient;
+using Lizard.Util;
 
 namespace Lizard.Session;
 
 public sealed class DebugSessionProvider : IDisposable
 {
     static readonly DisconnectedSession DisconnectedSession = new();
+    static readonly ITracer Log = new LogTopic(nameof(DebugSessionProvider));
     public event Action? Connected;
     public event Action? Disconnected;
     public event StoppedDelegate? Stopped;
@@ -20,10 +21,18 @@ public sealed class DebugSessionProvider : IDisposable
 
     void OnStopped(LRegisters1 state) => Stopped?.Invoke(state);
 
-    public void StartIceSession(string hostname, int port)
+    public void StartNetSession(string hostname, int port)
     {
         Disconnect();
-        Session = new IceDebugSession(hostname, port);
+
+        try
+        {
+            Session = NetDebugSession.Start(hostname, port);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Failed to connect: {ex.Message}");
+        }
     }
 
     public void StartDumpSession(string path, CommandContext c)
