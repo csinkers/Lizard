@@ -8,6 +8,7 @@ public class LogHistory
     const int MaxHistory = 10000;
     readonly Lock _syncRoot = new();
     readonly Queue<LogEntry> _history = new();
+
     public event Action<LogEntry>? EntryAdded;
     public event Action? Cleared;
 
