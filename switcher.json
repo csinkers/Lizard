@@ -1,0 +1,12 @@
+{
+  "solution": "Lizard.sln",
+  "solutionFolder": null,
+  "mappings": {
+    "GhidraProgramData": "../GhidraProgramData/src/GhidraProgramData/GhidraProgramData.csproj",
+    "ImGuiColorTextEditNet": "../ImGuiColorTextEditNet/src/TextEdit/ImGuiColorTextEditNet.csproj",
+    "SerdesNet": "../SerdesNet/src/SerdesNet/SerdesNet.csproj",
+    "Sinkers.Veldrid": "../veldrid/src/Veldrid/Veldrid.csproj",
+    "Sinkers.Veldrid.ImageSharp": "../veldrid/src/Veldrid.ImageSharp/Veldrid.ImageSharp.csproj"
+  },
+  "removeProjects": true
+}

@@ -62,11 +62,11 @@
 
   <ItemGroup>
     <PackageReference Include="Gee.External.Capstone" Version="2.3.0" />
+    <PackageReference Include="GhidraProgramData" Version="0.1.4" />
+    <PackageReference Include="ImGuiColorTextEditNet" Version="0.1.9" />
     <PackageReference Include="SerdesNet" Version="4.1.0" />
     <PackageReference Include="Sinkers.Veldrid" Version="0.4.16" />
     <PackageReference Include="Sinkers.Veldrid.ImageSharp" Version="0.4.16" />
-    <PackageReference Include="ImGuiColorTextEditNet" Version="0.1.9" />
-    <PackageReference Include="GhidraProgramData" Version="0.1.4" />
   </ItemGroup>
 
   <ItemGroup>
