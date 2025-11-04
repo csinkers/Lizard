@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
@@ -7,13 +6,11 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="Icons\**" />
     <EmbeddedResource Remove="Icons\**" />
     <None Remove="Icons\**" />
   </ItemGroup>
-
   <ItemGroup>
     <None Remove="Gui\IconsDark\debug-continue.png" />
     <None Remove="Gui\IconsDark\debug-disconnect.png" />
@@ -36,7 +33,6 @@
     <None Remove="Gui\IconsLight\debug.png" />
     <None Remove="Gui\IconsLight\gear.png" />
   </ItemGroup>
-
   <ItemGroup>
     <EmbeddedResource Include="Gui\IconsDark\debug-continue.png" />
     <EmbeddedResource Include="Gui\IconsDark\debug-disconnect.png" />
@@ -59,19 +55,16 @@
     <EmbeddedResource Include="Gui\IconsLight\debug.png" />
     <EmbeddedResource Include="Gui\IconsLight\gear.png" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Gee.External.Capstone" Version="2.3.0" />
     <PackageReference Include="GhidraProgramData" Version="0.1.4" />
     <PackageReference Include="ImGuiColorTextEditNet" Version="0.1.9" />
     <PackageReference Include="SerdesNet" Version="4.1.0" />
-    <PackageReference Include="Sinkers.Veldrid" Version="0.4.16" />
-    <PackageReference Include="Sinkers.Veldrid.ImageSharp" Version="0.4.16" />
+    <PackageReference Include="Sinkers.Veldrid" Version="0.4.17" />
+    <PackageReference Include="Sinkers.Veldrid.ImageSharp" Version="0.4.17" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Lizard.Comms\Lizard.Comms.csproj" />
     <ProjectReference Include="..\SharpFileDialog\SharpFileDialog.csproj" />
   </ItemGroup>
-
 </Project>
