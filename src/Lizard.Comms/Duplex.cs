@@ -101,7 +101,7 @@ public class Duplex
             sw.Int32("packetSize", packet.Data.Length);
             sw.EnumU8("packetType", packet.Type);
             sw.UInt8("id", packet.Id);
-            _log.LogDebug("SEND {id} {type} - {size} bytes", packet.Id, packet.Type, packet.Data.Length);
+            // _log.LogDebug("SEND {id} {type} - {size} bytes", packet.Id, packet.Type, packet.Data.Length);
 
             await stream.WriteAsync(sw.GetMemory(), ct).ConfigureAwait(false);
             await stream.WriteAsync(packet.Data, ct).ConfigureAwait(false);
@@ -153,7 +153,7 @@ public class Duplex
 
         PacketType packetType = sr.EnumU8("packetType", PacketType.Request);
         byte id = sr.UInt8("id", 0);
-        _log.LogDebug("RECV {id} {type} - {size} bytes", id, packetType, packetSize);
+        // _log.LogDebug("RECV {id} {type} - {size} bytes", id, packetType, packetSize);
 
         var buffer = new byte[packetSize];
         int totalBytesRead = 0;

@@ -300,7 +300,7 @@ namespace {{namespaceName}}
             sw.UInt32("size", size);
             sw.UInt8Enum("type", packet.type);
             sw.UInt8("id", packet.id);
-            log_->Info(std::format("SEND {} {} - {} bytes", (int)packet.id, DescribePacketType(packet.type), (int)size));
+            log_->Debug(std::format("SEND {} {} - {} bytes", (int)packet.id, DescribePacketType(packet.type), (int)size));
 
             socket_->Send(header);
             socket_->Send(packet.data);
@@ -351,7 +351,7 @@ namespace {{namespaceName}}
             }
 
             packet->data.resize(size);
-            log_->Info(std::format("RECV {} {} - {} bytes", (int)id, DescribePacketType(type), (int)size));
+            log_->Debug(std::format("RECV {} {} - {} bytes", (int)id, DescribePacketType(type), (int)size));
             socket_->Receive(packet->data);
 
             if (type == PacketType::ResponseOk || type == PacketType::ResponseFail)
