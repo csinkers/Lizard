@@ -105,54 +105,58 @@ public class ProgramDataWindow : SingletonWindow
         ImGui.Text("Memory Mapping");
         int indexToRemove = -1;
 
-        ImGui.Columns(4);
-        ImGui.Text("File Offset");
-        ImGui.NextColumn();
-        ImGui.Text("Mem Offset");
-        ImGui.NextColumn();
-        ImGui.Text("Length");
-        ImGui.NextColumn();
-        ImGui.Text("Type");
-
-        for (var i = 0; i < _tempRegions.Count; i++)
+        if (ImGui.BeginTable("DetailsTable", 4))
         {
-            ImGui.PushID(i);
+            ImGui.TableNextColumn();
+            ImGui.Text("File Offset");
+            ImGui.TableNextColumn();
+            ImGui.Text("Mem Offset");
+            ImGui.TableNextColumn();
+            ImGui.Text("Length");
+            ImGui.TableNextColumn();
+            ImGui.Text("Type");
 
-            ImGui.NextColumn();
-            var tempRegion = _tempRegions[i];
-            if (ImGui.Button("-"))
-                indexToRemove = i;
+            for (var i = 0; i < _tempRegions.Count; i++)
+            {
+                ImGui.PushID(i);
 
-            ImGui.SameLine();
-            ImGui.InputText(
-                "##file",
-                tempRegion.FileAddress,
-                (uint)tempRegion.FileAddress.Length,
-                ImGuiInputTextFlags.CharsHexadecimal
-            );
-            ImGui.NextColumn();
-            ImGui.InputText(
-                "##mem",
-                tempRegion.MemAddress,
-                (uint)tempRegion.MemAddress.Length,
-                ImGuiInputTextFlags.CharsHexadecimal
-            );
-            ImGui.NextColumn();
-            ImGui.InputText(
-                "##len",
-                tempRegion.Length,
-                (uint)tempRegion.Length.Length,
-                ImGuiInputTextFlags.CharsHexadecimal
-            );
-            ImGui.NextColumn();
-            int type = tempRegion.Type;
-            if (ImGui.Combo("##type", ref type, MemoryTypes, MemoryTypes.Length))
-                tempRegion.Type = type;
+                ImGui.TableNextColumn();
+                var tempRegion = _tempRegions[i];
+                if (ImGui.Button("-"))
+                    indexToRemove = i;
 
-            ImGui.PopID();
+                ImGui.SameLine();
+                ImGui.InputText(
+                    "##file",
+                    tempRegion.FileAddress,
+                    (uint)tempRegion.FileAddress.Length,
+                    ImGuiInputTextFlags.CharsHexadecimal
+                );
+                ImGui.TableNextColumn();
+                ImGui.InputText(
+                    "##mem",
+                    tempRegion.MemAddress,
+                    (uint)tempRegion.MemAddress.Length,
+                    ImGuiInputTextFlags.CharsHexadecimal
+                );
+                ImGui.TableNextColumn();
+                ImGui.InputText(
+                    "##len",
+                    tempRegion.Length,
+                    (uint)tempRegion.Length.Length,
+                    ImGuiInputTextFlags.CharsHexadecimal
+                );
+                ImGui.TableNextColumn();
+                int type = tempRegion.Type;
+                if (ImGui.Combo("##type", ref type, MemoryTypes, MemoryTypes.Length))
+                    tempRegion.Type = type;
+
+                ImGui.PopID();
+            }
+
+            ImGui.EndTable();
         }
 
-        ImGui.Columns(0);
         if (ImGui.Button("+"))
             _tempRegions.Add(new TempRegion());
 

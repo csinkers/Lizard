@@ -3,6 +3,7 @@
   "solutionFolder": null,
   "mappings": {
     "GhidraProgramData": "../GhidraProgramData/src/GhidraProgramData/GhidraProgramData.csproj",
+    "ImGui.NET": "../ImGui.NET/src/ImGui.NET/ImGui.NET.csproj",
     "ImGuiColorTextEditNet": "../ImGuiColorTextEditNet/src/TextEdit/ImGuiColorTextEditNet.csproj",
     "SerdesNet": "../SerdesNet/src/SerdesNet/SerdesNet.csproj",
     "Sinkers.Veldrid": "../veldrid/src/Veldrid/Veldrid.csproj",
