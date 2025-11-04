@@ -6,7 +6,7 @@ namespace Lizard.Gui;
 public class TextureStore : ITextureStore
 {
     const int CyclePeriod = 60;
-    readonly object _syncRoot = new();
+    readonly Lock _syncRoot = new();
     readonly GraphicsDevice _device;
     readonly ImGuiRenderer _imgui;
     Dictionary<int, Texture> _lastCache = new();
@@ -34,7 +34,7 @@ public class TextureStore : ITextureStore
                 TextureUsage.Sampled
             );
 
-            var texture = _device.ResourceFactory.CreateTexture(ref description);
+            var texture = _device.ResourceFactory.CreateTexture(in description);
             int handle = _nextHandle++;
             _cache[handle] = texture;
             return (handle, texture);

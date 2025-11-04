@@ -1,22 +1,22 @@
 ﻿using System.Globalization;
 using ImGuiNET;
-using LizardProtocol;
+using Lizard.Comms;
 
 namespace Lizard.Gui.Windows;
 
 public class BreakpointsWindow : SingletonWindow
 {
-    static readonly string[] PossibleTypes = Enum.GetNames(typeof(BreakpointType));
+    static readonly string[] PossibleTypes = Enum.GetNames(typeof(LBreakpointType1));
 
     readonly CommandContext _context;
-    readonly List<Breakpoint> _breakpoints = new();
-    string[] _idStrings = Array.Empty<string>();
-    string[] _checkboxIds = Array.Empty<string>();
-    string[] _addressStrings = Array.Empty<string>();
-    string[] _nameStrings = Array.Empty<string>();
-    string[] _typeStrings = Array.Empty<string>();
+    readonly List<LBreakpoint1> _breakpoints = [];
+    string[] _idStrings = [];
+    string[] _checkboxIds = [];
+    string[] _addressStrings = [];
+    string[] _nameStrings = [];
+    string[] _typeStrings = [];
     string _pendingAddress = "";
-    int _pendingType = (int)BreakpointType.Normal;
+    int _pendingType = (int)LBreakpointType1.Normal;
     int _version = -1;
 
     public BreakpointsWindow(CommandContext context)
@@ -30,36 +30,42 @@ public class BreakpointsWindow : SingletonWindow
             _breakpoints.Clear();
             _breakpoints.AddRange(session.ListBreakpoints());
             // csharpier-ignore
-
             _addressStrings = _breakpoints
                 .Select(x =>
-                    x.type switch
+                {
+                    if (x.Address == null)
+                        return "Null";
+
+                    return x.Type switch
                     {
-                        BreakpointType.Normal          => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Ephemeral       => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Read            => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Write           => $"{x.address.segment}:{x.address.offset}",
-                        BreakpointType.Interrupt       => $"INT {x.address.offset:X2}",
-                        BreakpointType.InterruptWithAH => $"INT {x.address.offset:X2}, AH={x.ah:X2}",
-                        BreakpointType.InterruptWithAX => $"INT {x.address.offset:X2}, AH={x.ah:X2}, AL={x.al:X2}",
-                        BreakpointType.Unknown         => "Unk",
+                        LBreakpointType1.Normal          => $"{x.Address.Segment}:{x.Address.Offset}",
+                        LBreakpointType1.Ephemeral       => $"{x.Address.Segment}:{x.Address.Offset}",
+                        LBreakpointType1.Read            => $"{x.Address.Segment}:{x.Address.Offset}",
+                        LBreakpointType1.Write           => $"{x.Address.Segment}:{x.Address.Offset}",
+                        LBreakpointType1.Interrupt       => $"INT {x.Address.Offset:X2}",
+                        LBreakpointType1.InterruptWithAH => $"INT {x.Address.Offset:X2}, AH={x.Ah:X2}",
+                        LBreakpointType1.InterruptWithAX => $"INT {x.Address.Offset:X2}, AH={x.Ah:X2}, AL={x.Al:X2}",
+                        LBreakpointType1.Unknown         => "Unk",
                         _ => throw new ArgumentOutOfRangeException()
-                    }
-                )
+                    };
+                })
                 .ToArray();
 
-            _idStrings = _breakpoints.Select(x => x.id.ToString(CultureInfo.InvariantCulture)).ToArray();
-            _checkboxIds = _breakpoints.Select(x => "##" + x.id.ToString(CultureInfo.InvariantCulture)).ToArray();
-            _typeStrings = _breakpoints.Select(x => x.type.ToString()).ToArray();
+            _idStrings = _breakpoints.Select(x => x.Id.ToString(CultureInfo.InvariantCulture)).ToArray();
+            _checkboxIds = _breakpoints.Select(x => "##" + x.Id.ToString(CultureInfo.InvariantCulture)).ToArray();
+            _typeStrings = _breakpoints.Select(x => x.Type.ToString()).ToArray();
             _nameStrings = _breakpoints
                 .Select(x =>
                 {
-                    var sym = _context.LookupSymbolForAddress((uint)x.address.offset);
+                    if (x.Address == null)
+                        return "";
+
+                    var sym = _context.LookupSymbolForAddress(x.Address.Offset);
                     if (sym == null)
                         return "";
 
                     _context.Mapping.ToMemory(sym.Address, out var baseAddr, out _);
-                    var offset = (uint)x.address.offset - baseAddr;
+                    var offset = x.Address.Offset - baseAddr;
                     return offset == 0 ? $"{sym.Key}" : $"{sym.Key}+0x{offset:X}";
                 })
                 .ToArray();
@@ -83,11 +89,11 @@ public class BreakpointsWindow : SingletonWindow
             ImGui.TextUnformatted(_idStrings[i]);
 
             var bp = _breakpoints[i];
-            bool enabled = bp.enabled;
+            bool enabled = bp.IsEnabled;
 
             ImGui.TableNextColumn();
             if (ImGui.Checkbox(_checkboxIds[i], ref enabled))
-                session.EnableBreakpoint(bp.id, enabled);
+                session.EnableBreakpoint(bp.Id, enabled);
 
             ImGui.TableNextColumn();
             ImGui.TextUnformatted(_typeStrings[i]);

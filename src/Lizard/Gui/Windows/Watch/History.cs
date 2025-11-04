@@ -4,7 +4,7 @@ namespace Lizard.Gui.Windows.Watch;
 
 public class History
 {
-    public History(string path, IGhidraType type)
+    protected History(string path, IGhidraType type)
     {
         Path = path;
         Type = type ?? throw new ArgumentNullException(nameof(type));

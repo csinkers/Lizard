@@ -1,0 +1,147 @@
+﻿enum<uint8> LRegister1 { Flags, EAX, EBX, ECX, EDX, ESI, EDI, EBP, ESP, EIP, ES, CS, SS, DS, FS, GS }
+enum<uint8> LBreakpointType1
+{
+    Unknown,
+    Normal, // Regular breakpoint
+    Ephemeral, // Automatically deleted when it's hit, for things like step-out, step-over, run to address etc
+    Read, // Memory breakpoint on read
+    Write, // Memory breakpoint on write
+    Interrupt, // Break when interrupt called
+    InterruptWithAH, // Break when interrupt called
+    InterruptWithAX // Break when interrupt called
+}
+
+struct LAddress1 { uint16 segment; uint32 offset; }
+
+struct LRegisters1
+{
+    uint32 flags;
+
+    uint32 eax; uint32 ebx; uint32 ecx; uint32 edx;
+    uint32 esi; uint32 edi;
+    uint32 ebp; uint32 esp; uint32 eip;
+
+    uint16 es; uint16 cs; uint16 ss;
+    uint16 ds; uint16 fs; uint16 gs;
+    bool is_stopped;
+}
+
+struct LBreakpoint1
+{
+    uint32 id;
+    LAddress1 address;
+    LBreakpointType1 type;
+    bool is_enabled;
+    uint8 ah;
+    uint8 al;
+}
+
+struct LAssemblyLine1
+{
+    LAddress1 address;
+    string line;
+    uint8[] bytes;
+}
+
+enum<uint8> LDescriptorType1
+{
+    SysInvalid = 0x00,
+    Sys286TssA = 0x01,
+    SysLdt = 0x02,
+    Sys286TssB = 0x03,
+
+    Sys286CallGate = 0x04, // Gate
+    SysTaskGate = 0x05, // Gate
+    Sys286IntGate = 0x06, // Gate
+    Sys286TrapGate = 0x07, // Gate
+
+    // No 0x8
+    Sys386TssA = 0x09,
+    // No 0xa
+    Sys386TssB = 0x0b,
+
+    Sys386CallGate = 0x0c, // Gate
+    // No 0xd
+    Sys386IntGate = 0x0e, // Gate
+    Sys386TrapGate = 0x0f, // Gate
+
+    // Expand UP/DOWN, Read-Only/Read-Write, Accessed
+    DataUpRead = 0x10,
+    DataUpReadAcc = 0x11,
+    DataUpWrite = 0x12,
+    DataUpWriteAcc = 0x13,
+    DataDnRead = 0x14,
+    DataDnReadAcc = 0x15,
+    DataDnWrite = 0x16,
+    DataDnWriteAcc = 0x17,
+
+    // Readable, Confirming, Accessed
+    CodeAcc = 0x18,
+    Code = 0x19,
+    CodeReadAcc = 0x1a,
+    CodeRead = 0x1b,
+    CodeConfAcc = 0x1c,
+    CodeConf = 0x1d,
+    CodeReadConfAcc = 0x1e,
+    CodeReadConf = 0x1f
+}
+
+struct LDescriptor1
+{
+    LDescriptorType1 type;
+    uint32 offset; // For a gate, base=offset, limit=selector
+    uint32 selector;
+    uint8 dpl;
+    bool is_big;
+}
+
+client LizardClient1 { void Stopped(LRegisters1 state); }
+server<LizardClient1> Lizard1
+{
+    void Continue();
+    LRegisters1 Break();
+    LRegisters1 StepIn();
+    LRegisters1 StepOver();
+    LRegisters1 StepOut();
+    LRegisters1 StepMultiple(uint32 cycles);
+    void RunToAddress(LAddress1 address);
+    LRegisters1 GetState();
+    uint32 GetMaxNonEmptyAddress(uint16 seg);
+    LAddress1[] SearchMemory(LAddress1 start, uint32 length, uint8[] pattern, uint32 advance);
+
+    LAssemblyLine1[] Disassemble(LAddress1 address, uint32 length);
+    uint8[] GetMemory(LAddress1 address, uint32 length);
+    void SetMemory(LAddress1 address, uint8[] bytes);
+
+    LBreakpoint1[] ListBreakpoints();
+    void SetBreakpoint(LBreakpoint1 breakpoint);
+    void EnableBreakpoint(uint32 id, bool is_enabled);
+    void DeleteBreakpoint(uint32 id);
+
+    void SetRegister(LRegister1 reg, uint32 value);
+
+    LDescriptor1[] GetGdt();
+    LDescriptor1[] GetLdt();
+}
+
+/*
+Handshake:
+
+Client: "Lizard" (6 bytes, ASCII); 1 byte protocol version (currently 1)
+Server: 1 byte protocol version (currently 1)
+
+Request:
+	4-byte length
+    1 byte packet type (Disconnect = 0, Request = 1)
+    1 byte packet ID (for matching requests and responses)
+    2 byte method ID
+    Parameters (if any)
+
+Response:
+	4-byte length
+    1 byte packet type (ResponseOk = 2, ResponseFail = 3)
+    1 byte packet ID (for matching requests and responses)
+    if Ok: Response body
+    if Fail: 4 byte message length, then UTF-8 error message
+
+*/

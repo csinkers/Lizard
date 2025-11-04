@@ -1,5 +1,5 @@
-﻿using LizardProtocol;
+﻿using Lizard.Comms;
 
 namespace Lizard;
 
-public delegate void StoppedDelegate(Registers state);
+public delegate void StoppedDelegate(LRegisters1 state);

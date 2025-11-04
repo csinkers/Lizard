@@ -1,4 +1,4 @@
-﻿using Veldrid;
+﻿using Veldrid.Sdl2;
 
 namespace Lizard.Gui;
 
@@ -12,10 +12,10 @@ public class HotkeyManager
         {
             if (!keyEvent.Down)
                 continue;
-            if (IsModifier(keyEvent.Key))
+            if (IsModifier(keyEvent.Physical))
                 continue;
 
-            var binding = new KeyBinding(keyEvent.Key, keyEvent.Modifiers);
+            var binding = new KeyBinding(keyEvent.Physical, keyEvent.Modifiers);
             if (_bindings.TryGetValue(binding, out var info) && (info.IsGlobal || !imguiCaptured))
                 info.Action();
         }
@@ -24,14 +24,14 @@ public class HotkeyManager
     static bool IsModifier(Key key) =>
         key switch
         {
-            Key.LControl => true,
-            Key.RControl => true,
-            Key.LShift => true,
-            Key.RShift => true,
-            Key.LAlt => true,
-            Key.RAlt => true,
-            Key.LWin => true,
-            Key.RWin => true,
+            Key.LeftControl => true,
+            Key.RightControl => true,
+            Key.LeftShift => true,
+            Key.RightShift => true,
+            Key.LeftAlt => true,
+            Key.RightAlt => true,
+            Key.LeftGui => true,
+            Key.RightGui => true,
             _ => false
         };
 

@@ -1,11 +1,11 @@
 ﻿using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
+using Lizard.Comms;
 using Lizard.Config;
 using Lizard.Config.Properties;
 using Lizard.Gui;
 using Lizard.Util;
-using LizardProtocol;
 
 namespace Lizard.Session.Dump;
 
@@ -15,6 +15,7 @@ public class DumpFile
     const string MemoryName = "memory";
     static readonly Property<DumpRegisters> RegistersProperty = new(nameof(DumpFile), "Registers", new DumpRegisters());
     static readonly LogTopic Log = new("Dump");
+
     public ProjectConfig State { get; }
     public DumpRegisters Registers { get; }
     public byte[] Memory { get; }
@@ -107,8 +108,8 @@ public class DumpFile
         }
 
         var r = c.Session.Registers;
-        int maxAddress = c.Session.GetMaxNonEmptyAddress(r.cs);
-        var bytes = c.Session.GetMemory(new Address(r.cs, 0), maxAddress);
+        uint maxAddress = c.Session.GetMaxNonEmptyAddress(r.Cs);
+        var bytes = c.Session.GetMemory(new LAddress1 { Segment = r.Cs, Offset = 0 }, maxAddress);
         var state = new ProjectConfig();
         c.ProjectManager.Save(state);
 
@@ -116,22 +117,22 @@ public class DumpFile
             RegistersProperty,
             new DumpRegisters
             {
-                cs = r.cs,
-                ds = r.ds,
-                es = r.es,
-                fs = r.fs,
-                gs = r.gs,
-                ss = r.ss,
-                eax = r.eax,
-                ebx = r.ebx,
-                ecx = r.ecx,
-                edx = r.edx,
-                esi = r.esi,
-                edi = r.edi,
-                ebp = r.ebp,
-                esp = r.esp,
-                eip = r.eip,
-                flags = r.flags,
+                Cs = r.Cs,
+                Ds = r.Ds,
+                Es = r.Es,
+                Fs = r.Fs,
+                Gs = r.Gs,
+                Ss = r.Ss,
+                Eax = r.Eax,
+                Ebx = r.Ebx,
+                Ecx = r.Ecx,
+                Edx = r.Edx,
+                Esi = r.Esi,
+                Edi = r.Edi,
+                Ebp = r.Ebp,
+                Esp = r.Esp,
+                Eip = r.Eip,
+                Flags = r.Flags,
             }
         );
 

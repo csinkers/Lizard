@@ -4,7 +4,7 @@ namespace Lizard.Gui.Windows.Watch
 {
     public class Config
     {
-        const string Filename = @"MemWatcher.json";
+        const string Filename = "MemWatcher.json";
         public List<string> Watches { get; set; } = new();
 
         public static Config Load() =>

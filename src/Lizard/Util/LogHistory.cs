@@ -6,8 +6,9 @@ namespace Lizard.Util;
 public class LogHistory
 {
     const int MaxHistory = 10000;
-    readonly object _syncRoot = new();
+    readonly Lock _syncRoot = new();
     readonly Queue<LogEntry> _history = new();
+
     public event Action<LogEntry>? EntryAdded;
     public event Action? Cleared;
 
@@ -49,8 +50,6 @@ public class LogHistory
 
     public void Access<T>(T context, Action<T, IReadOnlyCollection<LogEntry>> operation)
     {
-        if (operation == null)
-            throw new ArgumentNullException(nameof(operation));
         lock (_syncRoot)
             operation(context, _history);
     }

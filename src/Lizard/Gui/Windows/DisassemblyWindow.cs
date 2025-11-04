@@ -1,7 +1,8 @@
 ﻿using System.Text;
 using ImGuiColorTextEditNet;
+using ImGuiColorTextEditNet.Syntax;
 using ImGuiNET;
-using LizardProtocol;
+using Lizard.Comms;
 
 namespace Lizard.Gui.Windows;
 
@@ -11,9 +12,9 @@ class DisassemblyWindow : SingletonWindow
     const int MaxByteStringLength = MaxInstructionBytes * 2 + (MaxInstructionBytes - 1);
     const int LinesToShow = 48;
 
-    record Line(Address Address, string Bytes, string Asm)
+    record Line(LAddress1 Address, string Bytes, string Asm)
     {
-        public string AddrString { get; } = $"{Address.segment:X4}:{Address.offset:X8}";
+        public string AddrString { get; } = $"{Address.Segment:X4}:{Address.Offset:X8}";
     };
 
     readonly CommandContext _context;
@@ -40,12 +41,12 @@ class DisassemblyWindow : SingletonWindow
         if (!session.IsPaused)
             return;
 
-        var ip = _context.SelectedAddress ?? (uint)session.Registers.eip;
+        var ip = _context.SelectedAddress ?? session.Registers.Eip;
         if (_address == ip)
             return;
 
         _address = ip;
-        var address = new Address(session.Registers.cs, (int)ip);
+        var address = new LAddress1 { Segment = session.Registers.Cs, Offset = ip };
 
         session.Defer(
             new Request<Line[]>(
@@ -54,17 +55,22 @@ class DisassemblyWindow : SingletonWindow
                 {
                     var rawLines = host.Disassemble(address, LinesToShow);
                     var sb = new StringBuilder(MaxByteStringLength);
-                    var formattedLines = new Line[rawLines.Length];
+                    var formattedLines = new Line[rawLines.Count];
 
-                    for (var i = 0; i < rawLines.Length; i++)
+                    for (var i = 0; i < rawLines.Count; i++)
                     {
                         var rawLine = rawLines[i];
+                        if (rawLine.Address == null || rawLine.Line == null)
+                            continue;
+
                         sb.Clear();
-                        for (int j = 0; j < rawLine.bytes.Length; j++)
-                            sb.AppendFormat(j > 0 ? " {0:X2}" : "{0:X2}", rawLine.bytes[j]);
+                        if (rawLine.Bytes != null)
+                            for (int j = 0; j < rawLine.Bytes.Length; j++)
+                                sb.AppendFormat(j > 0 ? " {0:X2}" : "{0:X2}", rawLine.Bytes[j]);
+
                         sb.Append(' ');
 
-                        formattedLines[i] = new Line(rawLine.address, sb.ToString(), rawLine.line);
+                        formattedLines[i] = new Line(rawLine.Address, sb.ToString(), rawLine.Line);
                     }
 
                     return formattedLines;

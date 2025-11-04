@@ -79,69 +79,69 @@ class RegistersWindow : SingletonWindow
         var regs = session.Registers;
 
         ImGui.PushStyleColor(ImGuiCol.Border, Green);
-        ImGui.BeginChild("exx_regs", _regChildSize, ImGuiChildFlags.Border, ImGuiWindowFlags.NoScrollbar);
-        DrawReg8("EAX", regs.eax, oldRegs.eax);
-        DrawReg8("EBX", regs.ebx, oldRegs.ebx);
-        DrawReg8("ECX", regs.ecx, oldRegs.ecx);
-        DrawReg8("EDX", regs.edx, oldRegs.edx);
+        ImGui.BeginChild("exx_regs", _regChildSize, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar);
+        DrawReg8("EAX", regs.Eax, oldRegs.Eax);
+        DrawReg8("EBX", regs.Ebx, oldRegs.Ebx);
+        DrawReg8("ECX", regs.Ecx, oldRegs.Ecx);
+        DrawReg8("EDX", regs.Edx, oldRegs.Edx);
         ImGui.EndChild();
         ImGui.PopStyleColor();
 
         ImGui.SameLine();
 
         ImGui.PushStyleColor(ImGuiCol.Border, Cyan);
-        ImGui.BeginChild("exi_exp_regs", _regChildSize, ImGuiChildFlags.Border, ImGuiWindowFlags.NoScrollbar);
-        DrawReg8("ESI", regs.esi, oldRegs.esi);
-        DrawReg8("EDI", regs.edi, oldRegs.edi);
-        DrawReg8("EBP", regs.ebp, oldRegs.ebp);
-        DrawReg8("ESP", regs.esp, oldRegs.esp);
+        ImGui.BeginChild("exi_exp_regs", _regChildSize, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar);
+        DrawReg8("ESI", regs.Esi, oldRegs.Esi);
+        DrawReg8("EDI", regs.Edi, oldRegs.Edi);
+        DrawReg8("EBP", regs.Ebp, oldRegs.Ebp);
+        DrawReg8("ESP", regs.Esp, oldRegs.Esp);
         ImGui.EndChild();
         ImGui.PopStyleColor();
 
         ImGui.Spacing();
 
         ImGui.PushStyleColor(ImGuiCol.Border, Yellow);
-        ImGui.BeginChild("segments", _segChildSize, ImGuiChildFlags.Border, ImGuiWindowFlags.NoScrollbar);
-        DrawReg4("DS", regs.ds, oldRegs.ds);
+        ImGui.BeginChild("segments", _segChildSize, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar);
+        DrawReg4("DS", regs.Ds, oldRegs.Ds);
         ImGui.SameLine();
-        DrawReg4("FS", regs.fs, oldRegs.fs);
-        DrawReg4("ES", regs.es, oldRegs.es);
+        DrawReg4("FS", regs.Fs, oldRegs.Fs);
+        DrawReg4("ES", regs.Es, oldRegs.Es);
         ImGui.SameLine();
-        DrawReg4("GS", regs.gs, oldRegs.gs);
-        DrawReg4("CS", regs.cs, oldRegs.cs);
+        DrawReg4("GS", regs.Gs, oldRegs.Gs);
+        DrawReg4("CS", regs.Cs, oldRegs.Cs);
         ImGui.SameLine();
-        DrawReg4("SS", regs.ss, oldRegs.ss);
+        DrawReg4("SS", regs.Ss, oldRegs.Ss);
         ImGui.EndChild();
         ImGui.PopStyleColor();
 
         ImGui.SameLine();
 
         ImGui.PushStyleColor(ImGuiCol.Border, Red);
-        ImGui.BeginChild("flags", _flagChildSize, ImGuiChildFlags.Border, ImGuiWindowFlags.NoScrollbar);
-        DrawFlag("CF", regs.flags, oldRegs.flags, CpuFlags.CF);
+        ImGui.BeginChild("flags", _flagChildSize, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar);
+        DrawFlag("CF", regs.Flags, oldRegs.Flags, CpuFlags.CF);
         ImGui.SameLine();
-        DrawFlag("ZF", regs.flags, oldRegs.flags, CpuFlags.ZF);
+        DrawFlag("ZF", regs.Flags, oldRegs.Flags, CpuFlags.ZF);
         ImGui.SameLine();
-        DrawFlag("SF", regs.flags, oldRegs.flags, CpuFlags.SF);
+        DrawFlag("SF", regs.Flags, oldRegs.Flags, CpuFlags.SF);
 
-        DrawFlag("Oj", regs.flags, oldRegs.flags, CpuFlags.OF);
+        DrawFlag("Oj", regs.Flags, oldRegs.Flags, CpuFlags.OF);
         ImGui.SameLine();
-        DrawFlag("AF", regs.flags, oldRegs.flags, CpuFlags.AF);
+        DrawFlag("AF", regs.Flags, oldRegs.Flags, CpuFlags.AF);
         ImGui.SameLine();
-        DrawFlag("PF", regs.flags, oldRegs.flags, CpuFlags.PF);
+        DrawFlag("PF", regs.Flags, oldRegs.Flags, CpuFlags.PF);
 
-        DrawFlag("Dj", regs.flags, oldRegs.flags, CpuFlags.DF);
+        DrawFlag("Dj", regs.Flags, oldRegs.Flags, CpuFlags.DF);
         ImGui.SameLine();
-        DrawFlag("IF", regs.flags, oldRegs.flags, CpuFlags.IF);
+        DrawFlag("IF", regs.Flags, oldRegs.Flags, CpuFlags.IF);
         ImGui.SameLine();
-        DrawFlag("TF", regs.flags, oldRegs.flags, CpuFlags.TF);
+        DrawFlag("TF", regs.Flags, oldRegs.Flags, CpuFlags.TF);
 
         ImGui.EndChild();
         ImGui.PopStyleColor();
 
         ImGui.Spacing();
 
-        DrawReg8("EIP", regs.eip, oldRegs.eip);
+        DrawReg8("EIP", regs.Eip, oldRegs.Eip);
 
         GetPaddedRect(out var rectMinPos, out var rectMaxPos);
         ImGui.GetWindowDrawList().AddRect(rectMinPos, rectMaxPos, WhiteUInt, 5.0f);
@@ -160,13 +160,13 @@ class RegistersWindow : SingletonWindow
         ImGui.TextColored(color, $"{name}={value:X4}");
     }
 
-    static void DrawReg8(string name, int value, int oldValue)
+    static void DrawReg8(string name, uint value, uint oldValue)
     {
         var color = value == oldValue ? White : Red;
         ImGui.TextColored(color, $"{name}={value:X8}");
     }
 
-    static void DrawFlag(string name, int flags, int oldFlags, CpuFlags flag)
+    static void DrawFlag(string name, uint flags, uint oldFlags, CpuFlags flag)
     {
         int val = (flags & (int)flag) == 0 ? 0 : 1;
         int oldVal = (oldFlags & (int)flag) == 0 ? 0 : 1;

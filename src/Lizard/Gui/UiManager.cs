@@ -83,6 +83,9 @@ class UiManager : IDisposable
             out _gd
         );
 
+        if (_gd.MainSwapchain == null)
+            throw new InvalidOperationException("Graphics device created without a swapchain");
+
         _imguiRenderer = new ImGuiRenderer(
             _gd,
             _gd.MainSwapchain.Framebuffer.OutputDescription,
@@ -90,6 +93,8 @@ class UiManager : IDisposable
             (int)_gd.MainSwapchain.Framebuffer.Height
         );
 
+        var io = ImGui.GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         TextureStore = new TextureStore(_gd, _imguiRenderer);
 
         _window.Resized += () =>
@@ -99,7 +104,7 @@ class UiManager : IDisposable
         };
 
         _cl = _gd.ResourceFactory.CreateCommandList();
-        ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(0.1f, 0.1f, 0.1f, 1));
+        // ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(0.1f, 0.1f, 0.1f, 1));
     }
 
     void PostLoad(ProjectConfig project)
@@ -186,7 +191,7 @@ class UiManager : IDisposable
         _hotkeys.HandleInput(input, io.WantCaptureKeyboard);
 
         _cl.Begin();
-        _cl.SetFramebuffer(_gd.MainSwapchain.Framebuffer);
+        _cl.SetFramebuffer(_gd.MainSwapchain!.Framebuffer);
         _cl.ClearColorTarget(0, RgbaFloat.Black);
         _imguiRenderer.Render(_gd, _cl);
         _cl.End();

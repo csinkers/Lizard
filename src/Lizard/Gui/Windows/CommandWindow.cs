@@ -41,7 +41,8 @@ public class CommandWindow : SingletonWindow
         _logs.EntryAdded += x =>
         {
             _textEditor.AppendLine(x.Line);
-            _textEditor.Movement.MoveToEndOfFile();
+            if (_autoScroll)
+                _textEditor.Movement.MoveToEndOfFile();
         };
     }
 
