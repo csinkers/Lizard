@@ -1,4 +1,4 @@
-﻿namespace Lizard;
+﻿namespace Lizard.Core;
 
 [Flags]
 enum CpuFlags

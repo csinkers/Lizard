@@ -11,8 +11,8 @@ public class MemoryCache : IMemoryCache
     readonly IMemoryReader _reader;
     readonly Func<uint, byte[]?> _tryGetPreviousPageDelegate;
 
-    Dictionary<uint, byte[]> _current = new();
-    Dictionary<uint, byte[]> _previous = new();
+    Dictionary<uint, byte[]> _current = [];
+    Dictionary<uint, byte[]> _previous = [];
     bool _dirty;
 
     public MemoryCache(IMemoryReader reader)
@@ -90,7 +90,7 @@ public class MemoryCache : IMemoryCache
     static ReadOnlySpan<byte> ReadInner(uint offset, uint size, Span<byte> backingArray, Func<uint, byte[]?> tryGetPage)
     {
         if (size == 0)
-            return ReadOnlySpan<byte>.Empty;
+            return [];
 
         uint firstPage = PageNum(offset);
         uint lastPage = PageNumRoundUp(offset + size) - 1;
@@ -100,7 +100,7 @@ public class MemoryCache : IMemoryCache
         {
             var buffer = tryGetPage(firstPage);
             if (buffer == null)
-                return ReadOnlySpan<byte>.Empty;
+                return [];
 
             var pageOffset = PageAddr(firstPage);
             return buffer.AsSpan((int)(offset - pageOffset), (int)size);

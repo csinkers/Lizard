@@ -3,6 +3,7 @@ using ImGuiColorTextEditNet;
 using ImGuiColorTextEditNet.Syntax;
 using ImGuiNET;
 using Lizard.Comms;
+using Lizard.Core;
 
 namespace Lizard.Gui.Windows;
 

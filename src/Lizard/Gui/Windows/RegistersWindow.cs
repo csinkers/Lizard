@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using ImGuiNET;
+using Lizard.Core;
 
 namespace Lizard.Gui.Windows;
 

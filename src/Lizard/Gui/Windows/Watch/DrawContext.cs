@@ -1,4 +1,5 @@
-﻿using Lizard.Memory;
+﻿using Lizard.Core;
+using Lizard.Memory;
 
 namespace Lizard.Gui.Windows.Watch;
 

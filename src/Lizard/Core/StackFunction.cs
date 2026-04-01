@@ -1,5 +1,5 @@
 ﻿using GhidraProgramData;
 
-namespace Lizard;
+namespace Lizard.Core;
 
 public record StackFunction(Symbol Symbol, uint Address, int Offset);

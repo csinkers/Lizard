@@ -2,6 +2,7 @@
 using ImGuiNET;
 using Lizard.Config;
 using Lizard.Config.Properties;
+using Lizard.Core;
 
 namespace Lizard.Gui.Windows;
 

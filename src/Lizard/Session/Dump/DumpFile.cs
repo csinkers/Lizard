@@ -4,7 +4,7 @@ using System.Text.Json;
 using Lizard.Comms;
 using Lizard.Config;
 using Lizard.Config.Properties;
-using Lizard.Gui;
+using Lizard.Core;
 using Lizard.Util;
 
 namespace Lizard.Session.Dump;

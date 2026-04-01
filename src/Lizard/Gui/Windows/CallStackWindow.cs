@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using Lizard.Core;
 
 namespace Lizard.Gui.Windows;
 
@@ -6,7 +7,7 @@ public class CallStackWindow : SingletonWindow
 {
     record Info(string Text, StackFrame Frame, StackFunction Function);
 
-    readonly List<Info> _infos = new();
+    readonly List<Info> _infos = [];
     readonly CommandContext _context;
     int _lastVersion;
 
@@ -24,7 +25,8 @@ public class CallStackWindow : SingletonWindow
             for (var frameIndex = 0; frameIndex < stack.Count; frameIndex++)
             {
                 var frame = stack[frameIndex];
-                foreach (var func in frame.Functions)
+                var func = frame.Function;
+                if (func != null)
                 {
                     var symbol = func.Symbol;
                     _infos.Add(new Info($"[{frameIndex:x}] {symbol.Name}+{func.Offset:X}", frame, func));

@@ -1,4 +1,6 @@
 ﻿using Lizard.Config;
+using Lizard.Core;
+using Lizard.Core.Unwind;
 using Lizard.Gui;
 using Lizard.Gui.Windows;
 using Lizard.Gui.Windows.Watch;
@@ -34,7 +36,12 @@ internal static class Program
 
             using var sessionProvider = new DebugSessionProvider();
             using var uiManager = new UiManager(projectManager);
-            var context = new CommandContext(sessionProvider, mapping, symbols, projectManager);
+
+            var unwinderManager = new UnwindManager();
+            unwinderManager.AddUnwinder(new BasicUnwinder());
+            unwinderManager.AddUnwinder(new WatcomUnwinder());
+
+            var context = new CommandContext(sessionProvider, mapping, symbols, projectManager, unwinderManager);
             var watcher = new WatcherCore(context, uiManager.TextureStore);
             var ui = new Ui(LogHistory.Instance, projectManager, uiManager, context, watcher);
 

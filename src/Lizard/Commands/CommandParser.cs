@@ -4,7 +4,7 @@ using System.Text;
 using GhidraProgramData.Types;
 using ImGuiColorTextEditNet;
 using Lizard.Comms;
-using Lizard.Gui;
+using Lizard.Core;
 using Lizard.Gui.Windows;
 using Lizard.Memory;
 using Lizard.Session.Dump;
@@ -449,7 +449,7 @@ static class CommandParser
             {
                 var address = ParseUtil.ParseAddress(getArg(), c, false);
                 var length = ParseUtil.ParseUInt32(getArg());
-                var pattern = new List<byte>();
+                List<byte> pattern = [];
 
                 string arg;
                 while (!string.IsNullOrEmpty(arg = getArg()))
@@ -463,7 +463,7 @@ static class CommandParser
                     pattern.Add(b);
                 }
 
-                var results = c.Session.SearchMemory(address, length, pattern.ToArray(), 1);
+                var results = c.Session.SearchMemory(address, length, [..pattern], 1);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
                     PrintMemBytes(result, c.Session.GetMemory(result, (uint)displayLength), c);
@@ -493,7 +493,7 @@ static class CommandParser
                     pattern.Add((byte)(dword >> 24 & 0xff));
                 }
 
-                var results = c.Session.SearchMemory(address, length, pattern.ToArray(), 4);
+                var results = c.Session.SearchMemory(address, length, [..pattern], 4);
                 int displayLength = 16 * ((pattern.Count + 15) / 16);
                 foreach (var result in results)
                     PrintMemBytes(result, c.Session.GetMemory(result, (uint)displayLength), c);
@@ -739,11 +739,12 @@ static class CommandParser
 
     static void PrintStackTrace(CommandContext c)
     {
-        var stack = c.GetStackTrace();
+        var stack = c.Stack;
         for (int i = 0; i < stack.Count; i++)
         {
             var frame = stack[i];
-            foreach (var f in frame.Functions)
+            var f = frame.Function;
+            if (f != null)
                 Log.Debug($"[{i}] BP:{frame.BasePointer:x8} {f.Symbol.Name}+{f.Offset:x}");
         }
     }
@@ -783,7 +784,7 @@ def make_label(address, name):
         );
         /*
          */
-        string Esc(string s) => s.Replace("\"", "\\\"");
+        static string Esc(string s) => s.Replace("\"", "\\\"");
 
         var r = c.Session.Registers;
         sw.WriteLine($"make_label(0x{r.Ebp:x}, \"base_pointer\")");

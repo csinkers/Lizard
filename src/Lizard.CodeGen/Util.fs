@@ -2,7 +2,6 @@
 open LizardGenFs.Types
 
 let reverseDependencyOrder (types : TypeDef list) =
-    // Build a map from type name to TypeDef
     let rec typeName =
         function
         | TypeDef.Enum e    -> e.name
@@ -18,6 +17,7 @@ let reverseDependencyOrder (types : TypeDef list) =
         | TypeDef.Service _ -> 2
         | _                 -> 3
 
+    // Build a map from type name to TypeDef
     let allTypes =
         types
         |> List.map (fun t -> typeName t, t)

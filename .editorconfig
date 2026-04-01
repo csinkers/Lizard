@@ -1,7 +1,8 @@
-# Remove the line below if you want to inherit .editorconfig settings from higher directories
+﻿# Remove the line below if you want to inherit .editorconfig settings from higher directories
 root = true
 
 [*.cs]
 dotnet_style_require_accessibility_modifiers = never:silent
+csharp_style_prefer_primary_constructors = false
 csharp_style_prefer_top_level_statements = false:silent
 resharper_convert_to_primary_constructor_highlighting = none

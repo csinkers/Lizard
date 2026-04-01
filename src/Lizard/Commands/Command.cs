@@ -1,4 +1,4 @@
-﻿using Lizard.Gui;
+﻿using Lizard.Core;
 
 namespace Lizard.Commands;
 

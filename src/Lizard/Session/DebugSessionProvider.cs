@@ -1,5 +1,5 @@
 ﻿using Lizard.Comms;
-using Lizard.Gui;
+using Lizard.Core;
 using Lizard.Session.Dump;
 using Lizard.Util;
 

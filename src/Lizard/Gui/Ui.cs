@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using ImGuiNET;
 using Lizard.Config;
+using Lizard.Core;
 using Lizard.Gui.Windows;
 using Lizard.Gui.Windows.Watch;
 using Lizard.Session;

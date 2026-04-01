@@ -2,6 +2,7 @@
 using GhidraProgramData.Types;
 using ImGuiColorTextEditNet;
 using ImGuiColorTextEditNet.Syntax;
+using Lizard.Core;
 
 namespace Lizard.Gui.Windows;
 

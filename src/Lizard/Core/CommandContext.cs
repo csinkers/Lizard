@@ -1,31 +1,34 @@
-﻿using System.Runtime.InteropServices;
-using GhidraProgramData;
-using GhidraProgramData.Types;
+﻿using GhidraProgramData;
 using Lizard.Config;
+using Lizard.Core.Unwind;
 using Lizard.Memory;
 using Lizard.Session;
 using Lizard.Util;
 
-namespace Lizard.Gui;
+namespace Lizard.Core;
 
 public class CommandContext
 {
     static readonly LogTopic Log = new("Context");
-    public event Action? ExitRequested;
-    List<StackFrame> _stack = new();
+    readonly UnwindManager _unwindManager;
+    List<StackFrame> _stack = [];
     int _lastStackVersion = -1;
+
+    public event Action? ExitRequested;
 
     public CommandContext(
         DebugSessionProvider sessionProvider,
         MemoryMapping mapping,
         SymbolStore symbols,
-        ProjectManager projectManager
+        ProjectManager projectManager,
+        UnwindManager unwindManager
     )
     {
         SessionProvider = sessionProvider ?? throw new ArgumentNullException(nameof(sessionProvider));
         Mapping = mapping ?? throw new ArgumentNullException(nameof(mapping));
         Symbols = symbols ?? throw new ArgumentNullException(nameof(symbols));
         ProjectManager = projectManager ?? throw new ArgumentNullException(nameof(projectManager));
+        _unwindManager = unwindManager ?? throw new ArgumentNullException(nameof(unwindManager));
     }
 
     public IDebugSession Session => SessionProvider.Session;
@@ -70,7 +73,7 @@ public class CommandContext
     public StackFrame? SelectedFrame =>
         SelectedFrameIndex == null || SelectedFrameIndex >= Stack.Count ? null : Stack[SelectedFrameIndex.Value];
 
-    public List<StackFrame> GetStackTrace()
+    List<StackFrame> GetStackTrace()
     {
         var r = Session.Registers;
 
@@ -78,52 +81,28 @@ public class CommandContext
         if (stackRegion == null)
         {
             Log.Warn("No stack region found");
-            return new List<StackFrame>();
+            return [];
         }
 
         uint stackBase = stackRegion.MemoryEnd;
+        if (r.Ebp > stackBase)
+        {
+            Log.Error("Invalid stack data: current frame pointer is higher than stack base");
+            return [];
+        }
 
-        uint ip = r.Eip;
-        uint bp = r.Ebp;
-
-        var ipSymbol = LookupSymbolForAddress(ip, out var offset);
-        var stack = new List<StackFrame> { new(bp) };
+        var ipSymbol = LookupSymbolForAddress(r.Eip, out var offset);
+        var frame = new StackFrame(r.Ebp);
+        var stack = new List<StackFrame> { frame };
 
         if (ipSymbol != null)
-            stack[0].Functions.Add(new(ipSymbol, ip, offset));
+            stack[0].Function = new StackFunction(ipSymbol, r.Eip, offset);
 
-        var dwords = GetDwords(bp, stackBase);
+        OffsetMemory stackMemory = GetDwords(r.Ebp, stackBase);
+        var context = new UnwinderContext(this, stackMemory);
 
-        uint GetDword(uint addr)
-        {
-            if (addr < r.Ebp)
-                return 0;
-
-            uint index = (addr - r.Ebp) / 4;
-            if (index >= dwords.Length)
-                return 0;
-
-            return dwords[index];
-        }
-
-        while (bp != 0)
-        {
-            bp = GetDword(bp);
-            if (bp != 0)
-                stack.Add(new StackFrame(bp));
-        }
-
-        for (int i = 0; i < stack.Count; i++)
-        {
-            var limit = i < stack.Count - 2 ? stack[i + 1].BasePointer : stackBase;
-            for (uint addr = stack[i].BasePointer; addr < limit; addr += 4)
-            {
-                var value = GetDword(addr);
-                var symbol = LookupSymbolForAddress(value, out offset);
-                if (symbol?.Context is GFunction)
-                    stack[i].Functions.Add(new(symbol, value, offset));
-            }
-        }
+        while ((frame = _unwindManager.TryUnwindFrame(context, frame)) != null)
+            stack.Add(frame);
 
         return stack;
     }
@@ -131,19 +110,21 @@ public class CommandContext
     MemoryRegion? GetStackRegion(uint addressHint) =>
         Mapping.Regions.FirstOrDefault(x => x.Contains(addressHint) && x.Type == MemoryType.Stack);
 
-    uint[] GetDwords(uint from, uint to)
+    OffsetMemory GetDwords(uint from, uint to)
     {
         if (to < from)
             throw new InvalidOperationException("Tried to get array of dwords but the supplied range was backwards");
+
         var byteCount = to - from;
         if (byteCount % 4 != 0)
+        {
             throw new InvalidOperationException(
                 "Tried to get array of dwords but the length supplied was not a multiple of 4"
             );
+        }
 
-        var num = byteCount / 4;
-        var buf = new uint[num];
-        Session.Memory.ReadIntoSpan(from, byteCount, MemoryMarshal.Cast<uint, byte>(buf));
-        return buf;
+        var buf = new byte[byteCount];
+        Session.Memory.ReadIntoSpan(from, byteCount, buf);
+        return new OffsetMemory(buf, from);
     }
 }

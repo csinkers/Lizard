@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 using Lizard.Comms;
-using Lizard.Gui;
+using Lizard.Core;
 
 namespace Lizard.Util;
 

@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using ImGuiNET;
 using Lizard.Comms;
+using Lizard.Core;
 
 namespace Lizard.Gui.Windows;
 

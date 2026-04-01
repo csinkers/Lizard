@@ -43,9 +43,11 @@ public sealed class NetDebugSession : IDebugSession, IMemoryReader, ILizardClien
     public void Read(uint offset, uint size, Span<byte> buffer)
     {
         if (size > buffer.Length)
+        {
             throw new InvalidOperationException(
                 $"Tried to retrieve {size} bytes, but the supplied buffer can only hold {buffer.Length}"
             );
+        }
 
         var addr = new LAddress1 { Segment = _registers.Ds, Offset = offset };
         var result = GetMemory(addr, size);
