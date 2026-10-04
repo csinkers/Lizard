@@ -66,9 +66,9 @@ let serdesCall s name t = // s=ISerdes name, name=member name, t=member type
         | EnumBackingType.UInt32 -> $"{s}.UInt32Enum(\"{name}\", {name})"
     | Struct _ -> $"{name}.Serdes(\"{name}\", {s})"
     | Array (Basic UInt8) -> $"{s}.Bytes(\"{name}\", {name})"
-    | Array t ->
+    | Array _ ->
         seq {
-            yield ($"{s}.Array(\"{name}\", {name})" )
+            yield $"{s}.Array(\"{name}\", {name})"
         } |> String.concat ""
     | Service _ -> failwith "Services cannot be members of structs"
     | _ -> failwith "Unsupported"

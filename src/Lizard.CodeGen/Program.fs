@@ -27,13 +27,13 @@ let parseCmdLineArgs (args: string[]) : CmdLineArg list =
     let rec loop i acc =
         if i >= args.Length then List.rev acc else
 
-        match args.[i] with
-        | "-o"  when i + 1 < args.Length -> loop (i + 2) (OutputDirectory args.[i + 1]::acc)
-        | "-ns" when i + 1 < args.Length -> loop (i + 2) (Namespace args.[i + 1]::acc)
+        match args[i] with
+        | "-o"  when i + 1 < args.Length -> loop (i + 2) (OutputDirectory args[i + 1]::acc)
+        | "-ns" when i + 1 < args.Length -> loop (i + 2) (Namespace args[i + 1]::acc)
         | "-cpp" -> loop (i + 1) (GenerateCpp::acc)
         | "-cs"  -> loop (i + 1) (GenerateCs::acc)
         | "-v"   -> loop (i + 1) (Verbose::acc)
-        | unknown -> failwithf "Unknown or misplaced argument: %s" unknown
+        | unknown -> failwith $"Unknown or misplaced argument: %s{unknown}"
 
     loop 1 []
 
@@ -42,13 +42,13 @@ let writeFileIfDifferent fileName content isVerbose =
         let existingContent = File.ReadAllText(fileName)
         if existingContent = content then
             if isVerbose then
-                printfn "Skipping %s (no changes)" fileName
+                printfn $"Skipping %s{fileName} (no changes)"
         else
-            printfn "Overwriting %s" fileName
+            printfn $"Overwriting %s{fileName}"
             File.WriteAllText(fileName, content)
     else
         File.WriteAllText(fileName, content)
-        printfn "Wrote %s" fileName
+        printfn $"Wrote %s{fileName}"
 
 let generateCpp namespaceName types =
     [
@@ -60,7 +60,7 @@ let generateCpp namespaceName types =
 [<EntryPoint>]
 let main args =
     try
-        // printfn "Running with \"%A\"" args
+        // printfn $"Running with \"%A{args}\"" 
         if args.Length = 0 then
             printfn "Usage: LizardGenFs <lproto file> [-o OutputDirectory] [-cpp] [-cs]"
             printfn "-o: Specify output directory for generated files"
@@ -69,11 +69,11 @@ let main args =
             printfn "-ns: Specify namespace"
             exit 1
 
-        let path = args.[0]
+        let path = args[0]
         let options = parseCmdLineArgs args
 
         if not (File.Exists path) then
-            printfn "File not found: %s" path
+            printfn $"File not found: %s{path}"
             exit 1
 
         let types = loadLProto path
@@ -110,4 +110,4 @@ let main args =
                 let fileName = Path.Combine(destDir, r.name)
                 writeFileIfDifferent fileName r.text isVerbose
         0
-    with | ex -> printfn "Error: %s" (ex.ToString()); 1
+    with | ex -> printfn $"Error: %s{ex.ToString()}"; 1

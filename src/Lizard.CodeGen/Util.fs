@@ -39,7 +39,7 @@ let reverseDependencyOrder (types : TypeDef list) =
 
     // Kahn's algorithm with per-level sorting
     let rec kahn (depMap : Map<string, list<string>>) (result : TypeDef list) =
-        let (noDeps, rest) =
+        let noDeps, rest =
             depMap
             |> Map.partition (fun _ ds -> ds.IsEmpty)
 
@@ -49,13 +49,13 @@ let reverseDependencyOrder (types : TypeDef list) =
             else
                 // If there are nodes left but none with zero deps, we have a cycle
                 let cycle = rest |> Map.toList |> List.map fst
-                failwithf "Circular dependency detected: %A" cycle
+                failwith $"Circular dependency detected: %A{cycle}"
         else
             // Sort nodes with no dependencies by type and name
             let sorted =
                 noDeps
                 |> Map.toList
-                |> List.map (fun (n,_) -> allTypes.[n])
+                |> List.map (fun (n,_) -> allTypes[n])
                 |> List.sortBy (fun t -> (typeOrder t, typeName t))
 
             // Remove these from the graph

@@ -1,15 +1,19 @@
 ﻿module LizardGenFs.CppHeader
+
 open LizardGenFs.CppCommon
 open LizardGenFs.Types
 open LizardGenFs.Util
 
 let private nl = System.Environment.NewLine
-let private commonHeader namespaceName= $$"""#pragma once
+
+let private commonHeader namespaceName =
+    $$"""#pragma once
 
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 #include <string>
 #include "Serdes.h"
 
@@ -30,10 +34,10 @@ namespace {{namespaceName}}
     class ISocket
     {
     public:
-		virtual ~ISocket() = default;
+        virtual ~ISocket() = default;
         virtual ISocket* Accept() = 0;
-		virtual void Send(std::span<const uint8_t> buffer) = 0;
-		virtual void Receive(std::span<uint8_t> buffer) = 0;
+        virtual void Send(std::span<const uint8_t> buffer) = 0;
+        virtual void Receive(std::span<uint8_t> buffer) = 0;
         virtual void GetPeerAddress(uint32_t &ip, uint16_t& port) const = 0;
         virtual std::string GetPeerAddress() const = 0;
         virtual void Close() = 0;
@@ -42,11 +46,11 @@ namespace {{namespaceName}}
     class BitfieldEvent
     {
         int state_;
-        std::mutex m_;
-        std::condition_variable cv_;
+        std::mutex m_ = {};
+        std::condition_variable cv_ = {};
 
     public:
-        BitfieldEvent() : state_(false) {}
+        BitfieldEvent() : state_(0) {}
         void set(int flags)
         {
             std::unique_lock ul(m_);
@@ -87,7 +91,7 @@ namespace {{namespaceName}}
 
     class ManualResetEvent
     {
-        BitfieldEvent e_;
+        BitfieldEvent e_ = {};
 
     public:
         void set() { e_.set(1); }
@@ -122,70 +126,85 @@ namespace {{namespaceName}}
 
     class CommsError : public std::exception
     {
+        std::string message_;
     public:
-        explicit CommsError(const std::string& message) : std::exception(message.c_str()) {}
+        const char* what() const noexcept override { return message_.c_str(); }
+        explicit CommsError(const std::string& message) : message_(message) {}
     };
+
+    // End common Lizard.CodeGen code, begin contract-defined code.
 
 """
 
-let private generateEnum (e : EnumDef) =
+let private generateEnum (e: EnumDef) =
     seq {
-        yield $$"""    enum class {{e.name}} : {{backingTypeName e.backingType}}
+        yield
+            $$"""    enum class {{e.name}} : {{backingTypeName e.backingType}}
     {
 """
 
-        let lines =
-            e.values
-            |> List.map (fun (name, v) -> $"        {name} = {v}")
+        let lines = e.values |> List.map (fun (name, v) -> $"        {name} = {v}")
 
         yield String.concat ("," + nl) lines
-        yield """
+
+        yield
+            """
     };
 
 """
-    } |> String.concat ""
+    }
+    |> String.concat ""
 
-let private generateStruct (s : StructDef) =
+let private generateStruct (s: StructDef) =
     seq {
-        yield $$"""    struct {{s.name}}
+        yield
+            $$"""    struct {{s.name}}
     {
 """
 
-        for (name, t) in s.members do
-            yield $$"""        {{typeName t}} {{name}};
+        for name, t in s.members do
+            yield
+                $$"""        {{typeName t}} {{name}} = {};
 """
 
-        yield """
-        template<typename Tname>
-        void Serdes(Tname name, ISerdes& s)
+        yield
+            """
+        template<typename TName>
+        void Serdes(TName name, ISerdes& s)
         {
             s.Begin(name);
 """
 
-        for (name, t) in s.members do
+        for name, t in s.members do
             yield indentText 3 (serdesCall "s" name t)
-            yield """;
+
+            yield
+                """;
 """
 
-        yield """            s.End();
+        yield
+            """            s.End();
         }
     };
 
 """
-    } |> String.concat ""
+    }
+    |> String.concat ""
 
-let private methodSignature (m : MethodDef) =
+let private methodSignature (m: MethodDef) =
     let returnType = returnTypeName m.returnType
+
     let paramString =
         m.parameters
         |> List.map (fun (n, t) -> $"{paramTypeName t} {n}")
         |> String.concat ", "
 
-    $"{returnType } {m.name}({paramString})"
+    $"{returnType} {m.name}({paramString})"
 
-let private generateServiceInterface (s : ServiceDef) =
+let private generateServiceInterface (s: ServiceDef) =
     seq {
-        yield $$"""    class I{{s.name}}
+        yield
+            $$"""    class I{{s.name}}
     {
     public:
         virtual ~I{{s.name}}() = default;
@@ -197,36 +216,40 @@ let private generateServiceInterface (s : ServiceDef) =
             yield " = 0;" + nl
 
         yield "    };" + nl + nl
-    } |> String.concat ""
+    }
+    |> String.concat ""
 
-let private generateServiceDeserializerFactory (s : ServiceDef) =
+let private generateServiceDeserializerFactory (s: ServiceDef) =
     $"    IDeserializer* Make{s.name}Deserializer(I{s.name}& receiver);" + nl
 
-let private generateServiceSerializerFactory (s : ServiceDef) =
-    $"    I{s.name}* Make{s.name}Serializer(std::function<void(std::vector<uint8_t>&)> sendCallback);" + nl + nl
+let private generateServiceSerializerFactory (s: ServiceDef) =
+    $"    I{s.name}* Make{s.name}Serializer(std::function<void(std::vector<uint8_t>&)> sendCallback);"
+    + nl
+    + nl
 
-let private generateServiceHeader (s : ServiceDef) =
+let private generateServiceHeader (s: ServiceDef) =
     seq {
         yield generateServiceInterface s
         yield generateServiceDeserializerFactory s
         yield generateServiceSerializerFactory s
-    } |> String.concat ""
+    }
+    |> String.concat ""
 
 let generateHeader namespaceName types =
     let genType =
         function
-        | Basic   _ -> "" // predefined, don't need to emit anything
-        | Enum    e -> generateEnum e
-        | Struct  s -> generateStruct s
-        | Array   _ -> failwith "Arrays cannot be top-level types in Lizard-proto"
+        | Basic _ -> "" // predefined, don't need to emit anything
+        | Enum e -> generateEnum e
+        | Struct s -> generateStruct s
+        | Array _ -> failwith "Arrays cannot be top-level types in Lizard-proto"
         | Service s -> generateServiceHeader s
 
     seq {
-    yield commonHeader namespaceName
+        yield commonHeader namespaceName
 
-    for t in types do
-        yield (genType t)
+        for t in types do
+            yield (genType t)
 
-    yield "}"
-    } |> String.concat ""
-
+        yield "}"
+    }
+    |> String.concat ""

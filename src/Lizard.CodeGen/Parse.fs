@@ -33,12 +33,12 @@ let identifier : Parser<string> =
 let convertToInt64 (s: string) : string =
     match System.Int64.TryParse(s) with
     | true, v -> v.ToString()
-    | _ -> failwithf "Invalid integer value: %s" s
+    | _ -> failwith $"Invalid integer value: %s{s}"
 
 let convertToInt64Hex (s: string) : string =
     match System.Int64.TryParse(s, System.Globalization.NumberStyles.HexNumber, null) with
     | true, v -> v.ToString()
-    | _ -> failwithf "Invalid hexadecimal value: %s" s
+    | _ -> failwith $"Invalid hexadecimal value: %s{s}"
 
 let numeric : Parser<string> =
     ((pstring "0x" >>. many1Satisfy isHex |>> convertToInt64Hex ) <|> (many1Satisfy isDigit |>> convertToInt64))
@@ -52,7 +52,7 @@ let typeRef : Parser<string> =
         | None   -> n
 
 // Enum parser
-let enumValue : Parser<(string * string option)> =
+let enumValue : Parser<string * string option> =
     identifier .>>. opt (ws >>. strWs "=" >>. numeric) .>> opt (strWs ",")
 
 let enumDef : Parser<RawEnumDef> =
@@ -62,7 +62,7 @@ let enumDef : Parser<RawEnumDef> =
         { name = name; backingType = backingType; values = values }
 
 // Struct parser
-let structMember : Parser<(string * string)> =
+let structMember : Parser<string * string> =
     typeRef .>>. identifier .>> strWs ";"
 
 let structDef : Parser<RawStructDef> =
@@ -71,7 +71,7 @@ let structDef : Parser<RawStructDef> =
     |>> fun (name, members) -> { name = name; members = members }
 
 // Method parser
-let param : Parser<(string * string)> =
+let param : Parser<string * string> =
     typeRef .>>. identifier
 
 let paramList : Parser<(string * string) list> =
@@ -100,7 +100,7 @@ let serverDef : Parser<RawServiceDef> =
     >>. opt (between (strWs "<") (strWs ">") identifier)
     .>>. identifier
     .>>. between (strWs "{") (strWs "}") (many methodDef)
-    |>> fun (((cb, name), methods)) ->
+    |>> fun ((cb, name), methods) ->
         { name = name; isClient = false; callbackService = cb; methods = methods }
 
 let statement : Parser<RawTypeDef> =

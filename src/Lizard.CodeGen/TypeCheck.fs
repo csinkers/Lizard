@@ -48,7 +48,7 @@ let rec resolveType (types : Map<string, TypeDef>) (name : string) : TypeDef =
     else
         raise (TypeCheckError $"Unknown type: {name}")
 
-let resolveEnum (types : Map<string, TypeDef>) (raw : RawEnumDef) : EnumDef =
+let resolveEnum (raw : RawEnumDef) : EnumDef =
     let backingType = parseEnumBackingType raw.backingType
     let mutable lastValue = -1L
     let values =
@@ -124,7 +124,7 @@ let typecheck (rawTypes : RawTypeDef list) : TypeDef list =
         | raw :: rest ->
             match raw with
             | RawTypeDef.Enum e ->
-                let enumDef = TypeDef.Enum (resolveEnum acc e)
+                let enumDef = TypeDef.Enum (resolveEnum e)
                 resolveAll types rest (acc.Add(e.name, enumDef))
             | RawTypeDef.Struct s ->
                 let structDef = TypeDef.Struct (resolveStruct acc s)

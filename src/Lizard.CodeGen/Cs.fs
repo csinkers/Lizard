@@ -140,7 +140,7 @@ public class {{s.name}}
 {
 """
 
-        for (name, t) in s.members do
+        for name, t in s.members do
             yield $$"""    public {{typeNameN t}} {{pascalCase name}};
 """
 
@@ -151,7 +151,7 @@ public class {{s.name}}
         s.Begin(name);
 """
 
-        for (name, t) in s.members do
+        for name, t in s.members do
             let valName = "value." + (pascalCase name)
             yield indentText 2 (memberSerdes "s" valName t)
             yield ";" + nl
@@ -261,7 +261,7 @@ let private generateSerializerMethod (s : ServiceDef) (m : MethodDef) =
     {
         var sw = Header({{s.name}}Message.{{m.name}});"""
 
-        for (p, pt) in m.parameters do
+        for p, pt in m.parameters do
             yield $$"""        {{(paramSerdes "sw" (camelCase p) pt)}};""";
 
         if (m.returnType = Basic Void) then
@@ -305,7 +305,7 @@ public sealed class {{s.name}}Serializer : I{{s.name}}
         yield "}"
     } |> String.concat nl
 
-let private generateDeserializerMethod (s : ServiceDef) (m : MethodDef) =
+let private generateDeserializerMethod (m : MethodDef) =
     let paramSerdes (s:string) name t = // s=ISerdes name, name=parameter name, t=parameter type
         let tname = paramTypeName t
         match t with
@@ -361,12 +361,12 @@ let private generateDeserializerMethod (s : ServiceDef) (m : MethodDef) =
     seq {
         let args =
             m.parameters
-            |> List.map (fun (p, pt) -> $"{camelCase p}")
+            |> List.map (fun (p, _) -> $"{camelCase p}")
             |> String.concat ", "
 
         yield $$"""    void Handle{{m.name}}(ISerdes sr, ISerdes sw)
     {"""
-        for (p, pt) in m.parameters do
+        for p, pt in m.parameters do
             yield $$"""        {{(paramSerdes "sw" (camelCase p) pt)}};""";
 
         if (m.returnType = Basic Void) then
@@ -413,7 +413,7 @@ public sealed class {{s.name}}Deserializer
 
         for m in s.methods do
             yield ""
-            yield generateDeserializerMethod s m
+            yield generateDeserializerMethod m
 
         yield "}"
     } |> String.concat nl
@@ -429,7 +429,7 @@ let private generateType (ns : string) (t : TypeDef)  : GeneratedFile seq =
             { name = $"{s.name}Serializer.g.cs"; text = generateSerializer ns s }
             { name = $"{s.name}Deserializer.g.cs"; text = generateDeserializer ns s }
         ]
-    | _ -> failwithf "Unsupported type %A" t
+    | _ -> failwith $"Unsupported type %A{t}"
 
 let generate ns types : GeneratedFile list =
     types

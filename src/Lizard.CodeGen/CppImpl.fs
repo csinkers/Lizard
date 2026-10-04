@@ -6,7 +6,8 @@ open LizardGenFs.Util
 let private nl = System.Environment.NewLine
 
 let private commonImpl namespaceName = $$"""#include "{{namespaceName}}.g.h"
-#include <cstdio>
+#include <cstring>
+#include <list>
 #include <format>
 #include <functional>
 #include <future>
@@ -71,16 +72,16 @@ namespace {{namespaceName}}
             }
         }
 
-        template<>
-        void Respond(std::vector<uint8_t>& buffer, std::vector<uint8_t>& results)
+        template<std::same_as<uint8_t> T>
+        void Respond(std::vector<uint8_t>& buffer, std::vector<T>& results)
         {
             buffer.clear();
             SerdesWrite sw(buffer);
             sw.Bytes("result", results) ;
         }
 
-        template<>
-        void Respond(std::vector<uint8_t>& buffer, uint32_t& result)
+        template<std::same_as<uint32_t> T>
+        void Respond(std::vector<uint8_t>& buffer, T& result)
         {
             buffer.clear();
             SerdesWrite sw(buffer);
@@ -116,8 +117,8 @@ namespace {{namespaceName}}
             return result;
         }
 
-        template<>
-        uint32_t DecodeResponse(std::span<uint8_t> response)
+        template<std::same_as<uint32_t> T>
+        T DecodeResponse(std::span<uint8_t> response)
         {
             SerdesRead s(response);
             uint32_t result;
@@ -152,13 +153,13 @@ namespace {{namespaceName}}
 
         class Packet
         {
-            std::vector<uint8_t> ownedData;
+            std::vector<uint8_t> ownedData = {};
 
         public:
             PacketType type;
             uint8_t id;
             std::vector<uint8_t>& data;
-            ManualResetEvent done;
+            ManualResetEvent done = {};
 
             Packet(PacketType typeParam, uint8_t idParam) :
                 type(typeParam),
@@ -188,7 +189,7 @@ namespace {{namespaceName}}
                 ReceiveQueue = 1 << 2,
             };
 
-            BitfieldEvent e_;
+            BitfieldEvent e_ = {};
 
         public:
             void SetDone() { e_.set(Done); }
@@ -205,15 +206,15 @@ namespace {{namespaceName}}
         };
 
         std::unique_ptr<ISocket> socket_;
-        DuplexEvents events_;
-        std::mutex mutex_;
-        std::list<uint8_t> freeIds_;
+        DuplexEvents events_ = {};
+        std::mutex mutex_ = {};
+        std::list<uint8_t> freeIds_ = {};
         std::shared_ptr<ILogger> log_;
-        std::list<std::shared_ptr<Packet> > sendQueue_;
-        std::list<std::shared_ptr<Packet> > pendingRequests_;
-        std::list<std::shared_ptr<Packet> > receiveQueue_;
-        std::unique_ptr<std::thread>        sendThread_;
-        std::unique_ptr<std::thread>        receiveThread_;
+        std::list<std::shared_ptr<Packet> > sendQueue_ = {};
+        std::list<std::shared_ptr<Packet> > pendingRequests_ = {};
+        std::list<std::shared_ptr<Packet> > receiveQueue_ = {};
+        std::unique_ptr<std::thread>        sendThread_ = {};
+        std::unique_ptr<std::thread>        receiveThread_ = {};
         std::function<void(std::vector<uint8_t>&)> receiveFunc_;
 
         // Must be called with mutex_ held

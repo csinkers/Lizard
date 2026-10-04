@@ -75,10 +75,16 @@ class UiManager : IDisposable
         bool capturePending = false;
 #endif
 
+#if WIN32
+        GraphicsBackend backend = GraphicsBackend.Direct3D11;
+#else
+        GraphicsBackend backend = GraphicsBackend.Vulkan;
+#endif
+
         VeldridStartup.CreateWindowAndGraphicsDevice(
             new WindowCreateInfo(0, 0, 320, 240, WindowState.Normal, "Lizard"),
             new GraphicsDeviceOptions(true) { SyncToVerticalBlank = true },
-            GraphicsBackend.Direct3D11,
+            backend,
             out _window,
             out _gd
         );
