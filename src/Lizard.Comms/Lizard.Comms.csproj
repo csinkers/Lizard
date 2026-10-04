@@ -9,6 +9,6 @@
     <PackageReference Include="SerdesNet" Version="4.1.0" />
   </ItemGroup>
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="&quot;$(ProjectDir)\..\..\build\Lizard.CodeGen\bin\$(Configuration)\net9.0\Lizard.CodeGen.exe&quot; $(ProjectDir)\..\LizardProtocol1.lproto -cs -o $(ProjectDir)\Generated -ns Lizard.Comms" />
+    <Exec Command="&quot;$(ProjectDir)/../../build/Lizard.CodeGen/bin/$(Configuration)/net9.0/Lizard.CodeGen&quot; $(ProjectDir)/../LizardProtocol1.lproto -cs -o $(ProjectDir)/Generated -ns Lizard.Comms" />
   </Target>
 </Project>
